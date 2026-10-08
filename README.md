@@ -29,3 +29,12 @@ python -m pytest
 ```
 
 The unit tests cover the pure logic in `viochem/utils.py` and run without a Frappe site.
+
+Integration tests run on a bench site with ERPNext set up (setup wizard completed):
+
+```bash
+bench --site your-site set-config allow_tests true
+bench --site your-site run-tests --app viochem
+```
+
+They check the custom fields install, the CAS check, the document checklist and date rules, and that a shipment's landed cost raises stock value (100 kg at 500 plus 5,000 of charges values at 550 per kg).
