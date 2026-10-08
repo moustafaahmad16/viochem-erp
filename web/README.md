@@ -40,3 +40,7 @@ The `Dockerfile` builds a production image. On start it applies database migrati
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SESSION_SECRET` | Random text, at least 32 characters |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin user (only used when there are no users) |
+
+### Vercel and Neon
+
+Import the repository in Vercel with **Root Directory** set to `web`, and add the variables above. Use Neon's connection string with connection pooling turned off. Each deploy applies migrations and creates the first admin if needed (see `vercel.json`).
