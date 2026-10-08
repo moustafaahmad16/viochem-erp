@@ -12,4 +12,35 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install pytest
-      - run: python -m pytest -q
+      - run: python -m pytest -q tests
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: viochem
+          POSTGRES_PASSWORD: viochem
+          POSTGRES_DB: viochem_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://viochem:viochem@localhost:5432/viochem_test
+      TEST_DATABASE_URL: postgresql://viochem:viochem@localhost:5432/viochem_test
+      SESSION_SECRET: ci-only-secret-ci-only-secret-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx eslint src
+      - run: npm test
+      - run: npm run build
