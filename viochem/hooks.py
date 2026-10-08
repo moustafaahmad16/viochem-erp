@@ -6,6 +6,8 @@ app_email = "admin@viochem.local"
 app_license = "mit"
 required_apps = ["erpnext"]
 
+after_install = "viochem.install.after_install"
+
 # Custom fields on standard ERPNext doctypes ship as fixtures.
 fixtures = [{"dt": "Custom Field", "filters": [["module", "=", "Viochem"]]}]
 

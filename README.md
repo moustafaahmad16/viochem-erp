@@ -11,6 +11,8 @@ It runs on ERPNext v15 (hosted on Frappe Cloud) and adds what a generic ERP lack
 - **Import Shipment:** one record per container with ETD/ETA, vessel, bill of lading, forwarder and customs broker; the items and purchase orders it carries; a checklist of the eight import documents; and the landed costs (freight, insurance, duty, clearance, port, inland transport).
 - **ETA e-invoicing (Egypt):** an "ETA Settings" page for the Tax Authority credentials and VIOCHEM's issuer details, ETA codes on items, receiver type on customers, and a "Send to ETA" button on submitted Sales Invoices (or automatic sending on submit). The result (UUID, long ID or the rejection reason) is stored on the invoice.
 - **Bilingual invoice:** a "VIOCHEM Sales Invoice" print format in English and Arabic with CAS numbers, lots, VAT and the ETA UUID.
+- **Reports:** "VIOCHEM Margin Analysis" (revenue, landed cost and margin by import shipment, customer, item or lot), "Lots Near Expiry" (lots in stock past or near their expiry or retest date) and "Supplier Balances by Currency" (unpaid foreign supplier invoices at the booked rate and at today's rate, showing the exchange gain or loss).
+- **VIOCHEM dashboard:** a workspace with sales this month, open shipments, lots expiring in 90 days and overdue supplier invoices, plus shortcuts to everything above. EGP amounts show as "EGP" instead of ERPNext's default "£ or ج.م".
 - **Landed cost in one click:** "Create Landed Cost Voucher" spreads the shipment's charges over its purchase receipts by amount or quantity, so stock is valued at true cost per kg.
 
 ## Install
