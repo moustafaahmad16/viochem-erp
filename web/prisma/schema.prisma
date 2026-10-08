@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STAFF)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+// Running numbers for documents, one row per prefix and year (e.g. "INV-2026").
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model Item {
+  id            Int            @id @default(autoincrement())
+  code          String         @unique
+  name          String
+  casNumber     String?
+  unit          String         @default("kg")
+  hazardClass   String?
+  notes         String?
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  lots          Lot[]
+  shipmentLines ShipmentLine[]
+  invoiceLines  InvoiceLine[]
+}
+
+model Supplier {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  country   String?
+  currency  String     @default("USD")
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime   @default(now())
+  shipments Shipment[]
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  taxId     String?
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  invoices  Invoice[]
+}
+
+enum ShipmentStatus {
+  ORDERED
+  IN_TRANSIT
+  AT_CUSTOMS
+  RECEIVED
+}
+
+enum AllocationMethod {
+  VALUE
+  QUANTITY
+}
+
+model Shipment {
+  id                Int              @id @default(autoincrement())
+  ref               String           @unique
+  supplierId        Int
+  supplier          Supplier         @relation(fields: [supplierId], references: [id])
+  supplierInvoiceNo String?
+  currency          String
+  fxRate            Decimal          @db.Decimal(14, 6)
+  allocation        AllocationMethod @default(VALUE)
+  orderDate         DateTime         @db.Date
+  etd               DateTime?        @db.Date
+  eta               DateTime?        @db.Date
+  arrivalDate       DateTime?        @db.Date
+  status            ShipmentStatus   @default(ORDERED)
+  notes             String?
+  createdAt         DateTime         @default(now())
+  lines             ShipmentLine[]
+  charges           ShipmentCharge[]
+}
+
+model ShipmentLine {
+  id              Int       @id @default(autoincrement())
+  shipmentId      Int
+  shipment        Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  itemId          Int
+  item            Item      @relation(fields: [itemId], references: [id])
+  qty             Decimal   @db.Decimal(14, 3)
+  unitPrice       Decimal   @db.Decimal(14, 4)
+  supplierBatchNo String?
+  expiryDate      DateTime? @db.Date
+  lot             Lot?
+}
+
+model ShipmentCharge {
+  id          Int      @id @default(autoincrement())
+  shipmentId  Int
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  kind        String
+  description String?
+  amountEgp   Decimal  @db.Decimal(14, 2)
+}
+
+model Lot {
+  id              Int           @id @default(autoincrement())
+  lotNo           String        @unique
+  itemId          Int
+  item            Item          @relation(fields: [itemId], references: [id])
+  shipmentLineId  Int?          @unique
+  shipmentLine    ShipmentLine? @relation(fields: [shipmentLineId], references: [id])
+  receivedDate    DateTime      @db.Date
+  qtyReceived     Decimal       @db.Decimal(14, 3)
+  qtyOnHand       Decimal       @db.Decimal(14, 3)
+  unitCostEgp     Decimal       @db.Decimal(14, 4)
+  expiryDate      DateTime?     @db.Date
+  supplierBatchNo String?
+  createdAt       DateTime      @default(now())
+  moves           StockMove[]
+  invoiceLines    InvoiceLine[]
+}
+
+enum MoveKind {
+  OPENING
+  RECEIPT
+  SALE
+  ADJUSTMENT
+}
+
+// Every change to a lot's quantity. qty is negative for stock going out.
+model StockMove {
+  id            Int          @id @default(autoincrement())
+  lotId         Int
+  lot           Lot          @relation(fields: [lotId], references: [id])
+  date          DateTime     @db.Date
+  kind          MoveKind
+  qty           Decimal      @db.Decimal(14, 3)
+  unitCostEgp   Decimal      @db.Decimal(14, 4)
+  invoiceLineId Int?
+  invoiceLine   InvoiceLine? @relation(fields: [invoiceLineId], references: [id])
+  note          String?
+  createdAt     DateTime     @default(now())
+
+  @@index([lotId])
+  @@index([date])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+model Invoice {
+  id         Int           @id @default(autoincrement())
+  number     String        @unique
+  customerId Int
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  date       DateTime      @db.Date
+  status     InvoiceStatus @default(DRAFT)
+  vatRate    Decimal       @default(14) @db.Decimal(5, 2)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  postedAt   DateTime?
+  lines      InvoiceLine[]
+
+  @@index([date])
+}
+
+model InvoiceLine {
+  id        Int         @id @default(autoincrement())
+  invoiceId Int
+  invoice   Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemId    Int
+  item      Item        @relation(fields: [itemId], references: [id])
+  // A specific lot the customer asked for; left empty, stock is taken earliest-expiry first.
+  lotId     Int?
+  lot       Lot?        @relation(fields: [lotId], references: [id])
+  qty       Decimal     @db.Decimal(14, 3)
+  unitPrice Decimal     @db.Decimal(14, 4)
+  moves     StockMove[]
+}
