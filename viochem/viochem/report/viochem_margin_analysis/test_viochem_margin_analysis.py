@@ -45,7 +45,6 @@ class TestReports(FrappeTestCase):
 		supplier = make_supplier()
 		item = make_item("_Test Report Linalool", cas_number="78-70-6")
 		pr = make_purchase_receipt(item.name, supplier, qty=100, rate=500)
-		account = frappe.get_cached_value("Company", company, "expenses_included_in_valuation")
 
 		shipment = frappe.get_doc(
 			{
@@ -53,7 +52,7 @@ class TestReports(FrappeTestCase):
 				"supplier": supplier,
 				"company": company,
 				"items": [{"item_code": item.name, "qty": 100, "purchase_receipt": pr.name}],
-				"charges": [{"charge_type": "Freight", "expense_account": account, "amount": 5000}],
+				"charges": [{"charge_type": "Freight", "amount": 5000}],
 			}
 		).insert()
 		frappe.get_doc("Landed Cost Voucher", make_landed_cost_voucher(shipment.name)).submit()

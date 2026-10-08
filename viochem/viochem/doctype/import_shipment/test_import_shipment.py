@@ -104,7 +104,6 @@ class TestImportShipment(FrappeTestCase):
 		supplier = make_supplier()
 		item = make_item("_Test Vanillin", cas_number="121-33-5")
 		pr = make_purchase_receipt(item.name, supplier, qty=100, rate=500)
-		expense_account = frappe.get_cached_value("Company", company, "expenses_included_in_valuation")
 
 		shipment = frappe.get_doc(
 			{
@@ -113,8 +112,8 @@ class TestImportShipment(FrappeTestCase):
 				"company": company,
 				"items": [{"item_code": item.name, "qty": 100, "purchase_receipt": pr.name}],
 				"charges": [
-					{"charge_type": "Freight", "expense_account": expense_account, "amount": 3000},
-					{"charge_type": "Customs Duty", "expense_account": expense_account, "amount": 2000},
+					{"charge_type": "Freight", "amount": 3000},
+					{"charge_type": "Customs Duty", "amount": 2000},
 				],
 			}
 		).insert()

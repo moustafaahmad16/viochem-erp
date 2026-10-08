@@ -6,7 +6,22 @@ from frappe.utils import flt, getdate
 from viochem.utils import REQUIRED_IMPORT_DOCUMENTS, date_order_problem, missing_documents
 
 
+def get_valuation_expense_account(company):
+	"""The company's "Expenses Included In Valuation" account, where landed costs are booked."""
+	return frappe.db.get_value(
+		"Account",
+		{"company": company, "account_type": "Expenses Included In Valuation", "is_group": 0, "disabled": 0},
+	)
+
+
 class ImportShipment(Document):
+	def before_validate(self):
+		default_account = None
+		for charge in self.charges:
+			if not charge.expense_account:
+				default_account = default_account or get_valuation_expense_account(self.company)
+				charge.expense_account = default_account
+
 	def validate(self):
 		self.check_dates()
 		self.add_document_checklist()

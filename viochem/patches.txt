@@ -2,3 +2,4 @@
 
 [post_model_sync]
 viochem.patches.set_egp_symbol
+viochem.patches.enable_batch_tracking
