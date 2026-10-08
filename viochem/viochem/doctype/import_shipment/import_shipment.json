@@ -1,0 +1,285 @@
+{
+ "doctype": "DocType",
+ "module": "Viochem",
+ "engine": "InnoDB",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "modified": "2026-10-08 12:00:00.000000",
+ "creation": "2026-10-08 12:00:00.000000",
+ "states": [],
+ "links": [],
+ "name": "Import Shipment",
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SHP-.YYYY.-",
+   "default": "SHP-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "remember_last_selected_value": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Ordered\nIn Transit\nAt Port\nCustoms Clearance\nReceived\nCancelled",
+   "default": "Ordered",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "documents_complete",
+   "fieldtype": "Check",
+   "label": "All Documents Received",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "logistics_section",
+   "fieldtype": "Section Break",
+   "label": "Logistics"
+  },
+  {
+   "fieldname": "etd",
+   "fieldtype": "Date",
+   "label": "ETD",
+   "description": "Estimated departure from the supplier's port"
+  },
+  {
+   "fieldname": "eta",
+   "fieldtype": "Date",
+   "label": "ETA",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "label": "Actual Arrival"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Data",
+   "label": "Port of Loading"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Data",
+   "label": "Port of Discharge",
+   "default": "Alexandria"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vessel",
+   "fieldtype": "Data",
+   "label": "Vessel"
+  },
+  {
+   "fieldname": "container_no",
+   "fieldtype": "Data",
+   "label": "Container No",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bill_of_lading_no",
+   "fieldtype": "Data",
+   "label": "Bill of Lading No"
+  },
+  {
+   "fieldname": "forwarder",
+   "fieldtype": "Data",
+   "label": "Freight Forwarder"
+  },
+  {
+   "fieldname": "customs_broker",
+   "fieldtype": "Data",
+   "label": "Customs Broker"
+  },
+  {
+   "fieldname": "customs_declaration_no",
+   "fieldtype": "Data",
+   "label": "Customs Declaration No"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Import Shipment Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "documents_section",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Document Checklist",
+   "options": "Import Shipment Document"
+  },
+  {
+   "fieldname": "costs_section",
+   "fieldtype": "Section Break",
+   "label": "Landed Costs"
+  },
+  {
+   "fieldname": "charges",
+   "fieldtype": "Table",
+   "label": "Charges",
+   "options": "Import Shipment Charge",
+   "description": "Amounts in company currency (EGP)"
+  },
+  {
+   "fieldname": "distribute_charges_based_on",
+   "fieldtype": "Select",
+   "label": "Distribute Charges Based On",
+   "options": "Amount\nQty",
+   "default": "Amount"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_charges",
+   "fieldtype": "Currency",
+   "label": "Total Charges",
+   "read_only": 1,
+   "options": "Company:company:default_currency"
+  },
+  {
+   "fieldname": "landed_cost_voucher",
+   "fieldtype": "Link",
+   "label": "Landed Cost Voucher",
+   "options": "Landed Cost Voucher",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "field_order": [
+  "naming_series",
+  "supplier",
+  "company",
+  "column_break_1",
+  "status",
+  "documents_complete",
+  "logistics_section",
+  "etd",
+  "eta",
+  "arrival_date",
+  "port_of_loading",
+  "port_of_discharge",
+  "column_break_2",
+  "vessel",
+  "container_no",
+  "bill_of_lading_no",
+  "forwarder",
+  "customs_broker",
+  "customs_declaration_no",
+  "items_section",
+  "items",
+  "documents_section",
+  "documents",
+  "costs_section",
+  "charges",
+  "distribute_charges_based_on",
+  "column_break_3",
+  "total_charges",
+  "landed_cost_voucher",
+  "notes_section",
+  "notes"
+ ],
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "title_field": "supplier",
+ "track_changes": 1,
+ "search_fields": "supplier,container_no,bill_of_lading_no",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Purchase Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Stock Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Purchase User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "print": 1
+  }
+ ]
+}

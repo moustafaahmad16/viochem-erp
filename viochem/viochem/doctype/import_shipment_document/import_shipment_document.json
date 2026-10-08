@@ -1,0 +1,51 @@
+{
+ "doctype": "DocType",
+ "module": "Viochem",
+ "engine": "InnoDB",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "modified": "2026-10-08 12:00:00.000000",
+ "creation": "2026-10-08 12:00:00.000000",
+ "states": [],
+ "links": [],
+ "name": "Import Shipment Document",
+ "fields": [
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Select",
+   "label": "Document",
+   "options": "Proforma Invoice\nCommercial Invoice\nPacking List\nBill of Lading\nCertificate of Origin\nCertificate of Analysis\nSafety Data Sheet\nCustoms Declaration\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received",
+   "fieldtype": "Check",
+   "label": "Received",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "File",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Data",
+   "label": "Notes",
+   "in_list_view": 1
+  }
+ ],
+ "field_order": [
+  "document_type",
+  "received",
+  "attachment",
+  "notes"
+ ],
+ "istable": 1,
+ "editable_grid": 1,
+ "permissions": []
+}

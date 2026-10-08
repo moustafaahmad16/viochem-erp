@@ -1,0 +1,201 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "Item-chemical_section",
+  "dt": "Item",
+  "fieldname": "chemical_section",
+  "label": "Chemical Details",
+  "fieldtype": "Section Break",
+  "insert_after": "description",
+  "module": "Viochem",
+  "collapsible": 0
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-cas_number",
+  "dt": "Item",
+  "fieldname": "cas_number",
+  "label": "CAS Number",
+  "fieldtype": "Data",
+  "insert_after": "chemical_section",
+  "module": "Viochem",
+  "in_standard_filter": 1,
+  "in_global_search": 1,
+  "description": "Format 1234-56-7. The check digit is verified on save."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-chemical_name",
+  "dt": "Item",
+  "fieldname": "chemical_name",
+  "label": "Chemical Name",
+  "fieldtype": "Data",
+  "insert_after": "cas_number",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-synonyms",
+  "dt": "Item",
+  "fieldname": "synonyms",
+  "label": "Synonyms",
+  "fieldtype": "Small Text",
+  "insert_after": "chemical_name",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-fema_number",
+  "dt": "Item",
+  "fieldname": "fema_number",
+  "label": "FEMA Number",
+  "fieldtype": "Data",
+  "insert_after": "synonyms",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-origin_type",
+  "dt": "Item",
+  "fieldname": "origin_type",
+  "label": "Origin",
+  "fieldtype": "Select",
+  "insert_after": "fema_number",
+  "module": "Viochem",
+  "options": "\nSynthetic\nNatural\nNature Identical"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-chemical_col_break",
+  "dt": "Item",
+  "fieldname": "chemical_col_break",
+  "label": "",
+  "fieldtype": "Column Break",
+  "insert_after": "origin_type",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-hazard_class",
+  "dt": "Item",
+  "fieldname": "hazard_class",
+  "label": "Hazard Class",
+  "fieldtype": "Select",
+  "insert_after": "chemical_col_break",
+  "module": "Viochem",
+  "options": "\nNot Hazardous\n3 - Flammable Liquid\n4.1 - Flammable Solid\n6.1 - Toxic\n8 - Corrosive\n9 - Miscellaneous"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-un_number",
+  "dt": "Item",
+  "fieldname": "un_number",
+  "label": "UN Number",
+  "fieldtype": "Data",
+  "insert_after": "hazard_class",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-storage_conditions",
+  "dt": "Item",
+  "fieldname": "storage_conditions",
+  "label": "Storage Conditions",
+  "fieldtype": "Small Text",
+  "insert_after": "un_number",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-odour_description",
+  "dt": "Item",
+  "fieldname": "odour_description",
+  "label": "Odour Description",
+  "fieldtype": "Small Text",
+  "insert_after": "storage_conditions",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-sds_section",
+  "dt": "Item",
+  "fieldname": "sds_section",
+  "label": "Safety Data Sheet",
+  "fieldtype": "Section Break",
+  "insert_after": "odour_description",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-sds_file",
+  "dt": "Item",
+  "fieldname": "sds_file",
+  "label": "SDS File",
+  "fieldtype": "Attach",
+  "insert_after": "sds_section",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-sds_revision_date",
+  "dt": "Item",
+  "fieldname": "sds_revision_date",
+  "label": "SDS Revision Date",
+  "fieldtype": "Date",
+  "insert_after": "sds_file",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Item-sds_review_date",
+  "dt": "Item",
+  "fieldname": "sds_review_date",
+  "label": "SDS Review Date",
+  "fieldtype": "Date",
+  "insert_after": "sds_revision_date",
+  "module": "Viochem",
+  "description": "A warning shows on save once this date has passed."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Batch-supplier_batch_no",
+  "dt": "Batch",
+  "fieldname": "supplier_batch_no",
+  "label": "Supplier Batch No",
+  "fieldtype": "Data",
+  "insert_after": "batch_id",
+  "module": "Viochem",
+  "in_standard_filter": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Batch-coa_file",
+  "dt": "Batch",
+  "fieldname": "coa_file",
+  "label": "Certificate of Analysis",
+  "fieldtype": "Attach",
+  "insert_after": "supplier_batch_no",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Batch-retest_date",
+  "dt": "Batch",
+  "fieldname": "retest_date",
+  "label": "Retest Date",
+  "fieldtype": "Date",
+  "insert_after": "expiry_date",
+  "module": "Viochem"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Batch-import_shipment",
+  "dt": "Batch",
+  "fieldname": "import_shipment",
+  "label": "Import Shipment",
+  "fieldtype": "Link",
+  "insert_after": "retest_date",
+  "module": "Viochem",
+  "options": "Import Shipment"
+ }
+]
