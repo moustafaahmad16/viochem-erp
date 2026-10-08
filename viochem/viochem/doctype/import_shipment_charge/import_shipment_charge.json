@@ -6,7 +6,7 @@
  "sort_order": "DESC",
  "owner": "Administrator",
  "modified_by": "Administrator",
- "modified": "2026-10-08 12:00:00.000000",
+ "modified": "2026-10-08 18:40:00.000000",
  "creation": "2026-10-08 12:00:00.000000",
  "states": [],
  "links": [],
@@ -25,8 +25,8 @@
    "fieldtype": "Link",
    "label": "Expense Account",
    "options": "Account",
-   "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "Leave empty to use Expenses Included In Valuation"
   },
   {
    "fieldname": "amount",
