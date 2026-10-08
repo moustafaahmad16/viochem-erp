@@ -1,0 +1,183 @@
+{
+ "doctype": "DocType",
+ "name": "ETA Settings",
+ "module": "Viochem",
+ "issingle": 1,
+ "engine": "InnoDB",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "modified": "2026-10-08 12:00:00.000000",
+ "creation": "2026-10-08 12:00:00.000000",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "links": [],
+ "track_changes": 1,
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "Pre-production\nProduction",
+   "default": "Pre-production",
+   "reqd": 1
+  },
+  {
+   "fieldname": "document_version",
+   "fieldtype": "Select",
+   "label": "Document Version",
+   "options": "0.9\n1.0",
+   "default": "0.9",
+   "reqd": 1,
+   "description": "0.9 needs no signature and is for pre-production testing only. Production needs 1.0 with a signature."
+  },
+  {
+   "fieldname": "auto_submit",
+   "fieldtype": "Check",
+   "label": "Send to ETA When an Invoice Is Submitted"
+  },
+  {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "ERP Credentials"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Password",
+   "label": "Client Secret"
+  },
+  {
+   "fieldname": "issuer_section",
+   "fieldtype": "Section Break",
+   "label": "Issuer (VIOCHEM)"
+  },
+  {
+   "fieldname": "issuer_id",
+   "fieldtype": "Data",
+   "label": "Tax Registration Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issuer_name",
+   "fieldtype": "Data",
+   "label": "Registered Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "activity_code",
+   "fieldtype": "Data",
+   "label": "Taxpayer Activity Code",
+   "reqd": 1,
+   "description": "ETA activity code, e.g. 4669"
+  },
+  {
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "default": "0",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issuer_col",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "governate",
+   "fieldtype": "Data",
+   "label": "Governorate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "region_city",
+   "fieldtype": "Data",
+   "label": "City / Region",
+   "reqd": 1
+  },
+  {
+   "fieldname": "street",
+   "fieldtype": "Data",
+   "label": "Street",
+   "reqd": 1
+  },
+  {
+   "fieldname": "building_number",
+   "fieldtype": "Data",
+   "label": "Building Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "postal_code",
+   "fieldtype": "Data",
+   "label": "Postal Code"
+  },
+  {
+   "fieldname": "signing_section",
+   "fieldtype": "Section Break",
+   "label": "Signing"
+  },
+  {
+   "fieldname": "signer_url",
+   "fieldtype": "Data",
+   "label": "Signing Service URL",
+   "description": "Only for version 1.0. A small service on the PC holding the eSeal USB token. It receives the serialized invoice and returns the CAdES-BES signature."
+  },
+  {
+   "fieldname": "signer_token",
+   "fieldtype": "Password",
+   "label": "Signing Service Token"
+  }
+ ],
+ "field_order": [
+  "enabled",
+  "environment",
+  "document_version",
+  "auto_submit",
+  "credentials_section",
+  "client_id",
+  "client_secret",
+  "issuer_section",
+  "issuer_id",
+  "issuer_name",
+  "activity_code",
+  "branch_id",
+  "issuer_col",
+  "governate",
+  "region_city",
+  "street",
+  "building_number",
+  "postal_code",
+  "signing_section",
+  "signer_url",
+  "signer_token"
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ]
+}
