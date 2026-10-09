@@ -44,27 +44,39 @@ model Item {
 }
 
 model Supplier {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  country   String?
-  currency  String     @default("USD")
-  email     String?
-  phone     String?
-  notes     String?
-  createdAt DateTime   @default(now())
-  shipments Shipment[]
+  id                 Int               @id @default(autoincrement())
+  name               String            @unique
+  country            String?
+  currency           String            @default("USD")
+  email              String?
+  phone              String?
+  notes              String?
+  // Days after the order date that a shipment's goods are due to be paid, unless the shipment says otherwise.
+  paymentTermsDays   Int               @default(0)
+  // What was owed to this supplier before using this system, in the supplier's currency.
+  openingBalance     Decimal           @default(0) @db.Decimal(14, 2)
+  openingBalanceDate DateTime?         @db.Date
+  createdAt          DateTime          @default(now())
+  shipments          Shipment[]
+  payments           SupplierPayment[]
 }
 
 model Customer {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  taxId     String?
-  phone     String?
-  email     String?
-  address   String?
-  notes     String?
-  createdAt DateTime  @default(now())
-  invoices  Invoice[]
+  id                 Int               @id @default(autoincrement())
+  name               String            @unique
+  taxId              String?
+  phone              String?
+  email              String?
+  address            String?
+  notes              String?
+  // Days after the invoice date that payment is due.
+  paymentTermsDays   Int               @default(30)
+  // What this customer owed before using this system, in EGP. Negative if they had credit.
+  openingBalance     Decimal           @default(0) @db.Decimal(14, 2)
+  openingBalanceDate DateTime?         @db.Date
+  createdAt          DateTime          @default(now())
+  invoices           Invoice[]
+  payments           CustomerPayment[]
 }
 
 enum ShipmentStatus {
@@ -80,23 +92,26 @@ enum AllocationMethod {
 }
 
 model Shipment {
-  id                Int              @id @default(autoincrement())
-  ref               String           @unique
+  id                Int               @id @default(autoincrement())
+  ref               String            @unique
   supplierId        Int
-  supplier          Supplier         @relation(fields: [supplierId], references: [id])
+  supplier          Supplier          @relation(fields: [supplierId], references: [id])
   supplierInvoiceNo String?
   currency          String
-  fxRate            Decimal          @db.Decimal(14, 6)
-  allocation        AllocationMethod @default(VALUE)
-  orderDate         DateTime         @db.Date
-  etd               DateTime?        @db.Date
-  eta               DateTime?        @db.Date
-  arrivalDate       DateTime?        @db.Date
-  status            ShipmentStatus   @default(ORDERED)
+  fxRate            Decimal           @db.Decimal(14, 6)
+  allocation        AllocationMethod  @default(VALUE)
+  orderDate         DateTime          @db.Date
+  etd               DateTime?         @db.Date
+  eta               DateTime?         @db.Date
+  arrivalDate       DateTime?         @db.Date
+  // When the supplier must be paid; empty means the order date plus the supplier's payment terms.
+  dueDate           DateTime?         @db.Date
+  status            ShipmentStatus    @default(ORDERED)
   notes             String?
-  createdAt         DateTime         @default(now())
+  createdAt         DateTime          @default(now())
   lines             ShipmentLine[]
   charges           ShipmentCharge[]
+  payments          SupplierPayment[]
 }
 
 model ShipmentLine {
@@ -171,17 +186,20 @@ enum InvoiceStatus {
 }
 
 model Invoice {
-  id         Int           @id @default(autoincrement())
-  number     String        @unique
+  id         Int               @id @default(autoincrement())
+  number     String            @unique
   customerId Int
-  customer   Customer      @relation(fields: [customerId], references: [id])
-  date       DateTime      @db.Date
-  status     InvoiceStatus @default(DRAFT)
-  vatRate    Decimal       @default(14) @db.Decimal(5, 2)
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  date       DateTime          @db.Date
+  // Set when posted, from the customer's payment terms.
+  dueDate    DateTime?         @db.Date
+  status     InvoiceStatus     @default(DRAFT)
+  vatRate    Decimal           @default(14) @db.Decimal(5, 2)
   notes      String?
-  createdAt  DateTime      @default(now())
+  createdAt  DateTime          @default(now())
   postedAt   DateTime?
   lines      InvoiceLine[]
+  payments   CustomerPayment[]
 
   @@index([date])
 }
@@ -198,4 +216,49 @@ model InvoiceLine {
   qty       Decimal     @db.Decimal(14, 3)
   unitPrice Decimal     @db.Decimal(14, 4)
   moves     StockMove[]
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+}
+
+// Money received from a customer. It pays the invoice it names first, then their oldest unpaid invoices.
+model CustomerPayment {
+  id         Int           @id @default(autoincrement())
+  number     String        @unique
+  customerId Int
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  invoiceId  Int?
+  invoice    Invoice?      @relation(fields: [invoiceId], references: [id])
+  date       DateTime      @db.Date
+  amount     Decimal       @db.Decimal(14, 2)
+  method     PaymentMethod
+  reference  String?
+  notes      String?
+  createdAt  DateTime      @default(now())
+
+  @@index([customerId])
+}
+
+// Money paid to a supplier, in the currency paid. It pays the shipment it names first, then their oldest unpaid shipments.
+model SupplierPayment {
+  id         Int           @id @default(autoincrement())
+  number     String        @unique
+  supplierId Int
+  supplier   Supplier      @relation(fields: [supplierId], references: [id])
+  shipmentId Int?
+  shipment   Shipment?     @relation(fields: [shipmentId], references: [id])
+  date       DateTime      @db.Date
+  currency   String
+  amount     Decimal       @db.Decimal(14, 2)
+  // EGP for one unit of the currency on the day paid.
+  fxRate     Decimal       @db.Decimal(14, 6)
+  method     PaymentMethod
+  reference  String?
+  notes      String?
+  createdAt  DateTime      @default(now())
+
+  @@index([supplierId])
 }

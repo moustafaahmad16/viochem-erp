@@ -64,7 +64,7 @@ export async function updateShipment(id: number, _: FormState, fd: FormData): Pr
     const etd = optionalDate(fd, "etd");
     const eta = optionalDate(fd, "eta");
     checkDates(etd, eta, s.arrivalDate);
-    const common = { etd, eta, supplierInvoiceNo: text(fd, "supplierInvoiceNo"), notes: text(fd, "notes") };
+    const common = { etd, eta, dueDate: optionalDate(fd, "dueDate"), supplierInvoiceNo: text(fd, "supplierInvoiceNo"), notes: text(fd, "notes") };
     if (s.status === "RECEIVED") {
       await db.shipment.update({ where: { id }, data: common });
     } else {

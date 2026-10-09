@@ -50,6 +50,12 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
             <dd className="font-semibold">{inv.number}</dd>
             <dt className="text-slate-500">Date · التاريخ</dt>
             <dd>{formatDate(inv.date)}</dd>
+            {inv.dueDate && (
+              <>
+                <dt className="text-slate-500">Due · تاريخ الاستحقاق</dt>
+                <dd>{formatDate(inv.dueDate)}</dd>
+              </>
+            )}
           </dl>
         </section>
 

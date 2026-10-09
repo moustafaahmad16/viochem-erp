@@ -6,6 +6,7 @@ import { landedUnitCosts } from "@/lib/costing";
 import { formatDate, toInputDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money, qty } from "@/lib/format";
+import { supplierAccounts } from "@/lib/services/accounts";
 import { addCharge, addLine, receiveShipment, removeCharge, removeLine, updateShipment } from "../actions";
 import { StatusBadge } from "../status";
 
@@ -31,6 +32,8 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
   const goodsForeign = s.lines.reduce((t, l) => t.plus(d(l.qty).times(d(l.unitPrice))), new Decimal(0));
   const goodsEgp = goodsForeign.times(d(s.fxRate));
   const charges = s.charges.reduce((t, c) => t.plus(d(c.amountEgp)), new Decimal(0));
+  const [supplierAcc] = await supplierAccounts({ id: s.supplierId });
+  const bill = supplierAcc.accounts.find((a) => a.currency === s.currency)?.bills.find((b) => b.key === `shp:${s.id}`);
 
   return (
     <>
@@ -131,6 +134,15 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
               </ActionForm>
             </Card>
           )}
+          {bill && (
+            <Card title="Payment to supplier" actions={<RowLink href={`/suppliers/${s.supplierId}`}>Pay</RowLink>}>
+              <dl className="grid grid-cols-2 gap-3">
+                <Detail label="Due">{formatDate(bill.dueDate)}</Detail>
+                <Detail label={`Paid (${s.currency})`}>{money(bill.paid)}</Detail>
+                <Detail label={`Still owed (${s.currency})`}>{bill.outstanding.gt(0) ? money(bill.outstanding) : "Paid in full"}</Detail>
+              </dl>
+            </Card>
+          )}
           <Card title="Details">
             {received && (
               <dl className="mb-4 grid grid-cols-2 gap-3">
@@ -154,6 +166,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
                 </>
               )}
               <Field label="Supplier invoice no." name="supplierInvoiceNo" defaultValue={s.supplierInvoiceNo ?? ""} />
+              <Field label="Payment due" name="dueDate" type="date" defaultValue={toInputDate(s.dueDate)} hint={`Empty means ${s.supplier.paymentTermsDays} days after the order date, from the supplier's terms.`} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Departure (ETD)" name="etd" type="date" defaultValue={toInputDate(s.etd)} />
                 <Field label="Expected (ETA)" name="eta" type="date" defaultValue={toInputDate(s.eta)} />

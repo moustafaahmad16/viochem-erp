@@ -3,10 +3,15 @@ import { invoiceTotals } from "@/lib/costing";
 import { formatDate, today } from "@/lib/dates";
 import { money, pct, qty } from "@/lib/format";
 import { dashboardStats } from "@/lib/services/reports";
+import { customerAccounts, supplierAccounts, totalsByCurrency } from "@/lib/services/accounts";
+import Decimal from "decimal.js";
 import { StatusBadge } from "./shipments/status";
 
 export default async function Dashboard() {
-  const s = await dashboardStats();
+  const [s, customers, suppliers] = await Promise.all([dashboardStats(), customerAccounts(), supplierAccounts()]);
+  const owedToUs = customers.reduce((t, a) => t.plus(Decimal.max(a.balance, 0)), new Decimal(0));
+  const overdueToUs = customers.reduce((t, a) => t.plus(a.overdue), new Decimal(0));
+  const weOwe = totalsByCurrency(suppliers.flatMap((x) => x.accounts).filter((a) => a.balance.gt(0)));
   const now = today();
   const month = now.toLocaleString("en-US", { month: "long", timeZone: "UTC" });
 
@@ -28,6 +33,17 @@ export default async function Dashboard() {
         <Stat label={`Gross margin in ${month}`} value={`EGP ${money(s.marginThisMonth, 0)}`} hint={s.salesThisMonth.isZero() ? "No sales yet" : `${pct(s.marginPctThisMonth)} of sales`} tone="good" />
         <Stat label="Stock value" value={`EGP ${money(s.stockValue, 0)}`} hint="At landed cost" />
         <Stat label="Lots expiring in 90 days" value={s.expiring.length} tone={s.expiring.length ? "warn" : "default"} hint={<RowLink href="/reports/expiry">See them</RowLink>} />
+      </div>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Customers owe you" value={`EGP ${money(owedToUs, 0)}`} hint={<RowLink href="/receivables">By customer</RowLink>} />
+        <Stat label="Overdue from customers" value={`EGP ${money(overdueToUs, 0)}`} tone={overdueToUs.gt(0) ? "warn" : "default"} hint={`${customers.filter((a) => a.overdue.gt(0)).length} customers late`} />
+        <Stat label="You owe suppliers" value={weOwe.length ? weOwe.map((t) => <div key={t.currency}>{t.currency} {money(t.balance, 0)}</div>) : "Nothing"} hint={<RowLink href="/payables">By supplier</RowLink>} />
+        <Stat
+          label="Overdue to suppliers"
+          value={weOwe.some((t) => t.overdue.gt(0)) ? weOwe.filter((t) => t.overdue.gt(0)).map((t) => <div key={t.currency}>{t.currency} {money(t.overdue, 0)}</div>) : "None"}
+          tone={weOwe.some((t) => t.overdue.gt(0)) ? "warn" : "default"}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

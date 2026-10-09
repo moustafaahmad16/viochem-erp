@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import { db, type Tx } from "@/lib/db";
 import { landedUnitCosts, pickLots } from "@/lib/costing";
-import { today } from "@/lib/dates";
+import { addDays, today } from "@/lib/dates";
 import { UserError } from "./errors";
 import { nextNumber } from "./numbering";
 
@@ -119,7 +119,7 @@ export async function postInvoice(invoiceId: number) {
   return db.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUniqueOrThrow({
       where: { id: invoiceId },
-      include: { lines: { include: { item: true } } },
+      include: { customer: true, lines: { include: { item: true } } },
     });
     if (invoice.status !== "DRAFT") throw new UserError("Only draft invoices can be posted.");
     if (!invoice.lines.length) throw new UserError("Add at least one product to the invoice.");
@@ -154,7 +154,7 @@ export async function postInvoice(invoiceId: number) {
         });
       }
     }
-    await tx.invoice.update({ where: { id: invoiceId }, data: { status: "POSTED", postedAt: new Date() } });
+    await tx.invoice.update({ where: { id: invoiceId }, data: { status: "POSTED", postedAt: new Date(), dueDate: addDays(invoice.date, invoice.customer.paymentTermsDays) } });
   });
 }
 

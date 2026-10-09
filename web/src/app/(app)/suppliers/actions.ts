@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
-import { fail, required, text } from "@/lib/actions";
+import { decimal, fail, optionalDate, required, text } from "@/lib/actions";
+import { UserError } from "@/lib/services/errors";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -13,7 +14,16 @@ const data = (fd: FormData) => ({
   email: text(fd, "email"),
   phone: text(fd, "phone"),
   notes: text(fd, "notes"),
+  paymentTermsDays: terms(fd),
+  openingBalance: text(fd, "openingBalance") ? decimal(fd, "openingBalance", "Opening balance", { min: -1e12, allowZero: true }) : "0",
+  openingBalanceDate: optionalDate(fd, "openingBalanceDate"),
 });
+
+function terms(fd: FormData) {
+  const n = Number(text(fd, "paymentTermsDays") ?? 0);
+  if (!Number.isInteger(n) || n < 0 || n > 365) throw new UserError("Payment terms must be a whole number of days, 0 to 365.");
+  return n;
+}
 
 export async function createSupplier(_: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
