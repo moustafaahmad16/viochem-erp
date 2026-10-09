@@ -128,12 +128,16 @@ model ShipmentLine {
 }
 
 model ShipmentCharge {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   shipmentId  Int
-  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment    Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   kind        String
   description String?
-  amountEgp   Decimal  @db.Decimal(14, 2)
+  amountEgp   Decimal       @db.Decimal(14, 2)
+  // When and from which account it was paid, so bank balances include it.
+  date        DateTime?     @db.Date
+  accountId   Int?
+  account     MoneyAccount? @relation(fields: [accountId], references: [id])
 }
 
 model Lot {
@@ -232,6 +236,8 @@ model CustomerPayment {
   customer   Customer      @relation(fields: [customerId], references: [id])
   invoiceId  Int?
   invoice    Invoice?      @relation(fields: [invoiceId], references: [id])
+  accountId  Int?
+  account    MoneyAccount? @relation(fields: [accountId], references: [id])
   date       DateTime      @db.Date
   amount     Decimal       @db.Decimal(14, 2)
   method     PaymentMethod
@@ -250,6 +256,8 @@ model SupplierPayment {
   supplier   Supplier      @relation(fields: [supplierId], references: [id])
   shipmentId Int?
   shipment   Shipment?     @relation(fields: [shipmentId], references: [id])
+  accountId  Int?
+  account    MoneyAccount? @relation(fields: [accountId], references: [id])
   date       DateTime      @db.Date
   currency   String
   amount     Decimal       @db.Decimal(14, 2)
@@ -261,4 +269,63 @@ model SupplierPayment {
   createdAt  DateTime      @default(now())
 
   @@index([supplierId])
+}
+
+enum AccountKind {
+  BANK
+  CASH
+}
+
+// A bank account or cash box. Its balance is worked out from everything paid in and out of it.
+model MoneyAccount {
+  id               Int               @id @default(autoincrement())
+  name             String            @unique
+  kind             AccountKind       @default(BANK)
+  currency         String            @default("EGP")
+  openingBalance   Decimal           @default(0) @db.Decimal(14, 2)
+  openingDate      DateTime?         @db.Date
+  active           Boolean           @default(true)
+  notes            String?
+  createdAt        DateTime          @default(now())
+  customerPayments CustomerPayment[]
+  supplierPayments SupplierPayment[]
+  charges          ShipmentCharge[]
+  expenses         Expense[]
+  transfersOut     Transfer[]        @relation("TransferFrom")
+  transfersIn      Transfer[]        @relation("TransferTo")
+}
+
+// Running costs of the business: rent, salaries, transport. Import costs belong on the shipment instead.
+model Expense {
+  id          Int           @id @default(autoincrement())
+  number      String        @unique
+  date        DateTime      @db.Date
+  category    String
+  description String?
+  payee       String?
+  // Before VAT, in EGP.
+  amount      Decimal       @db.Decimal(14, 2)
+  vat         Decimal       @default(0) @db.Decimal(14, 2)
+  accountId   Int?
+  account     MoneyAccount? @relation(fields: [accountId], references: [id])
+  reference   String?
+  createdAt   DateTime      @default(now())
+
+  @@index([date])
+}
+
+// Money moved between two of VIOCHEM's own accounts, such as a cash deposit or buying dollars.
+model Transfer {
+  id            Int          @id @default(autoincrement())
+  date          DateTime     @db.Date
+  fromAccountId Int
+  fromAccount   MoneyAccount @relation("TransferFrom", fields: [fromAccountId], references: [id])
+  toAccountId   Int
+  toAccount     MoneyAccount @relation("TransferTo", fields: [toAccountId], references: [id])
+  // Taken out, in the first account's currency.
+  amount        Decimal      @db.Decimal(14, 2)
+  // Put in, in the second account's currency. The same as amount when the currencies match.
+  toAmount      Decimal      @db.Decimal(14, 2)
+  note          String?
+  createdAt     DateTime     @default(now())
 }

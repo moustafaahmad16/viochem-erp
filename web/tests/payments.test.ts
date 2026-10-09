@@ -9,7 +9,7 @@ import { recordCustomerPayment, recordSupplierPayment } from "@/lib/services/pay
 // Dates in 2024 keep these document numbers apart from the other test files.
 const d = (s: string) => parseInputDate(s)!;
 const n = (v: { toString(): string }) => Number(v.toString());
-const pay = { method: "BANK_TRANSFER" as const, reference: null, notes: null };
+const pay = { method: "BANK_TRANSFER" as const, reference: null, notes: null, accountId: null };
 
 let item: number, customer: number, supplier: number;
 
