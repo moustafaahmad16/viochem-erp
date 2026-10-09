@@ -163,6 +163,7 @@ export async function cancelInvoice(invoiceId: number) {
   return db.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { lines: { include: { moves: true } } } });
     if (invoice.status !== "POSTED") throw new UserError("Only posted invoices can be cancelled.");
+    if (await tx.creditNote.count({ where: { invoiceId, status: "POSTED" } })) throw new UserError("Cancel its credit notes first.");
     for (const move of invoice.lines.flatMap((l) => l.moves)) {
       await tx.lot.update({ where: { id: move.lotId }, data: { qtyOnHand: { increment: dec(move.qty).neg().toString() } } });
     }

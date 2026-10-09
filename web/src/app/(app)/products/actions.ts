@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
-import { fail, required, text } from "@/lib/actions";
+import { decimal, fail, required, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { isValidCas } from "@/lib/chemistry";
 import { db } from "@/lib/db";
@@ -21,6 +21,7 @@ function itemData(fd: FormData) {
     notes: text(fd, "notes"),
     etaItemCode: text(fd, "etaItemCode"),
     etaItemType: text(fd, "etaItemType") === "GS1" ? "GS1" : "EGS",
+    minQty: text(fd, "minQty") ? decimal(fd, "minQty", "Alert level", { allowZero: true }) : null,
   };
 }
 

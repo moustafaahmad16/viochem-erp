@@ -6,7 +6,7 @@ import { money, qty } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import { adjustLot } from "../../actions";
 
-const KIND = { OPENING: "Opening stock", RECEIPT: "Received", SALE: "Sold", ADJUSTMENT: "Stock count" } as const;
+const KIND = { OPENING: "Opening stock", RECEIPT: "Received", SALE: "Sold", ADJUSTMENT: "Stock count", RETURN: "Returned" } as const;
 
 export default async function LotPage({ params }: PageProps<"/stock/lots/[id]">) {
   const t = await getT();

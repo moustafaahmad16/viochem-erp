@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { money, pct, qty } from "@/lib/format";
 import { daysLate } from "@/lib/ledger";
 import { customerAccounts } from "@/lib/services/accounts";
+import { creditCheck } from "@/lib/services/credit";
+import { currentUser } from "@/lib/auth";
 import { addLine, cancelInvoice, checkEta, deleteDraft, postInvoice, removeLine, sendToEta, updateInvoice } from "../actions";
 import { EtaBadge, InvoiceStatusBadge } from "../status";
 import { prepare } from "@/lib/services/einvoice";
@@ -20,7 +22,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const id = Number((await params).id);
   const inv = await db.invoice.findUnique({
     where: { id },
-    include: { customer: true, lines: { include: { item: true, lot: true, moves: { include: { lot: true } } }, orderBy: { id: "asc" } } },
+    include: { customer: true, quote: true, lines: { include: { item: true, lot: true, moves: { include: { lot: true } } }, orderBy: { id: "asc" } } },
   });
   if (!inv) notFound();
   const isDraft = inv.status === "DRAFT";
@@ -40,13 +42,15 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const margin = totals.net.minus(cost);
   const bill = inv.status === "POSTED" ? (await customerAccounts({ id: inv.customerId }))[0].bills.find((b) => b.key === `inv:${inv.id}`) : undefined;
   const late = bill && bill.outstanding.gt(0) ? daysLate(bill.dueDate, today()) : 0;
+  const [credit, user] = await Promise.all([isDraft ? creditCheck(inv.customerId, totals.total) : null, currentUser()]);
+  const isAdmin = user?.role === "ADMIN";
   const etaMissing = inv.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) ? (await prepare(inv.id)).problems : [];
 
   return (
     <>
       <PageHeader
         title={<span className="flex items-center gap-3">{inv.number} <InvoiceStatusBadge status={inv.status} /></span>}
-        subtitle={<><RowLink href={`/customers/${inv.customerId}`}>{inv.customer.name}</RowLink> · {t.date(inv.date)}</>}
+        subtitle={<><RowLink href={`/customers/${inv.customerId}`}>{inv.customer.name}</RowLink> · {t.date(inv.date)}{inv.quote && <> · {t("From quotation")} <RowLink href={`/quotes/${inv.quote.id}`}>{inv.quote.number}</RowLink></>}</>}
         back={{ href: "/invoices", label: t("Invoices") }}
         actions={!isDraft && <ButtonLink href={`/print/invoices/${inv.id}`} variant="secondary">{t("Print")}</ButtonLink>}
       />
@@ -123,6 +127,16 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               <Card title={t("Post invoice")}>
                 <ActionForm action={postInvoice.bind(null, inv.id)}>
                   <p className="text-sm text-slate-600">{t("Posting takes the stock out of the lots and fixes the invoice. You can cancel it later if needed.")}</p>
+                  {credit && credit.warnings.length > 0 && (
+                    <div className={`rounded-lg p-3 text-sm ${credit.overLimit ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`}>
+                      {credit.warnings.map((w) => <p key={w}>{t.message(w)}</p>)}
+                      {credit.overLimit && (isAdmin ? (
+                        <label className="mt-2 flex items-center gap-2 font-medium"><input type="checkbox" name="overLimit" /> {t("Post anyway")}</label>
+                      ) : (
+                        <p className="mt-1">{t("Only an admin can post it.")}</p>
+                      ))}
+                    </div>
+                  )}
                   <Submit confirm={t("Post {number} for EGP {amount}?", { number: inv.number, amount: money(totals.total) })}>{t("Post invoice")}</Submit>
                 </ActionForm>
               </Card>

@@ -30,6 +30,7 @@ export async function CustomerFields({ c }: { c?: Customer }) {
         </div>
       </fieldset>
       <Field label={t("Payment terms (days)")} name="paymentTermsDays" type="number" min={0} max={365} defaultValue={c?.paymentTermsDays ?? 30} hint={t("Invoices fall due this many days after their date. 0 means cash on delivery.")} />
+      <Field label={t("Credit limit (EGP)")} name="creditLimit" inputMode="decimal" defaultValue={c?.creditLimit?.toString() ?? ""} hint={t("The most they may owe at once. Leave empty for no limit.")} />
       <div className="grid grid-cols-2 gap-3">
         <Field label={t("Opening balance (EGP)")} name="openingBalance" inputMode="decimal" defaultValue={c ? c.openingBalance.toString() : ""} hint={t("Owed before this system. Negative for credit.")} />
         <Field label={t("As of")} name="openingBalanceDate" type="date" defaultValue={toInputDate(c?.openingBalanceDate)} />

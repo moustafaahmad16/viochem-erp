@@ -1,2 +1,33 @@
+/** Credit limits, low-stock alerts and the menu entries for the new documents. */
 export const alerts: Record<string, string> = {
+  Quotations: "عروض الأسعار",
+  "Credit notes": "إشعارات دائنة",
+  "Purchase orders": "أوامر الشراء",
+  Cheques: "الشيكات",
+  "Low stock": "مخزون منخفض",
+
+  "Credit limit": "حد الائتمان",
+  "Credit limit (EGP)": "حد الائتمان (جنيه)",
+  "The most they may owe at once. Leave empty for no limit.": "أقصى مبلغ يمكن أن يكون مستحقًا عليه في نفس الوقت. اتركه فارغًا لعدم وضع حد.",
+  "No limit": "بدون حد",
+  "Over the limit": "تجاوز الحد",
+  "EGP {amount} still available": "متاح {amount} جنيه",
+  "{name} would owe EGP {after}, over their credit limit of EGP {limit}.": "سيصبح المستحق على {name} مبلغ {after} جنيه، وهو أكثر من حد الائتمان البالغ {limit} جنيه.",
+  "{name} has EGP {overdue} overdue.": "على {name} مبلغ {overdue} جنيه متأخر السداد.",
+  "Post anyway": "ترحيل على أي حال",
+  "Only an admin can post it.": "يمكن للمسؤول فقط ترحيلها.",
+  'Tick "Post anyway" to post it.': "اختر «ترحيل على أي حال» لترحيلها.",
+  "Ask an admin to post it.": "اطلب من المسؤول ترحيلها.",
+
+  "Alert when stock falls to": "التنبيه عندما ينخفض المخزون إلى",
+  "In the product's unit. Leave empty for no alert.": "بوحدة المنتج. اتركه فارغًا لعدم التنبيه.",
+  "Alert level": "حد التنبيه",
+  "Products at or below their alert level. Set the level on each product.": "المنتجات التي وصلت إلى حد التنبيه أو أقل. حدد الحد في صفحة كل منتج.",
+  "Ordered or on the way": "مطلوب أو في الطريق",
+  "Still to order": "المطلوب طلبه",
+  "Nothing is running low.": "لا يوجد منتج على وشك النفاد.",
+  "Out of stock": "نفد من المخزون",
+  Covered: "مغطى",
+  Low: "منخفض",
+  "{n} running low": "{n} على وشك النفاد",
 };
