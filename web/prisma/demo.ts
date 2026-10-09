@@ -16,6 +16,7 @@ import { clearCheque, depositCheque, receiveCheque } from "@/lib/services/cheque
 import { addCreditLine, createCreditNote, postCreditNote } from "@/lib/services/credits";
 import { addOpeningStock, createInvoice, createShipment, postInvoice, receiveShipment } from "@/lib/services/inventory";
 import { recordCustomerPayment, recordSupplierPayment } from "@/lib/services/payments";
+import { createRfq, inviteSupplier, saveQuote, setRate } from "@/lib/services/rfq";
 
 if (!/demo/.test(new URL(process.env.DATABASE_URL ?? "postgresql://x/none").pathname)) {
   throw new Error("Demo data only goes into a database whose name contains 'demo'.");
@@ -271,6 +272,23 @@ async function main() {
     const note = await createCreditNote(line.invoiceId, addDays(line.invoice.date, 6), "Damaged drum returned");
     await addCreditLine(note.id, { invoiceLineId: line.id, qty: Math.min(25, Number(line.qty)), restock: true });
     await postCreditNote(note.id);
+  }
+
+  // A request for prices still open today, with replies from four suppliers to compare.
+  const code = (c: string) => products.find((p) => p.code === c)!.id;
+  const rfq = await createRfq({ date: END, replyBy: addDays(END, 7), neededBy: addDays(END, 75), notes: "CIF Alexandria", lines: [{ itemId: code("LIN-001"), qty: 400 }, { itemId: code("VAN-001"), qty: 250 }, { itemId: code("HED-001"), qty: 300 }] });
+  const rfqLines = await db.rfqLine.findMany({ where: { rfqId: rfq.id }, orderBy: { id: "asc" } });
+  for (const k of ["giv", "basf", "nhu", "tak"]) await inviteSupplier(rfq.id, suppliers.get(k)!.id);
+  await setRate(rfq.id, "USD", 50.4);
+  await setRate(rfq.id, "EUR", 58.9);
+  const offers: [number, string, number, number, number, number?][] = [
+    [0, "giv", 9.8, 35, 60], [0, "nhu", 9.6, 55, 30], [0, "basf", 10.4, 30, 90],
+    [1, "nhu", 14.2, 50, 30, 500], [1, "tak", 17.5, 40, 60], [1, "giv", 16.1, 35, 60],
+    [2, "giv", 22, 35, 60], [2, "tak", 23.1, 40, 90],
+  ];
+  for (const [i, k, unitPrice, leadTimeDays, paymentTermsDays, moq] of offers) {
+    const s = suppliers.get(k)!;
+    await saveQuote(rfq.id, { lineId: rfqLines[i].id, supplierId: s.id, currency: s.s.currency, unitPrice, leadTimeDays, paymentTermsDays, moq, validUntil: addDays(END, 45), incoterm: "CIF" });
   }
 
   const counts = { invoices: await db.invoice.count(), shipments: await db.shipment.count(), payments: await db.customerPayment.count(), cheques: await db.cheque.count() };
