@@ -30,16 +30,16 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
         </button>
       </div>
       <aside
-        className={`${open ? "block" : "hidden"} fixed inset-y-0 left-0 z-30 w-60 overflow-y-auto border-r border-slate-200 bg-white lg:block`}
+        className={`${open ? "flex" : "hidden"} fixed inset-y-0 left-0 z-30 w-60 flex-col border-r border-slate-200 bg-white lg:flex`}
         onClick={() => setOpen(false)}
       >
-        <div className="px-5 py-5">
+        <div className="shrink-0 px-5 py-5">
           <Link href="/" className="block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Viochem" className="h-14 w-auto" />
           </Link>
         </div>
-        <nav className="space-y-5 px-3 pb-24">
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
           {sections.map((s) => (
             <div key={s.title}>
               {s.title && <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{s.title}</div>}
@@ -56,7 +56,7 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
             </div>
           ))}
         </nav>
-        <div className="absolute inset-x-0 bottom-0 border-t border-slate-100 bg-white px-5 py-3 text-sm">
+        <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-3 text-sm">
           <div className="truncate text-slate-700">{user}</div>
           <form action={logout}>
             <button className="text-slate-500 hover:text-slate-800">Sign out</button>
