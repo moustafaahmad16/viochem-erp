@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { parseInputDate } from "@/lib/dates";
 import { buildSheet, readReply } from "@/lib/rfq/sheet";
 import { receiveShipment } from "@/lib/services/inventory";
-import { addRfqLine, analyseRfq, chooseSuggested, createRfq, inviteSupplier, loadReply, makeOrders, saveQuote, setRate } from "@/lib/services/rfq";
+import { addRfqLine, analyseRfq, createRfq, inviteSupplier, loadReply, orderSuggested, saveLines, saveQuote, setRate } from "@/lib/services/rfq";
 
 // Dates in 2037 keep these document numbers apart from the other test files.
 const d = (s: string) => parseInputDate(s)!;
@@ -42,28 +42,40 @@ beforeAll(async () => {
 });
 
 describe("supplier sheet", () => {
-  it("goes out with the products and comes back with prices, knowing who it was for", async () => {
+  it("goes out the same to everyone and comes back with prices, matched by the name written on it", async () => {
     const rfq = await db.rfq.findUniqueOrThrow({ where: { id: rfqId }, include: { lines: { include: { item: true }, orderBy: { id: "asc" } } } });
-    const supplier = await db.supplier.findUniqueOrThrow({ where: { id: s1 } });
-    const file = await buildSheet({ rfq, supplier, lines: rfq.lines });
+    const file = await buildSheet({ rfq, lines: rfq.lines });
 
     // The supplier fills in the yellow columns.
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(file as unknown as ArrayBuffer);
     const sheet = book.getWorksheet("Quotation")!;
     let head = 0;
-    sheet.eachRow((row, i) => { if (row.getCell(1).value === "Ref") head = i; });
+    sheet.eachRow((row, i) => {
+      if (row.getCell(1).value === "Ref") head = i;
+      if (row.getCell(1).value === "Supplier") row.getCell(3).value = " rfq supplier ONE ";
+    });
     const a = sheet.getRow(head + 1);
     const b = sheet.getRow(head + 2);
-    expect([a.getCell(1).value, a.getCell(3).value, a.getCell(5).value, a.getCell(8).value]).toEqual([lineA, "RFQ Linalool", 100, "USD"]);
-    a.getCell(7).value = 10; a.getCell(10).value = 30; a.getCell(11).value = "60 days"; a.getCell(12).value = "2037-03-31"; a.getCell(13).value = "cif";
+    expect([a.getCell(1).value, a.getCell(3).value, a.getCell(5).value]).toEqual([lineA, "RFQ Linalool", 100]);
+    a.getCell(7).value = 10; a.getCell(8).value = "usd"; a.getCell(10).value = 30; a.getCell(11).value = "60 days"; a.getCell(12).value = "2037-03-31"; a.getCell(13).value = "cif";
     b.getCell(7).value = "5"; b.getCell(9).value = 80;
     const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
 
-    expect([reply.rfqId, reply.supplierId, reply.errors]).toEqual([rfqId, s1, []]);
+    expect([reply.rfqId, reply.supplierId, reply.supplierName, reply.errors]).toEqual([rfqId, null, "rfq supplier ONE", []]);
     expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Supplier One", priced: 2 });
     const q = await db.rfqQuote.findUniqueOrThrow({ where: { rfqLineId_supplierId: { rfqLineId: lineA, supplierId: s1 } } });
     expect([n(q.unitPrice), q.currency, q.leadTimeDays, q.paymentTermsDays, q.incoterm, q.validUntil?.toISOString().slice(0, 10)]).toEqual([10, "USD", 30, 60, "CIF", "2037-03-31"]);
+  });
+
+  it("adds a supplier it doesn't know yet, in the currency they quoted", async () => {
+    const reply = { rfqId, supplierId: null, supplierName: "RFQ Brand New Trading", number: null, errors: [], rows: [{ row: 12, lineId: lineA, unitPrice: "99", currency: "GBP", moq: null, leadTimeDays: null, paymentTermsDays: null, validUntil: null, incoterm: null, notes: null }] };
+    expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Brand New Trading", priced: 1 });
+    const created = await db.supplier.findUniqueOrThrow({ where: { name: "RFQ Brand New Trading" } });
+    expect(created.currency).toBe("GBP");
+    await expect(loadReply(rfqId, null, { ...reply, supplierName: null })).rejects.toThrow("The supplier's name isn't on the sheet. Choose who sent it.");
+    // Not part of the comparison below.
+    await db.rfqQuote.deleteMany({ where: { supplierId: created.id } });
   });
 
   it("refuses a sheet made for another request", async () => {
@@ -119,10 +131,22 @@ describe("comparison", () => {
   });
 });
 
+describe("products", () => {
+  it("saves the list as shown: changed quantities, new products, and removed ones", async () => {
+    const r = await createRfq({ date: d("2037-03-01"), replyBy: null, neededBy: null, notes: null, lines: [{ itemId: itemA, qty: 10 }] });
+    await saveLines(r.id, [{ itemId: itemA, qty: 15 }, { itemId: itemB, qty: 5 }]);
+    let lines = await db.rfqLine.findMany({ where: { rfqId: r.id }, orderBy: { id: "asc" } });
+    expect(lines.map((l) => [l.itemId, n(l.qty)])).toEqual([[itemA, 15], [itemB, 5]]);
+    await saveLines(r.id, [{ itemId: itemB, qty: 7 }]);
+    lines = await db.rfqLine.findMany({ where: { rfqId: r.id } });
+    expect(lines.map((l) => [l.itemId, n(l.qty)])).toEqual([[itemB, 7]]);
+    await expect(saveLines(r.id, [{ itemId: itemB, qty: 1 }, { itemId: itemB, qty: 2 }])).rejects.toThrow("A product is listed twice.");
+  });
+});
+
 describe("ordering", () => {
   it("chooses the suggestions and makes one purchase order per supplier", async () => {
-    await chooseSuggested(rfqId);
-    const orders = await makeOrders(rfqId);
+    const orders = await orderSuggested(rfqId);
     expect(orders).toHaveLength(1);
     const po = await db.purchaseOrder.findUniqueOrThrow({ where: { id: orders[0].id }, include: { lines: { orderBy: { id: "asc" } } } });
     expect([po.supplierId, po.currency, po.expectedDate?.toISOString().slice(0, 10)]).toEqual([s1, "USD", po.date && new Date(po.date.getTime() + 30 * 86_400_000).toISOString().slice(0, 10)]);

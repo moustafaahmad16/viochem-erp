@@ -91,6 +91,34 @@ export async function removeRfqLine(id: number, lineId: number) {
   });
 }
 
+/** Set the products and quantities in one go: the list on screen replaces what was saved. */
+export async function saveLines(id: number, lines: { itemId: number; qty: Decimal.Value }[]) {
+  const seen = new Set<number>();
+  for (const l of lines) {
+    if (new Decimal(l.qty).lte(0)) throw new UserError("Quantity must be more than zero.");
+    if (seen.has(l.itemId)) throw new UserError("A product is listed twice. Put the total quantity on one line.");
+    seen.add(l.itemId);
+  }
+  if (!lines.length) throw new UserError("Add at least one product.");
+  return db.$transaction(async (tx) => {
+    await openRfq(tx, id);
+    const saved = await tx.rfqLine.findMany({ where: { rfqId: id } });
+    await tx.rfqLine.deleteMany({ where: { rfqId: id, itemId: { notIn: lines.map((l) => l.itemId) } } });
+    for (const l of lines) {
+      const line = saved.find((x) => x.itemId === l.itemId);
+      if (line) {
+        if (!dec(line.qty).eq(l.qty)) {
+          await tx.rfqLine.update({ where: { id: line.id }, data: { qty: l.qty.toString() } });
+          const chosen = await tx.rfqQuote.findMany({ where: { rfqLineId: line.id, awardQty: { not: null } } });
+          for (const q of chosen) await tx.rfqQuote.update({ where: { id: q.id }, data: { awardQty: Decimal.max(new Decimal(l.qty), dec(q.moq)).toString() } });
+        }
+      } else {
+        await tx.rfqLine.create({ data: { rfqId: id, itemId: l.itemId, qty: l.qty.toString() } });
+      }
+    }
+  });
+}
+
 export async function inviteSupplier(id: number, supplierId: number) {
   return db.$transaction(async (tx) => {
     await openRfq(tx, id);
@@ -164,20 +192,27 @@ export async function deleteQuote(id: number, quoteId: number) {
 }
 
 /**
- * Load a supplier's reply sheet. Their earlier prices on this request are replaced by the sheet,
- * so sending a corrected sheet is safe. Rows with no price remove that product's offer.
+ * Load a supplier's reply sheet. The supplier is the one chosen, else the name written on the sheet,
+ * matched to an existing supplier or added as a new one. Their earlier prices on this request are
+ * replaced by the sheet, so sending a corrected sheet is safe. Rows with no price remove that offer.
  */
 export async function loadReply(id: number, supplierId: number | null, reply: Reply) {
   if (reply.rfqId !== null && reply.rfqId !== id) throw new UserError(`This sheet is for ${reply.number ?? "another request"}, not this one.`);
-  const who = supplierId ?? reply.supplierId;
-  if (!who) throw new UserError("Choose which supplier sent this sheet.");
   if (reply.errors.length) {
     throw new UserError(`Nothing was loaded. Fix these and upload again:\n${reply.errors.map((e) => `Row ${e.row}: ${e.message}`).join("\n")}`);
   }
   return db.$transaction(async (tx) => {
     await openRfq(tx, id);
-    const supplier = await tx.supplier.findUnique({ where: { id: who } });
-    if (!supplier) throw new UserError("That supplier no longer exists.");
+    let supplier = supplierId ?? reply.supplierId ? await tx.supplier.findUnique({ where: { id: (supplierId ?? reply.supplierId)! } }) : null;
+    const name = reply.supplierName?.trim();
+    if (!supplier && name) {
+      const firstCurrency = reply.rows.find((r) => r.unitPrice && r.currency)?.currency;
+      supplier =
+        (await tx.supplier.findFirst({ where: { name: { equals: name, mode: "insensitive" } } })) ??
+        (await tx.supplier.create({ data: { name, currency: firstCurrency && /^[A-Z]{3}$/.test(firstCurrency) ? firstCurrency : "USD" } }));
+    }
+    if (!supplier) throw new UserError("The supplier's name isn't on the sheet. Choose who sent it.");
+    const who = supplier.id;
     const lines = new Set((await tx.rfqLine.findMany({ where: { rfqId: id }, select: { id: true } })).map((l) => l.id));
     let priced = 0;
     for (const r of reply.rows) {
@@ -226,6 +261,13 @@ export async function unchooseLine(id: number, lineId: number) {
 export async function chooseSuggested(id: number) {
   const analysis = await analyseRfq(id);
   for (const line of analysis.lines) if (line.best) await chooseQuote(id, line.best.quoteId);
+}
+
+/** Order what is chosen, taking the suggestion on any product not chosen by hand. */
+export async function orderSuggested(id: number) {
+  const analysis = await analyseRfq(id);
+  for (const line of analysis.lines) if (!line.chosen && line.best) await chooseQuote(id, line.best.quoteId);
+  return makeOrders(id);
 }
 
 /** One purchase order per supplier and currency for the chosen offers, then the request is done. */
