@@ -25,7 +25,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
       <div className="mx-auto mb-4 flex max-w-[210mm] justify-end print:hidden">
         <PrintButton />
       </div>
-      <article className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
+      <article dir="ltr" className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
         {inv.status === "CANCELLED" && <div className="mb-4 rounded border-2 border-red-600 py-2 text-center text-lg font-bold text-red-600">CANCELLED · ملغاة</div>}
         <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5 shadow-[0_2px_0_0_var(--color-accent-500)]">
           <div>

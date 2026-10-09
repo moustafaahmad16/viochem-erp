@@ -2,7 +2,7 @@
 
 import { createContext, startTransition, useActionState, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { formatDate } from "@/lib/dates";
+import { useT } from "@/i18n/client";
 import { buttonClass } from "./ui";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -16,6 +16,7 @@ const PendingContext = createContext(false);
  */
 export function ActionForm({ action, children, className = "space-y-4", resetOnSuccess = false }: { action: Action; children: ReactNode; className?: string; resetOnSuccess?: boolean }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useT();
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (resetOnSuccess && state?.ok) ref.current?.reset();
@@ -32,8 +33,8 @@ export function ActionForm({ action, children, className = "space-y-4", resetOnS
         startTransition(() => formAction(fd));
       }}
     >
-      {state?.error && <div role="alert" className="mb-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{state.error}</div>}
-      {state?.ok && <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{state.ok}</div>}
+      {state?.error && <div role="alert" className="mb-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{t.message(state.error)}</div>}
+      {state?.ok && <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{t.message(state.ok)}</div>}
       <div className={className}>
         <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>
       </div>
@@ -45,16 +46,17 @@ export function Submit({ children, variant = "primary", confirm }: { children: R
   const formPending = useFormStatus().pending;
   const actionPending = useContext(PendingContext);
   const pending = formPending || actionPending;
+  const t = useT();
   return (
     <button
       type="submit"
       disabled={pending}
       className={buttonClass(variant)}
       onClick={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        if (confirm && !window.confirm(t(confirm))) e.preventDefault();
       }}
     >
-      {pending ? "Saving…" : children}
+      {pending ? t("Saving…") : children}
     </button>
   );
 }
@@ -94,7 +96,8 @@ export function Field({ label, name, hint, className = "", ...input }: FieldProp
  */
 function DateField({ label, name, hint, className = "", defaultValue, onChange, ...input }: FieldProps & React.InputHTMLAttributes<HTMLInputElement>) {
   const [value, setValue] = useState(String(defaultValue ?? ""));
-  const shown = value ? formatDate(new Date(`${value}T00:00:00Z`)) : "";
+  const t = useT();
+  const shown = value ? t.date(new Date(`${value}T00:00:00Z`)) : "";
   return (
     <Labelled label={label} hint={hint} className={className}>
       {(id, hintId) => (

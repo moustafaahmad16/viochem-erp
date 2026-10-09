@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Tr } from "@/i18n/switch";
 
 export function PageHeader({ title, subtitle, actions, back }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; back?: { href: string; label: string } }) {
   return (
     <div className="mb-6">
       {back && (
         <Link href={back.href} className="mb-2 inline-block text-sm text-slate-500 hover:text-slate-800">
-          ← {back.label}
+          <span className="inline-block rtl:rotate-180">←</span> {back.label}
         </Link>
       )}
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -39,7 +40,7 @@ export function Stat({ label, value, hint, tone = "default" }: { label: string; 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="text-sm text-slate-500">{label}</div>
-      <div className={`num mt-1 text-left text-2xl font-semibold ${color}`}>{value}</div>
+      <div className={`num mt-1 text-start text-2xl font-semibold ${color}`}>{value}</div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );
@@ -77,13 +78,13 @@ export function Table({ head, children, empty, footer }: { head: ReactNode; chil
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500 [&_th]:px-4 [&_th]:py-2.5 [&_th]:font-medium">
+        <thead className="border-b border-slate-200 bg-slate-50 text-start text-xs font-medium uppercase tracking-wide text-slate-500 [&_th]:px-4 [&_th]:py-2.5 [&_th]:font-medium">
           {head}
         </thead>
         <tbody className="divide-y divide-slate-100 [&_td]:px-4 [&_td]:py-3">{children}</tbody>
         {footer && <tfoot className="border-t border-slate-200 bg-slate-50 font-semibold [&_td]:px-4 [&_td]:py-3">{footer}</tfoot>}
       </table>
-      {!hasRows && <div className="px-4 py-10 text-center text-sm text-slate-500">{empty ?? "Nothing here yet."}</div>}
+      {!hasRows && <div className="px-4 py-10 text-center text-sm text-slate-500">{empty ?? <Tr>Nothing here yet.</Tr>}</div>}
     </div>
   );
 }

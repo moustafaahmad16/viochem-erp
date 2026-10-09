@@ -1,5 +1,6 @@
 import type { ShipmentStatus } from "@prisma/client";
 import { Badge } from "@/components/ui";
+import { Tr } from "@/i18n/switch";
 
 export const SHIPMENT_STATUS: Record<ShipmentStatus, { label: string; color: "gray" | "blue" | "amber" | "green" }> = {
   ORDERED: { label: "Ordered", color: "gray" },
@@ -10,5 +11,5 @@ export const SHIPMENT_STATUS: Record<ShipmentStatus, { label: string; color: "gr
 
 export function StatusBadge({ status }: { status: ShipmentStatus }) {
   const s = SHIPMENT_STATUS[status];
-  return <Badge color={s.color}>{s.label}</Badge>;
+  return <Badge color={s.color}><Tr>{s.label}</Tr></Badge>;
 }

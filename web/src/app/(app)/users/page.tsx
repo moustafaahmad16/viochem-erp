@@ -2,12 +2,14 @@ import { revalidatePath } from "next/cache";
 import { ActionForm, Field, Select, Submit, type FormState } from "@/components/forms";
 import { Badge, Card, PageHeader, Table } from "@/components/ui";
 import { fail, required } from "@/lib/actions";
+import { getT } from "@/i18n/server";
 import { hashPassword, requireAdmin } from "@/lib/auth";
-import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
 
-export const metadata = { title: "Users" };
+export async function generateMetadata() {
+  return { title: (await getT())("Users") };
+}
 
 async function addUser(_: FormState, fd: FormData): Promise<FormState> {
   "use server";
@@ -41,23 +43,23 @@ async function toggleUser(id: number) {
 
 export default async function UsersPage() {
   const me = await requireAdmin();
-  const users = await db.user.findMany({ orderBy: { name: "asc" } });
+  const [users, t] = await Promise.all([db.user.findMany({ orderBy: { name: "asc" } }), getT()]);
   return (
     <>
-      <PageHeader title="Users" subtitle="People who can sign in to VIOCHEM" />
+      <PageHeader title={t("Users")} subtitle={t("People who can sign in to VIOCHEM")} />
       <div className="grid gap-6 lg:grid-cols-3">
         <Card padded={false} className="lg:col-span-2">
-          <Table head={<tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th /></tr>}>
+          <Table head={<tr><th>{t("Name")}</th><th>{t("Email")}</th><th>{t("Role")}</th><th>{t("Added")}</th><th /></tr>}>
             {users.map((u) => (
               <tr key={u.id} className={u.active ? "" : "text-slate-400"}>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
-                <td>{u.role === "ADMIN" ? <Badge color="blue">Admin</Badge> : "Staff"}</td>
-                <td>{formatDate(u.createdAt)}</td>
-                <td className="text-right">
+                <td>{u.role === "ADMIN" ? <Badge color="blue">{t("Admin")}</Badge> : t("Staff")}</td>
+                <td>{t.date(u.createdAt)}</td>
+                <td className="text-end">
                   {u.id !== me.id && (
                     <form action={toggleUser.bind(null, u.id)}>
-                      <button className="text-xs text-slate-500 hover:text-slate-900">{u.active ? "Turn off" : "Turn on"}</button>
+                      <button className="text-xs text-slate-500 hover:text-slate-900">{t(u.active ? "Turn off" : "Turn on")}</button>
                     </form>
                   )}
                 </td>
@@ -65,13 +67,13 @@ export default async function UsersPage() {
             ))}
           </Table>
         </Card>
-        <Card title="Add a user">
+        <Card title={t("Add a user")}>
           <ActionForm action={addUser} resetOnSuccess>
-            <Field label="Name" name="name" required />
-            <Field label="Email" name="email" type="email" required />
-            <Field label="Password" name="password" type="text" required hint="At least 8 characters" />
-            <Select label="Role" name="role" options={[{ value: "STAFF", label: "Staff" }, { value: "ADMIN", label: "Admin (can manage users)" }]} />
-            <Submit>Add user</Submit>
+            <Field label={t("Name")} name="name" required />
+            <Field label={t("Email")} name="email" type="email" required />
+            <Field label={t("Password")} name="password" type="text" required hint={t("At least 8 characters")} />
+            <Select label={t("Role")} name="role" options={[{ value: "STAFF", label: t("Staff") }, { value: "ADMIN", label: t("Admin (can manage users)") }]} />
+            <Submit>{t("Add user")}</Submit>
           </ActionForm>
         </Card>
       </div>

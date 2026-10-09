@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
-import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money, qty } from "@/lib/format";
+import { getT } from "@/i18n/server";
 import { updateItem } from "../actions";
 import { ItemFields } from "../item-form";
 
 export default async function ProductPage({ params }: PageProps<"/products/[id]">) {
+  const t = await getT();
   const id = Number((await params).id);
   const item = await db.item.findUnique({
     where: { id },
@@ -20,30 +21,30 @@ export default async function ProductPage({ params }: PageProps<"/products/[id]"
     <>
       <PageHeader
         title={item.name}
-        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>} · {qty(onHand)} {item.unit} in stock</>}
-        back={{ href: "/products", label: "Products" }}
-        actions={<ButtonLink href={`/stock/opening?item=${item.id}`} variant="secondary">Add opening stock</ButtonLink>}
+        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${t(item.unit)}` })}</>}
+        back={{ href: "/products", label: t("Products") }}
+        actions={<ButtonLink href={`/stock/opening?item=${item.id}`} variant="secondary">{t("Add opening stock")}</ButtonLink>}
       />
       <div className="grid gap-6 lg:grid-cols-5">
-        <Card title="Lots" className="lg:col-span-3" padded={false}>
-          <Table head={<tr><th>Lot</th><th>Received</th><th>Expiry</th><th className="num">On hand</th><th className="num">Cost / {item.unit}</th></tr>} empty="No stock received yet.">
+        <Card title={t("Lots")} className="lg:col-span-3" padded={false}>
+          <Table head={<tr><th>{t("Lot")}</th><th>{t("Received")}</th><th>{t("Expiry")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Cost / {unit}", { unit: t(item.unit) })}</th></tr>} empty={t("No stock received yet.")}>
             {item.lots.map((l) => (
               <tr key={l.id}>
                 <td>
                   <RowLink href={`/stock/lots/${l.id}`}>{l.lotNo}</RowLink>
-                  <div className="text-xs text-slate-500">{l.shipmentLine ? l.shipmentLine.shipment.ref : "Opening stock"}</div>
+                  <div className="text-xs text-slate-500">{l.shipmentLine ? l.shipmentLine.shipment.ref : t("Opening stock")}</div>
                 </td>
-                <td>{formatDate(l.receivedDate)}</td>
-                <td>{formatDate(l.expiryDate)}</td>
-                <td className="num">{Number(l.qtyOnHand) > 0 ? qty(l.qtyOnHand) : <Badge>Used up</Badge>}</td>
+                <td>{t.date(l.receivedDate)}</td>
+                <td>{t.date(l.expiryDate)}</td>
+                <td className="num">{Number(l.qtyOnHand) > 0 ? qty(l.qtyOnHand) : <Badge>{t("Used up")}</Badge>}</td>
                 <td className="num">{money(l.unitCostEgp)}</td>
               </tr>
             ))}
           </Table>
         </Card>
-        <Card title="Details" className="lg:col-span-2">
+        <Card title={t("Details")} className="lg:col-span-2">
           <ActionForm action={updateItem.bind(null, item.id)}>
-            <ItemFields item={item} />
+            <ItemFields item={item} t={t} />
           </ActionForm>
         </Card>
       </div>
