@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, optionalDate, text } from "@/lib/actions";
-import { today } from "@/lib/dates";
+import { formatDate, today } from "@/lib/dates";
 import { requireUser } from "@/lib/auth";
 import { readReply } from "@/lib/rfq/sheet";
 import { UserError } from "@/lib/services/errors";
@@ -83,7 +83,7 @@ export async function uploadReply(id: number, _: FormState, fd: FormData): Promi
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose an Excel file first." };
   if (file.size > MAX_BYTES) return { error: "That file is over 5 MB. Split it into smaller files." };
-  let done: { supplier: string; priced: number };
+  let done: { supplier: string; priced: number; swapped: Date[] };
   try {
     const chosen = text(fd, "supplierId");
     const reply = await readReply(await file.arrayBuffer());
@@ -93,7 +93,8 @@ export async function uploadReply(id: number, _: FormState, fd: FormData): Promi
     return fail(e);
   }
   refresh(id);
-  return { ok: `Loaded ${done.priced} prices from ${done.supplier}.` };
+  const swapped = done.swapped.length ? ` Read "valid until" as ${[...new Set(done.swapped.map(formatDate))].join(", ")}: the dates on the sheet were before this request, so day and month were swapped.` : "";
+  return { ok: `Loaded ${done.priced} prices from ${done.supplier}.${swapped}` };
 }
 
 
