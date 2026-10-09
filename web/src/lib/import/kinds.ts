@@ -23,6 +23,7 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "casNumber", title: "CAS number", example: "78-70-6" },
       { key: "unit", title: "Unit", example: "kg", note: "kg, L, g or pcs. Empty means kg." },
       { key: "hazardClass", title: "Hazard class", example: "Flammable liquid, Class 3" },
+      { key: "etaItemCode", title: "ETA item code", example: "EG-100324932-LIN001", note: "As registered on the ETA portal, for e-invoices" },
       { key: "notes", title: "Notes", example: "" },
     ],
   },
@@ -50,6 +51,11 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "phone", title: "Phone", example: "" },
       { key: "email", title: "Email", example: "" },
       { key: "address", title: "Address", example: "Industrial Zone, 6th of October, Giza" },
+      { key: "etaType", title: "Customer type", example: "Company", note: "Company, Person or Foreign. Empty means Company." },
+      { key: "governate", title: "Governorate", example: "Giza", note: "For e-invoices" },
+      { key: "city", title: "City or area", example: "6th of October", note: "For e-invoices" },
+      { key: "street", title: "Street", example: "Industrial Zone 3", note: "For e-invoices" },
+      { key: "buildingNo", title: "Building no.", example: "12", note: "For e-invoices" },
       { key: "paymentTermsDays", title: "Payment terms (days)", example: 30, note: "Empty keeps what is saved, or 30 for a new customer" },
       { key: "openingBalance", title: "Opening balance", example: 0, note: "What was owed before this system, in EGP. Negative for credit." },
       { key: "openingBalanceDate", title: "Opening balance date", example: "2026-09-30", note: "A date cell, or text like 2026-09-30" },
@@ -135,11 +141,25 @@ function number(v: Cell, label: string, { allowZero = false } = {}): string {
   return d.toString();
 }
 
-export type ProductRow = { code: string; name: string; casNumber: string | null; unit: string; hazardClass: string | null; notes: string | null };
+export type ProductRow = { code: string; name: string; casNumber: string | null; unit: string; hazardClass: string | null; notes: string | null; etaItemCode: string | null };
 // Left out when the cell is empty, so importing a file without them never wipes what is already saved.
 type Terms = { paymentTermsDays?: number; openingBalance?: string; openingBalanceDate?: Date };
 export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null } & Terms;
-export type CustomerRow = { name: string; taxId: string | null; phone: string | null; email: string | null; address: string | null; notes: string | null } & Terms;
+export type CustomerRow = {
+  name: string;
+  taxId: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  notes: string | null;
+  etaType?: string;
+  governate: string | null;
+  city: string | null;
+  street: string | null;
+  buildingNo: string | null;
+} & Terms;
+
+const CUSTOMER_TYPES: Record<string, string> = { company: "B", b: "B", person: "P", p: "P", foreign: "F", f: "F" };
 
 function terms(r: Record<string, Cell>): Terms {
   const t: Terms = { paymentTermsDays: days(r.paymentTermsDays), openingBalance: signedNumber(r.openingBalance, "Opening balance"), openingBalanceDate: readDate(r.openingBalanceDate) ?? undefined };
@@ -149,6 +169,14 @@ export type StockRow = { code: string; qty: string; unitCostEgp: string; expiryD
 
 const UNITS = ["kg", "L", "g", "pcs"];
 
+function customerType(v: Cell): { etaType?: string } {
+  const t = text(v);
+  if (!t) return {};
+  const code = CUSTOMER_TYPES[t.toLowerCase()];
+  if (!code) throw new Error(`Customer type "${t}" should be Company, Person or Foreign`);
+  return { etaType: code };
+}
+
 const PARSERS = {
   products: (r: Record<string, Cell>): ProductRow => {
     const cas = text(r.casNumber);
@@ -156,7 +184,7 @@ const PARSERS = {
     const unit = text(r.unit) ?? "kg";
     const known = UNITS.find((u) => u.toLowerCase() === unit.toLowerCase());
     if (!known) throw new Error(`Unit "${unit}" should be one of ${UNITS.join(", ")}`);
-    return { code: text(r.code)!.toUpperCase(), name: text(r.name)!, casNumber: cas, unit: known, hazardClass: text(r.hazardClass), notes: text(r.notes) };
+    return { code: text(r.code)!.toUpperCase(), name: text(r.name)!, casNumber: cas, unit: known, hazardClass: text(r.hazardClass), notes: text(r.notes), etaItemCode: text(r.etaItemCode) };
   },
   suppliers: (r: Record<string, Cell>): SupplierRow => {
     const currency = (text(r.currency) ?? "USD").toUpperCase();
@@ -164,6 +192,11 @@ const PARSERS = {
     return { name: text(r.name)!, country: text(r.country), currency, email: text(r.email), phone: text(r.phone), notes: text(r.notes), ...terms(r) };
   },
   customers: (r: Record<string, Cell>): CustomerRow => ({
+    ...customerType(r.etaType),
+    governate: text(r.governate),
+    city: text(r.city),
+    street: text(r.street),
+    buildingNo: text(r.buildingNo),
     name: text(r.name)!,
     taxId: text(r.taxId),
     phone: text(r.phone),

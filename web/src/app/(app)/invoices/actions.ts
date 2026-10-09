@@ -7,6 +7,7 @@ import { date, decimal, fail, int, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
+import { cancelOnEta, refreshStatus, sendInvoice } from "@/lib/services/einvoice";
 import { cancelInvoice as cancel, createInvoice as create, postInvoice as post } from "@/lib/services/inventory";
 
 async function draft(id: number) {
@@ -85,9 +86,10 @@ export async function postInvoice(id: number): Promise<FormState> {
   return { ok: "Posted. The stock has been taken out." };
 }
 
-export async function cancelInvoice(id: number): Promise<FormState> {
+export async function cancelInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   try {
+    await cancelOnEta(id, text(fd, "reason") ?? "Cancelled by the seller");
     await cancel(id);
   } catch (e) {
     return fail(e);
@@ -101,4 +103,27 @@ export async function deleteDraft(id: number) {
   await draft(id);
   await db.invoice.delete({ where: { id } });
   redirect("/invoices");
+}
+
+export async function sendToEta(id: number): Promise<FormState> {
+  await requireUser();
+  let status;
+  try {
+    status = (await sendInvoice(id)).etaStatus;
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/invoices/${id}`);
+  return status === "SUBMITTED" ? { ok: "Sent. The tax authority is checking it; check again in a minute." } : { error: "The tax authority refused it. The reasons are shown above." };
+}
+
+export async function checkEta(id: number): Promise<FormState> {
+  await requireUser();
+  try {
+    await refreshStatus(id);
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/invoices/${id}`);
+  return { ok: "Updated." };
 }

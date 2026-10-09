@@ -9,6 +9,8 @@ export function ItemFields({ item }: { item?: Item }) {
       <Field label="CAS number" name="casNumber" defaultValue={item?.casNumber ?? ""} placeholder="78-70-6" hint="Checked automatically" />
       <Select label="Unit" name="unit" defaultValue={item?.unit ?? "kg"} options={["kg", "L", "g", "pcs"].map((u) => ({ value: u, label: u }))} />
       <Field label="Hazard class" name="hazardClass" defaultValue={item?.hazardClass ?? ""} placeholder="e.g. Flammable liquid, Class 3" />
+      <Field label="ETA item code" name="etaItemCode" defaultValue={item?.etaItemCode ?? ""} placeholder="EG-100324932-LIN001" hint="As registered on the ETA portal. Needed to send e-invoices." />
+      <Select label="ETA code type" name="etaItemType" defaultValue={item?.etaItemType ?? "EGS"} options={[{ value: "EGS", label: "EGS (your own code)" }, { value: "GS1", label: "GS1 (barcode)" }]} />
       <TextArea label="Notes" name="notes" defaultValue={item?.notes ?? ""} className="sm:col-span-2" />
       {item && (
         <label className="flex items-center gap-2 text-sm text-slate-700">

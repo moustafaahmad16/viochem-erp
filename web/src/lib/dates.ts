@@ -28,6 +28,12 @@ export function today(): Date {
   return new Date(`${s}T00:00:00Z`);
 }
 
+/** The calendar day a timestamp falls on in Cairo, e.g. when a record was created. */
+export function dayOf(t: Date): Date {
+  const s = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(t);
+  return new Date(`${s}T00:00:00Z`);
+}
+
 export function addDays(d: Date, days: number): Date {
   return new Date(d.getTime() + days * 86_400_000);
 }

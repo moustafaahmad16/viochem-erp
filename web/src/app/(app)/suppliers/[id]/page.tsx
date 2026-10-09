@@ -9,11 +9,11 @@ import { updateSupplier } from "../actions";
 import { CURRENCIES, SupplierFields } from "../fields";
 import { StatusBadge } from "../../shipments/status";
 import { deleteSupplierPayment, paySupplier } from "../../payments/actions";
-import { Balance, OpenBills, PaySupplierForm, Statement } from "../../payments/parts";
+import { accountOptions, Balance, OpenBills, PaySupplierForm, Statement } from "../../payments/parts";
 
 export default async function SupplierPage({ params }: PageProps<"/suppliers/[id]">) {
   const id = Number((await params).id);
-  const [[acc], user] = await Promise.all([supplierAccounts({ id }), currentUser()]);
+  const [[acc], user, accounts] = await Promise.all([supplierAccounts({ id }), currentUser(), accountOptions()]);
   if (!acc) notFound();
   const s = acc.supplier;
   const deletes = user?.role === "ADMIN" ? new Map(acc.payments.map((p) => [p.number, deleteSupplierPayment.bind(null, p.id)])) : undefined;
@@ -69,6 +69,7 @@ export default async function SupplierPage({ params }: PageProps<"/suppliers/[id
               action={paySupplier.bind(null, s.id)}
               currency={s.currency}
               currencies={CURRENCIES}
+              accounts={accounts}
               shipments={unpaid.map((b) => ({ id: Number(String(b.key).replace("shp:", "")), label: `${b.label} · ${b.currency} ${money(b.outstanding)} owed` }))}
             />
           </Card>

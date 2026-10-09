@@ -8,8 +8,10 @@ import { db } from "@/lib/db";
 import { money, pct, qty } from "@/lib/format";
 import { daysLate } from "@/lib/ledger";
 import { customerAccounts } from "@/lib/services/accounts";
-import { addLine, cancelInvoice, deleteDraft, postInvoice, removeLine, updateInvoice } from "../actions";
-import { InvoiceStatusBadge } from "../status";
+import { addLine, cancelInvoice, checkEta, deleteDraft, postInvoice, removeLine, sendToEta, updateInvoice } from "../actions";
+import { EtaBadge, InvoiceStatusBadge } from "../status";
+import { prepare } from "@/lib/services/einvoice";
+import { shareUrl } from "@/lib/eta/client";
 import { LineForm } from "./line-form";
 
 export default async function InvoicePage({ params }: PageProps<"/invoices/[id]">) {
@@ -36,6 +38,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const margin = totals.net.minus(cost);
   const bill = inv.status === "POSTED" ? (await customerAccounts({ id: inv.customerId }))[0].bills.find((b) => b.key === `inv:${inv.id}`) : undefined;
   const late = bill && bill.outstanding.gt(0) ? daysLate(bill.dueDate, today()) : 0;
+  const etaMissing = inv.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) ? (await prepare(inv.id)).problems : [];
 
   return (
     <>
@@ -136,6 +139,35 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
             </>
           ) : (
             <>
+              {inv.status !== "DRAFT" && (inv.status === "POSTED" || inv.etaUuid) && (
+                <Card title="E-invoice (tax authority)" actions={<EtaBadge status={inv.etaStatus} />}>
+                  <div className="space-y-3 text-sm">
+                    {inv.etaUuid && inv.etaLongId && (
+                      <p>
+                        <a href={shareUrl(inv.etaUuid, inv.etaLongId)} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">Open on the ETA portal</a>
+                        <span className="block text-xs text-slate-500">Sent {inv.etaSentAt?.toLocaleString("en-GB", { timeZone: "Africa/Cairo", dateStyle: "medium", timeStyle: "short" })}</span>
+                      </p>
+                    )}
+                    {inv.etaError && <p className="whitespace-pre-line rounded-lg bg-red-50 p-3 text-red-800">{inv.etaError}</p>}
+                    {etaMissing.length > 0 && (
+                      <div className="rounded-lg bg-amber-50 p-3 text-amber-900">
+                        <p className="font-medium">Before sending:</p>
+                        <ul className="mt-1 list-disc pl-5">{etaMissing.map((m) => <li key={m}>{m}</li>)}</ul>
+                      </div>
+                    )}
+                    {inv.status === "POSTED" && etaMissing.length === 0 && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) && (
+                      <ActionForm action={sendToEta.bind(null, inv.id)}>
+                        <Submit confirm={`Send ${inv.number} to the tax authority?`}>{inv.etaStatus === "NOT_SENT" ? "Send to ETA" : "Send again"}</Submit>
+                      </ActionForm>
+                    )}
+                    {inv.etaUuid && ["SUBMITTED", "VALID", "INVALID"].includes(inv.etaStatus) && (
+                      <ActionForm action={checkEta.bind(null, inv.id)}>
+                        <Submit variant="secondary">Check status</Submit>
+                      </ActionForm>
+                    )}
+                  </div>
+                </Card>
+              )}
               {bill && (
                 <Card title="Payment" actions={bill.outstanding.gt(0) && <RowLink href={`/customers/${inv.customerId}`}>Receive</RowLink>}>
                   <dl className="space-y-2 text-sm">
@@ -161,7 +193,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               {inv.status === "POSTED" && (
                 <Card title="Cancel invoice">
                   <ActionForm action={cancelInvoice.bind(null, inv.id)}>
-                    <p className="text-sm text-slate-600">Puts the stock back into the same lots. The invoice number stays used.</p>
+                    <p className="text-sm text-slate-600">Puts the stock back into the same lots. The invoice number stays used.{inv.etaUuid && ["SUBMITTED", "VALID"].includes(inv.etaStatus) && " It is also cancelled at the tax authority."}</p>
+                    {inv.etaUuid && ["SUBMITTED", "VALID"].includes(inv.etaStatus) && <TextArea label="Reason (sent to the tax authority)" name="reason" required />}
                     <Submit variant="danger" confirm={`Cancel ${inv.number}? This can't be undone.`}>Cancel invoice</Submit>
                   </ActionForm>
                 </Card>

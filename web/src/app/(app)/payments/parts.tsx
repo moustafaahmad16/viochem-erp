@@ -6,9 +6,31 @@ import { money } from "@/lib/format";
 import { AGE_BUCKETS, daysLate } from "@/lib/ledger";
 import type { Account } from "@/lib/services/accounts";
 import { METHODS } from "@/lib/services/payments";
+import { db } from "@/lib/db";
 import { methodLabel } from "@/lib/services/accounts";
 
 const methodOptions = METHODS.map((m) => ({ value: m, label: methodLabel(m) }));
+
+type Option = { value: string | number; label: string };
+
+/** Accounts money can go into or come out of, for a form's select box. */
+export async function accountOptions({ egpOnly = false } = {}): Promise<Option[]> {
+  const accounts = await db.moneyAccount.findMany({ where: { active: true, ...(egpOnly ? { currency: "EGP" } : {}) }, orderBy: [{ kind: "asc" }, { name: "asc" }] });
+  return accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency})` }));
+}
+
+export function AccountSelect({ label, accounts }: { label: string; accounts: Option[] }) {
+  return (
+    <Select
+      label={label}
+      name="accountId"
+      defaultValue={accounts[0]?.value ?? ""}
+      placeholder="Not recorded"
+      options={accounts}
+      hint={accounts.length ? undefined : "Add your bank accounts and cash box under Bank & cash to track balances."}
+    />
+  );
+}
 
 /** One line per bill still open, with how late it is. */
 export function OpenBills({ account }: { account: Account }) {
@@ -89,7 +111,7 @@ export function Balance({ value, currency }: { value: Decimal; currency: string 
   return value.lt(0) ? <span className="text-brand-700">{prefix}{money(value.neg())} credit</span> : <>{prefix}{money(value)}</>;
 }
 
-export function ReceivePaymentForm({ action, bills }: { action: (s: FormState, fd: FormData) => Promise<FormState>; bills: Account["bills"] }) {
+export function ReceivePaymentForm({ action, bills, accounts }: { action: (s: FormState, fd: FormData) => Promise<FormState>; bills: Account["bills"]; accounts: Option[] }) {
   const open = bills.filter((b) => b.outstanding.gt(0) && b.key !== "opening");
   return (
     <ActionForm action={action} resetOnSuccess>
@@ -98,6 +120,7 @@ export function ReceivePaymentForm({ action, bills }: { action: (s: FormState, f
         <Field label="Date" name="date" type="date" defaultValue={toInputDate(today())} required />
       </div>
       <Select label="Paid by" name="method" options={methodOptions} />
+      <AccountSelect label="Into account" accounts={accounts} />
       <Field label="Reference" name="reference" hint="Cheque or transfer number" />
       <Select
         label="For invoice"
@@ -116,11 +139,13 @@ export function PaySupplierForm({
   currency,
   currencies,
   shipments,
+  accounts,
 }: {
   action: (s: FormState, fd: FormData) => Promise<FormState>;
   currency: string;
   currencies: { value: string; label: string }[];
   shipments: { id: number; label: string }[];
+  accounts: Option[];
 }) {
   return (
     <ActionForm action={action} resetOnSuccess>
@@ -133,6 +158,7 @@ export function PaySupplierForm({
         <Field label="Exchange rate" name="fxRate" inputMode="decimal" hint="EGP for 1 unit. Not needed for EGP." />
       </div>
       <Select label="Paid by" name="method" options={methodOptions} />
+      <AccountSelect label="From account" accounts={accounts} />
       <Field label="Reference" name="reference" hint="Swift or transfer number" />
       <Select label="For shipment" name="shipmentId" placeholder="Oldest unpaid first" options={shipments.map((s) => ({ value: s.id, label: s.label }))} />
       <TextArea label="Notes" name="notes" />

@@ -20,6 +20,7 @@ const common = (fd: FormData) => ({
   method: required(fd, "method", "Paid by") as PaymentMethod,
   reference: text(fd, "reference"),
   notes: text(fd, "notes"),
+  accountId: optionalId(fd, "accountId"),
 });
 
 export async function receivePayment(customerId: number, _: FormState, fd: FormData): Promise<FormState> {

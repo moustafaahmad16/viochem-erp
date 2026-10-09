@@ -7,6 +7,7 @@ import { formatDate, toInputDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money, qty } from "@/lib/format";
 import { supplierAccounts } from "@/lib/services/accounts";
+import { accountOptions, AccountSelect } from "../../payments/parts";
 import { addCharge, addLine, receiveShipment, removeCharge, removeLine, updateShipment } from "../actions";
 import { StatusBadge } from "../status";
 
@@ -16,7 +17,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
   const id = Number((await params).id);
   const s = await db.shipment.findUnique({
     where: { id },
-    include: { supplier: true, lines: { include: { item: true, lot: true }, orderBy: { id: "asc" } }, charges: { orderBy: { id: "asc" } } },
+    include: { supplier: true, lines: { include: { item: true, lot: true }, orderBy: { id: "asc" } }, charges: { include: { account: true }, orderBy: { id: "asc" } } },
   });
   if (!s) notFound();
   const received = s.status === "RECEIVED";
@@ -32,7 +33,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
   const goodsForeign = s.lines.reduce((t, l) => t.plus(d(l.qty).times(d(l.unitPrice))), new Decimal(0));
   const goodsEgp = goodsForeign.times(d(s.fxRate));
   const charges = s.charges.reduce((t, c) => t.plus(d(c.amountEgp)), new Decimal(0));
-  const [supplierAcc] = await supplierAccounts({ id: s.supplierId });
+  const [[supplierAcc], accounts] = await Promise.all([supplierAccounts({ id: s.supplierId }), accountOptions({ egpOnly: true })]);
   const bill = supplierAcc.accounts.find((a) => a.currency === s.currency)?.bills.find((b) => b.key === `shp:${s.id}`);
 
   return (
@@ -100,7 +101,10 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
             <Table head={<tr><th>Charge</th><th className="num">Amount (EGP)</th><th /></tr>} empty="No charges yet. Add freight, customs duty and clearance as the bills arrive.">
               {s.charges.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.kind}{c.description && <span className="text-slate-500"> · {c.description}</span>}</td>
+                  <td>
+                    {c.kind}{c.description && <span className="text-slate-500"> · {c.description}</span>}
+                    {(c.date || c.account) && <div className="text-xs text-slate-500">Paid {[formatDate(c.date), c.account && `from ${c.account.name}`].filter(Boolean).join(" ")}</div>}
+                  </td>
                   <td className="num">{money(c.amountEgp)}</td>
                   <td className="text-right">
                     <form action={removeCharge.bind(null, s.id, c.id)}>
@@ -115,8 +119,10 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
               <ActionForm action={addCharge.bind(null, s.id)} className="grid gap-3 sm:grid-cols-6" resetOnSuccess>
                 <Select label="Charge" name="kind" options={CHARGE_KINDS.map((k) => ({ value: k, label: k }))} className="sm:col-span-2" />
                 <Field label="Details" name="description" className="sm:col-span-2" />
-                <Field label="Amount (EGP)" name="amountEgp" inputMode="decimal" required />
-                <div className="flex items-end">
+                <Field label="Amount (EGP)" name="amountEgp" inputMode="decimal" required className="sm:col-span-2" />
+                <Field label="Paid on" name="date" type="date" defaultValue={toInputDate(today())} className="sm:col-span-2" />
+                <div className="sm:col-span-2"><AccountSelect label="Paid from" accounts={accounts} /></div>
+                <div className="flex items-end sm:col-span-2">
                   <Submit variant="secondary">Add</Submit>
                 </div>
               </ActionForm>

@@ -11,16 +11,17 @@ import { updateCustomer } from "../actions";
 import { CustomerFields } from "../fields";
 import { InvoiceStatusBadge } from "../../invoices/status";
 import { deleteCustomerPayment, receivePayment } from "../../payments/actions";
-import { Balance, OpenBills, ReceivePaymentForm, Statement } from "../../payments/parts";
+import { accountOptions, Balance, OpenBills, ReceivePaymentForm, Statement } from "../../payments/parts";
 
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const id = Number((await params).id);
   const [acc] = await customerAccounts({ id });
   if (!acc) notFound();
   const c = acc.customer;
-  const [drafts, user] = await Promise.all([
+  const [drafts, user, accounts] = await Promise.all([
     db.invoice.findMany({ where: { customerId: id, status: { not: "POSTED" } }, include: { lines: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     currentUser(),
+    accountOptions({ egpOnly: true }),
   ]);
   const deletes = user?.role === "ADMIN" ? new Map(acc.payments.map((p) => [p.number, deleteCustomerPayment.bind(null, p.id)])) : undefined;
 
@@ -67,7 +68,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         </div>
         <div className="space-y-6">
           <Card title="Receive a payment">
-            <ReceivePaymentForm action={receivePayment.bind(null, c.id)} bills={acc.bills} />
+            <ReceivePaymentForm action={receivePayment.bind(null, c.id)} bills={acc.bills} accounts={accounts} />
           </Card>
           <Card title="Details">
             <ActionForm action={updateCustomer.bind(null, c.id)}>

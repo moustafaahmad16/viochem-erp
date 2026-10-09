@@ -1,6 +1,6 @@
 import Decimal from "decimal.js";
 import { invoiceTotals } from "@/lib/costing";
-import { today } from "@/lib/dates";
+import { dayOf, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { aging, settle, type Bill, type Credit, type SettledBill } from "@/lib/ledger";
 
@@ -65,7 +65,7 @@ export async function customerAccounts(where: { id?: number } = {}) {
     const credits: Credit[] = [];
     const entries: Entry[] = [];
     const opening = dec(c.openingBalance);
-    const openingDate = c.openingBalanceDate ?? c.createdAt;
+    const openingDate = c.openingBalanceDate ?? dayOf(c.createdAt);
     if (opening.gt(0)) bills.push({ key: "opening", date: openingDate, dueDate: openingDate, amount: opening, label: "Opening balance" });
     if (opening.lt(0)) credits.push({ amount: opening.neg() });
     if (!opening.isZero()) entries.push({ date: openingDate, order: 0, label: "Opening balance", charge: Decimal.max(opening, 0), payment: Decimal.max(opening.neg(), 0) });
@@ -106,7 +106,7 @@ export async function supplierAccounts(where: { id?: number } = {}) {
       return byCurrency.get(cur)!;
     };
     const opening = dec(s.openingBalance);
-    const openingDate = s.openingBalanceDate ?? s.createdAt;
+    const openingDate = s.openingBalanceDate ?? dayOf(s.createdAt);
     if (!opening.isZero()) {
       const g = group(s.currency);
       if (opening.gt(0)) g.bills.push({ key: "opening", date: openingDate, dueDate: openingDate, amount: opening, label: "Opening balance" });

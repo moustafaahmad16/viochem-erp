@@ -7,6 +7,7 @@ import { date, decimal, fail, int, optionalDate, required, text } from "@/lib/ac
 import { requireUser } from "@/lib/auth";
 import { shipmentDateProblem } from "@/lib/dates";
 import { db } from "@/lib/db";
+import { activeAccount } from "@/lib/services/banking";
 import { UserError } from "@/lib/services/errors";
 import { createShipment as create, receiveShipment as receive, recostShipment } from "@/lib/services/inventory";
 
@@ -125,8 +126,11 @@ export async function addCharge(id: number, _: FormState, fd: FormData): Promise
       kind: required(fd, "kind", "Charge"),
       description: text(fd, "description"),
       amountEgp: decimal(fd, "amountEgp", "Amount"),
+      date: optionalDate(fd, "date"),
+      accountId: text(fd, "accountId") ? Number(text(fd, "accountId")) : null,
     };
     await db.$transaction(async (tx) => {
+      await activeAccount(tx, data.accountId, { egpOnly: true });
       await tx.shipmentCharge.create({ data });
       await recostShipment(tx, id);
     });
