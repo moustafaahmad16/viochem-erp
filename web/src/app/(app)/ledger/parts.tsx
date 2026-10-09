@@ -91,6 +91,7 @@ export function memoText(t: T, text: string | null | undefined, { transfer = fal
       if ((m = /^From (.+)$/.exec(part))) return t("Money from {name}", { name: m[1] });
       if ((m = /^To (.+)$/.exec(part))) return t("Money to {name}", { name: m[1] });
       if ((m = /^For (.+)$/.exec(part))) return t("For shipment {ref}", { ref: m[1] });
+      if ((m = /^Cheque (.+)$/.exec(part))) return t("Cheque {no}", { no: m[1] });
       if ((m = /^([A-Z]{3}) (-?[\d.]+) at ([\d.]+)$/.exec(part))) return t("Foreign amount {currency} {amount} at {rate}", { currency: m[1], amount: m[2], rate: m[3] });
       return t(part);
     })

@@ -30,4 +30,17 @@ export const alerts: Record<string, string> = {
   Covered: "مغطى",
   Low: "منخفض",
   "{n} running low": "{n} على وشك النفاد",
+
+  "Cheques to collect in 7 days": "شيكات للتحصيل خلال 7 أيام",
+  "Cheques to pay in 7 days": "شيكات للصرف خلال 7 أيام",
+  "Cheques due in 7 days": "شيكات تستحق خلال 7 أيام",
+  "Products running low": "منتجات على وشك النفاد",
+  "{n} still to order": "{n} يلزم طلبها",
+  "From or to": "من أو إلى",
+  "From {name}": "من {name}",
+  "To {name}": "إلى {name}",
+
+  "Cheques received, not yet cleared": "شيكات تحت التحصيل (أوراق قبض)",
+  "Cheques issued, not yet cashed": "شيكات صادرة لم تصرف (أوراق دفع)",
+  "Sales returns and allowances": "مردودات ومسموحات المبيعات",
 };

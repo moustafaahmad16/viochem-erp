@@ -15,7 +15,14 @@ import type { T } from "@/i18n/core";
 const methodOptions = (t: T) => METHODS.map((m) => ({ value: m, label: t(methodLabel(m)) }));
 
 /** A statement line's detail, like "Bank transfer · 1234 · for INV-2026-0001", in the chosen language. */
-export const statementDetail = (t: T, detail: string) => detail.split(" · ").map((part) => t.message(part)).join(" · ");
+export const statementDetail = (t: T, detail: string) =>
+  detail
+    .split(" · ")
+    .map((part) => {
+      const due = /^Due (\d{2} [A-Z][a-z]{2} \d{4})$/.exec(part);
+      return due ? t("Due {date}", { date: t.date(new Date(`${due[1]} UTC`)) }) : t.message(part);
+    })
+    .join(" · ");
 
 type Option = { value: string | number; label: string };
 

@@ -69,7 +69,7 @@ export default async function MarginPage({ searchParams }: PageProps<"/reports/m
         >
           {rows.map((r) => (
             <tr key={r.key}>
-              <td>{r.key === "opening" ? t(r.label) : r.label}{r.sub && <span className="ms-2 text-xs text-slate-500">{r.sub}</span>}</td>
+              <td>{r.key === "opening" || r.key === "allowances" ? t(r.label) : r.label}{r.sub && <span className="ms-2 text-xs text-slate-500">{r.sub}</span>}</td>
               <td className="num">{qty(r.qty)}</td>
               <td className="num">{money(r.revenue)}</td>
               <td className="num">{money(r.cost)}</td>

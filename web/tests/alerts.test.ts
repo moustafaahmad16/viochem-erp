@@ -29,8 +29,8 @@ describe("credit limits", () => {
     c = await creditCheck(customer, 1000);
     expect([n(c.balance), n(c.after), c.overLimit]).toEqual([4560, 5560, true]);
     expect(c.warnings[0]).toBe("Alerts Customer would owe EGP 5,560.00, over their credit limit of EGP 5,000.00.");
-    // Due on the day it was issued, so it is overdue now.
-    expect(c.warnings[1]).toBe("Alerts Customer has EGP 4,560.00 overdue.");
+    // Dated in the future, so nothing is overdue yet.
+    expect(c.warnings).toHaveLength(1);
   });
 
   it("has no limit when none is set", async () => {

@@ -51,8 +51,9 @@ export async function issueCheque(c: Common & { supplierId: number; shipmentId: 
   }
   if (!c.accountId) throw new UserError("Choose the bank account the cheque is drawn on.");
   return db.$transaction(async (tx) => {
-    await activeAccount(tx, c.accountId, { egpOnly: true });
-    return tx.cheque.create({ data: { ...c, chequeNo: c.chequeNo.trim(), direction: "ISSUED", number: await nextNumber(tx, "CHQ", c.date) } });
+    const account = (await activeAccount(tx, c.accountId, { egpOnly: true }))!;
+    const bank = c.bank ?? account.name;
+    return tx.cheque.create({ data: { ...c, bank, chequeNo: c.chequeNo.trim(), direction: "ISSUED", number: await nextNumber(tx, "CHQ", c.date) } });
   });
 }
 

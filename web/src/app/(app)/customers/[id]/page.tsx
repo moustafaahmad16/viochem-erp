@@ -10,6 +10,7 @@ import { customerAccounts } from "@/lib/services/accounts";
 import { getT } from "@/i18n/server";
 import { updateCustomer } from "../actions";
 import { CustomerFields } from "../fields";
+import { PendingCheques } from "../../cheques/pending";
 import { InvoiceStatusBadge } from "../../invoices/status";
 import { deleteCustomerPayment, receivePayment } from "../../payments/actions";
 import { accountOptions, Balance, OpenBills, ReceivePaymentForm, Statement } from "../../payments/parts";
@@ -76,6 +77,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           )}
         </div>
         <div className="space-y-6">
+          <PendingCheques customerId={c.id} />
           <Card title={t("Receive a payment")}>
             <ReceivePaymentForm action={receivePayment.bind(null, c.id)} bills={acc.bills} accounts={accounts} />
           </Card>

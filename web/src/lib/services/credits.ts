@@ -84,10 +84,14 @@ export async function addCreditLine(noteId: number, input: { invoiceLineId: numb
     const price = input.unitPrice == null || input.unitPrice === "" ? dec(il.unitPrice) : new Decimal(input.unitPrice);
     if (price.lte(0)) throw new UserError("Price must be more than 0.");
     if (price.gt(dec(il.unitPrice))) throw new UserError("The price credited can't be more than the invoice price.");
+    const left = dec(il.qty).minus((await creditedQty(tx, note.invoiceId, noteId)).get(il.id) ?? ZERO);
+    if (q.gt(left)) {
+      const item = await tx.item.findUniqueOrThrow({ where: { id: il.itemId } });
+      throw new UserError(`Only ${fmtQty(Decimal.max(left, 0))} ${item.unit} of ${item.name} can still be credited on this invoice.`);
+    }
     const line = await tx.creditNoteLine.create({
       data: { creditNoteId: noteId, invoiceLineId: il.id, qty: q.toString(), unitPrice: price.toString(), restock: input.restock },
     });
-    await checkQuantities(tx, noteId, note.invoiceId);
     return line;
   });
 }

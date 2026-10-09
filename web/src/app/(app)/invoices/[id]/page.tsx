@@ -16,6 +16,8 @@ import { prepare } from "@/lib/services/einvoice";
 import { shareUrl } from "@/lib/eta/client";
 import { getT } from "@/i18n/server";
 import { LineForm } from "./line-form";
+import { InvoiceCreditNotes } from "../../credit-notes/invoice-card";
+import { creditTotals } from "@/lib/services/credits";
 
 export default async function InvoicePage({ params }: PageProps<"/invoices/[id]">) {
   const t = await getT();
@@ -42,6 +44,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const margin = totals.net.minus(cost);
   const bill = inv.status === "POSTED" ? (await customerAccounts({ id: inv.customerId }))[0].bills.find((b) => b.key === `inv:${inv.id}`) : undefined;
   const late = bill && bill.outstanding.gt(0) ? daysLate(bill.dueDate, today()) : 0;
+  const credited = bill ? (await db.creditNote.findMany({ where: { invoiceId: inv.id, status: "POSTED" }, include: { lines: true } })).reduce((s, n) => s.plus(creditTotals(n).total), new Decimal(0)) : new Decimal(0);
   const [credit, user] = await Promise.all([isDraft ? creditCheck(inv.customerId, totals.total) : null, currentUser()]);
   const isAdmin = user?.role === "ADMIN";
   const etaMissing = inv.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) ? (await prepare(inv.id)).problems : [];
@@ -188,7 +191,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                 <Card title={t("Payment")} actions={bill.outstanding.gt(0) && <RowLink href={`/customers/${inv.customerId}`}>{t("Receive")}</RowLink>}>
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between"><dt className="text-slate-500">{t("Due")}</dt><dd className={late > 0 ? "font-medium text-amber-700" : ""}>{t.date(bill.dueDate)}{late > 0 && ` · ${t("{n} days late", { n: late })}`}</dd></div>
-                    <div className="flex justify-between"><dt className="text-slate-500">{t("Paid")}</dt><dd className="num">{money(bill.paid)}</dd></div>
+                    {credited.gt(0) && <div className="flex justify-between"><dt className="text-slate-500">{t("Credited")}</dt><dd className="num">{money(Decimal.min(credited, bill.paid))}</dd></div>}
+                    <div className="flex justify-between"><dt className="text-slate-500">{t("Paid")}</dt><dd className="num">{money(Decimal.max(bill.paid.minus(credited), 0))}</dd></div>
                     <div className="flex justify-between border-t border-slate-100 pt-2 font-semibold"><dt>{t("Still owed")}</dt><dd className="num">{bill.outstanding.gt(0) ? money(bill.outstanding) : t("Paid in full")}</dd></div>
                   </dl>
                 </Card>
@@ -205,6 +209,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                   </dl>
                 </Card>
               )}
+              <InvoiceCreditNotes invoice={inv} />
               {inv.notes && <Card title={t("Notes")}><p className="whitespace-pre-line text-sm text-slate-700">{inv.notes}</p></Card>}
               {inv.status === "POSTED" && (
                 <Card title={t("Cancel invoice")}>

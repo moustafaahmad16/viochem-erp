@@ -348,27 +348,27 @@ export async function generalLedger() {
     const href = `/cheques/${c.id}`;
     const seq = c.createdAt.getTime();
     if (c.direction === "RECEIVED") {
-      const memo = `Cheque ${c.chequeNo} from ${c.customer?.name ?? ""}`;
+      const memo = `From ${c.customer?.name ?? ""} · Cheque ${c.chequeNo}`;
       add(c.date, 5, seq, () => ({ date: c.date, ref: c.number, href, memo, lines: [line(CODES.chequesIn, amount), line(CODES.customers, amount.neg())] }));
       if (c.status === "CLEARED" && c.clearedOn) {
         const d = c.clearedOn;
-        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · cleared`, lines: [moneyLine(c.accountId, amount, one), line(CODES.chequesIn, amount.neg())] }));
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Cleared`, lines: [moneyLine(c.accountId, amount, one), line(CODES.chequesIn, amount.neg())] }));
       }
       if (c.status === "BOUNCED" && c.bouncedOn) {
         const d = c.bouncedOn;
-        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · bounced`, lines: [line(CODES.customers, amount), line(CODES.chequesIn, amount.neg())] }));
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Bounced`, lines: [line(CODES.customers, amount), line(CODES.chequesIn, amount.neg())] }));
       }
     } else if (c.supplierId) {
       const supplierId = c.supplierId;
-      const memo = `Cheque ${c.chequeNo} to ${c.supplier?.name ?? ""}`;
+      const memo = `To ${c.supplier?.name ?? ""} · Cheque ${c.chequeNo}`;
       add(c.date, 5, seq, () => ({ date: c.date, ref: c.number, href, memo, lines: [supplierLine(supplierId, "EGP", amount, one), line(CODES.chequesOut, amount.neg())] }));
       if (c.status === "CLEARED" && c.clearedOn) {
         const d = c.clearedOn;
-        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · cashed`, lines: [line(CODES.chequesOut, amount), moneyLine(c.accountId, amount.neg(), one)] }));
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Cashed`, lines: [line(CODES.chequesOut, amount), moneyLine(c.accountId, amount.neg(), one)] }));
       }
       if (c.status === "BOUNCED" && c.bouncedOn) {
         const d = c.bouncedOn;
-        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · returned`, lines: [line(CODES.chequesOut, amount), supplierLine(supplierId, "EGP", amount.neg(), one)] }));
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Returned`, lines: [line(CODES.chequesOut, amount), supplierLine(supplierId, "EGP", amount.neg(), one)] }));
       }
     }
   }
