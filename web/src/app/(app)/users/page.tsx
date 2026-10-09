@@ -54,7 +54,7 @@ export default async function UsersPage() {
                 <td>{u.email}</td>
                 <td>{u.role === "ADMIN" ? <Badge color="blue">Admin</Badge> : "Staff"}</td>
                 <td>{formatDate(u.createdAt)}</td>
-                <td className="text-right">
+                <td className="text-end">
                   {u.id !== me.id && (
                     <form action={toggleUser.bind(null, u.id)}>
                       <button className="text-xs text-slate-500 hover:text-slate-900">{u.active ? "Turn off" : "Turn on"}</button>

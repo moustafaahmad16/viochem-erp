@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
   /* Navy and orange from the VIOCHEM logo. */
   --color-brand-50: #eef2fb;
   --color-brand-100: #d9e1f5;
@@ -25,11 +25,11 @@ input, select, textarea {
   font: inherit;
 }
 
-/* Numbers line up in columns. In a layer so utilities like text-left can override it. */
+/* Numbers line up in columns. In a layer so utilities like text-start can override it. */
 @layer components {
   .num {
     font-variant-numeric: tabular-nums;
-    text-align: right;
+    text-align: end;
     white-space: nowrap;
   }
 }

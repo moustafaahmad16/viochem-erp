@@ -15,11 +15,11 @@ function Lines({ title, section }: { title: string; section: Section }) {
       <tr><td colSpan={2} className="pt-4 text-xs font-semibold uppercase tracking-wider text-brand-900/60">{title}</td></tr>
       {section.lines.map((l) => (
         <tr key={l.account.code}>
-          <td className="pl-4"><span className="mr-2 font-mono text-xs text-slate-400">{l.account.code}</span><AccountLink code={l.account.code}>{l.account.name}</AccountLink></td>
+          <td className="ps-4"><span className="me-2 font-mono text-xs text-slate-400">{l.account.code}</span><AccountLink code={l.account.code}>{l.account.name}</AccountLink></td>
           <Amount v={l.amount} />
         </tr>
       ))}
-      <tr className="border-t border-slate-100"><td className="pl-4 text-slate-600">Total {title.toLowerCase()}</td><Amount v={section.total} /></tr>
+      <tr className="border-t border-slate-100"><td className="ps-4 text-slate-600">Total {title.toLowerCase()}</td><Amount v={section.total} /></tr>
     </>
   );
 }
@@ -57,8 +57,8 @@ export default async function BalanceSheetPage({ searchParams }: PageProps<"/led
               <Lines title="Long-term liabilities" section={bs.longTermLiabilities} />
               <Total label="Total liabilities" v={bs.totalLiabilities} />
               <Lines title="Equity" section={bs.equity} />
-              <tr><td className="pl-4">Profit from earlier years, not yet closed</td><Amount v={bs.earlierProfit} /></tr>
-              <tr><td className="pl-4">Profit this year</td><Amount v={bs.profitThisYear} /></tr>
+              <tr><td className="ps-4">Profit from earlier years, not yet closed</td><Amount v={bs.earlierProfit} /></tr>
+              <tr><td className="ps-4">Profit this year</td><Amount v={bs.profitThisYear} /></tr>
               <Total label="Total equity" v={bs.totalEquity} />
               <Total label="Total liabilities and equity" v={bs.totalLiabilities.plus(bs.totalEquity)} />
             </tbody>

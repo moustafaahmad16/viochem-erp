@@ -32,7 +32,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <div className="text-xl font-semibold">Tax Invoice</div>
             <div className="text-xl font-semibold" dir="rtl">فاتورة ضريبية</div>
           </div>
@@ -45,7 +45,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
             {inv.customer.address && <div className="whitespace-pre-line text-slate-600">{inv.customer.address}</div>}
             {inv.customer.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {inv.customer.taxId}</div>}
           </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-end">
             <dt className="text-slate-500">Invoice no. · رقم الفاتورة</dt>
             <dd className="font-semibold">{inv.number}</dd>
             <dt className="text-slate-500">Date · التاريخ</dt>
@@ -61,11 +61,11 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
 
         <table className="mt-8 w-full">
           <thead>
-            <tr className="border-b border-slate-300 text-left text-xs text-slate-500 [&>th]:pb-2">
+            <tr className="border-b border-slate-300 text-start text-xs text-slate-500 [&>th]:pb-2">
               <th>Product · الصنف</th>
-              <th className="text-right">Qty · الكمية</th>
-              <th className="text-right">Price · السعر</th>
-              <th className="text-right">Amount · القيمة</th>
+              <th className="text-end">Qty · الكمية</th>
+              <th className="text-end">Price · السعر</th>
+              <th className="text-end">Amount · القيمة</th>
             </tr>
           </thead>
           <tbody>
@@ -83,7 +83,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
           </tbody>
         </table>
 
-        <div className="mt-6 ml-auto w-72 space-y-1">
+        <div className="mt-6 ms-auto w-72 space-y-1">
           <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
           <div className="flex justify-between"><span className="text-slate-500">VAT {inv.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
           <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-base font-bold"><span>Total EGP · الإجمالي</span><span className="num">{money(totals.total)}</span></div>

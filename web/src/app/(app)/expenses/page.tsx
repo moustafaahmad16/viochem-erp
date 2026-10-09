@@ -50,7 +50,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             <input type="date" name="to" defaultValue={toInputDate(to)} className="rounded-lg border border-slate-300 px-3 py-2" />
           </label>
           <button className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">Show</button>
-          <span className="ml-auto text-slate-600">{formatDate(from)} to {formatDate(to)}: <strong className="text-slate-900">EGP {money(total)}</strong> before VAT</span>
+          <span className="ms-auto text-slate-600">{formatDate(from)} to {formatDate(to)}: <strong className="text-slate-900">EGP {money(total)}</strong> before VAT</span>
         </form>
       </Card>
       <div className="grid gap-6 lg:grid-cols-3">
@@ -74,7 +74,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
                   <td>{e.account?.name}</td>
                   <td className="num">{money(e.amount)}</td>
                   <td className="num">{e.vat.toString() === "0" ? "" : money(e.vat)}</td>
-                  <td className="text-right">
+                  <td className="text-end">
                     {user?.role === "ADMIN" && (
                       <form action={deleteExpense.bind(null, e.id)}>
                         <button className="text-xs text-slate-400 hover:text-red-600">Delete</button>

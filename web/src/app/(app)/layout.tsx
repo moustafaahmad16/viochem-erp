@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div>
       <Nav user={user.name} isAdmin={user.role === "ADMIN"} logout={logout} />
-      <main className="lg:pl-60">
+      <main className="lg:ps-60">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">{children}</div>
       </main>
     </div>

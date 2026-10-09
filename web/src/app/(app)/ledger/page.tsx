@@ -42,9 +42,9 @@ export default async function ChartPage() {
                       <td className="font-mono text-xs text-slate-500">{a.code}</td>
                       <td>
                         <AccountLink code={a.code}>{a.name}</AccountLink>
-                        {a.system && <span className="ml-2"><Badge color="blue">Automatic</Badge></span>}
-                        {a.currency && a.currency !== "EGP" && <span className="ml-2"><Badge>{a.currency}</Badge></span>}
-                        {!a.active && <span className="ml-2"><Badge>Not in use</Badge></span>}
+                        {a.system && <span className="ms-2"><Badge color="blue">Automatic</Badge></span>}
+                        {a.currency && a.currency !== "EGP" && <span className="ms-2"><Badge>{a.currency}</Badge></span>}
+                        {!a.active && <span className="ms-2"><Badge>Not in use</Badge></span>}
                       </td>
                       <Amount v={normal(a.section, sums.get(a.code))} />
                     </tr>

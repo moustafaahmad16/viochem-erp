@@ -45,10 +45,10 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Goods ({s.currency})</div><div className="num text-left text-lg font-semibold">{money(goodsForeign)}</div></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Goods in EGP at {s.fxRate.toString()}</div><div className="num text-left text-lg font-semibold">{money(goodsEgp)}</div></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Charges (EGP)</div><div className="num text-left text-lg font-semibold">{money(charges)}</div></div>
-        <div className="rounded-xl border border-brand-100 bg-brand-50 p-4"><div className="text-xs text-brand-700">Total landed cost (EGP)</div><div className="num text-left text-lg font-semibold text-brand-900">{money(goodsEgp.plus(charges))}</div></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Goods ({s.currency})</div><div className="num text-start text-lg font-semibold">{money(goodsForeign)}</div></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Goods in EGP at {s.fxRate.toString()}</div><div className="num text-start text-lg font-semibold">{money(goodsEgp)}</div></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4"><div className="text-xs text-slate-500">Charges (EGP)</div><div className="num text-start text-lg font-semibold">{money(charges)}</div></div>
+        <div className="rounded-xl border border-brand-100 bg-brand-50 p-4"><div className="text-xs text-brand-700">Total landed cost (EGP)</div><div className="num text-start text-lg font-semibold text-brand-900">{money(goodsEgp.plus(charges))}</div></div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -106,7 +106,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
                     {(c.date || c.account) && <div className="text-xs text-slate-500">Paid {[formatDate(c.date), c.account && `from ${c.account.name}`].filter(Boolean).join(" ")}</div>}
                   </td>
                   <td className="num">{money(c.amountEgp)}</td>
-                  <td className="text-right">
+                  <td className="text-end">
                     <form action={removeCharge.bind(null, s.id, c.id)}>
                       <button className="text-xs text-slate-400 hover:text-red-600">Remove</button>
                     </form>

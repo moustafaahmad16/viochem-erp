@@ -24,7 +24,7 @@ export default async function AccountsPage() {
           <Table head={<tr><th>Account</th><th>Type</th><th>Last movement</th><th className="num">Balance</th></tr>} empty="No accounts yet.">
             {ledgers.map(({ account: a, ledger, balance }) => (
               <tr key={a.id} className={a.active ? "" : "text-slate-400"}>
-                <td><RowLink href={`/accounts/${a.id}`}>{a.name}</RowLink>{!a.active && <span className="ml-2"><Badge>Not in use</Badge></span>}</td>
+                <td><RowLink href={`/accounts/${a.id}`}>{a.name}</RowLink>{!a.active && <span className="ms-2"><Badge>Not in use</Badge></span>}</td>
                 <td>{a.kind === "BANK" ? "Bank" : "Cash"}</td>
                 <td>{formatDate(ledger.at(-1)?.date)}</td>
                 <td className={`num font-medium ${balance.lt(0) ? "text-red-700" : ""}`}>{a.currency} {money(balance)}</td>

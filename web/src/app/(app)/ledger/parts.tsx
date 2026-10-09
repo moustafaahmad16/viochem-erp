@@ -52,7 +52,7 @@ export function Warnings({ items }: { items: string[] }) {
   return (
     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <div className="font-medium">Fix these so the books are complete</div>
-      <ul className="mt-1 list-disc pl-5">
+      <ul className="mt-1 list-disc ps-5">
         {items.map((w) => <li key={w}>{w}</li>)}
       </ul>
     </div>

@@ -45,7 +45,7 @@ export default async function JournalPage({ searchParams }: PageProps<"/ledger/j
                 <span className="text-slate-500">{formatDate(e.date)}</span>
                 <span className="mx-2">·</span>
                 {e.href ? <Link href={e.href} className="font-medium text-brand-700 hover:underline">{e.ref}</Link> : <span className="font-medium">{e.ref}</span>}
-                <span className="ml-2 text-slate-600">{e.memo}</span>
+                <span className="ms-2 text-slate-600">{e.memo}</span>
               </div>
               {e.manualId && <span className="text-xs font-medium text-accent-700">Manual</span>}
             </div>
@@ -53,13 +53,13 @@ export default async function JournalPage({ searchParams }: PageProps<"/ledger/j
               <tbody>
                 {e.lines.map((l, j) => (
                   <tr key={j} className="border-b border-slate-50 last:border-0">
-                    <td className={`py-1.5 ${l.credit.isZero() ? "pl-5" : "pl-12"}`}>
-                      <span className="mr-2 font-mono text-xs text-slate-400">{l.code}</span>
+                    <td className={`py-1.5 ${l.credit.isZero() ? "ps-5" : "ps-12"}`}>
+                      <span className="me-2 font-mono text-xs text-slate-400">{l.code}</span>
                       <AccountLink code={l.code}>{names.get(l.code) ?? l.code}</AccountLink>
-                      {l.memo && <span className="ml-2 text-xs text-slate-500">{l.memo}</span>}
+                      {l.memo && <span className="ms-2 text-xs text-slate-500">{l.memo}</span>}
                     </td>
                     <td className="num w-36 py-1.5">{l.debit.isZero() ? "" : money(l.debit)}</td>
-                    <td className="num w-36 py-1.5 pr-5">{l.credit.isZero() ? "" : money(l.credit)}</td>
+                    <td className="num w-36 py-1.5 pe-5">{l.credit.isZero() ? "" : money(l.credit)}</td>
                   </tr>
                 ))}
               </tbody>

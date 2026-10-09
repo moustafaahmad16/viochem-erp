@@ -48,7 +48,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
 
   const row = (label: string, get: (p: typeof total) => Decimal, { strong = false, indent = false } = {}) => (
     <tr key={label} className={strong ? "bg-brand-50/60" : ""}>
-      <td className={`whitespace-nowrap ${strong ? "font-semibold text-brand-900" : ""} ${indent ? "pl-8 text-slate-600" : ""}`}>{label}</td>
+      <td className={`whitespace-nowrap ${strong ? "font-semibold text-brand-900" : ""} ${indent ? "ps-8 text-slate-600" : ""}`}>{label}</td>
       {cols.map((c, i) => <Amount key={i} v={get(c)} strong={strong} />)}
       <Amount v={get(total)} strong />
     </tr>
@@ -79,7 +79,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
             <input type="date" name="to" defaultValue={toInputDate(to)} className="rounded-lg border border-slate-300 px-3 py-2" />
           </label>
           <button className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">Show</button>
-          <span className="ml-auto flex gap-3">
+          <span className="ms-auto flex gap-3">
             {quick.map((q) => (
               <Link key={q.label} href={`?from=${toInputDate(q.from)}&to=${toInputDate(q.to)}`} className="text-brand-700 hover:underline">{q.label}</Link>
             ))}

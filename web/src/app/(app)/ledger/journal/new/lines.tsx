@@ -28,18 +28,18 @@ export function JournalLines({ accounts }: { accounts: Option[] }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr className="text-start text-xs uppercase tracking-wide text-slate-500">
             <th className="pb-2 font-medium">Account</th>
-            <th className="w-32 pb-2 pr-4 text-right font-medium">Debit</th>
-            <th className="w-32 pb-2 pr-4 text-right font-medium">Credit</th>
-            <th className="pb-2 pl-1 font-medium">Line note</th>
+            <th className="w-32 pb-2 pe-4 text-end font-medium">Debit</th>
+            <th className="w-32 pb-2 pe-4 text-end font-medium">Credit</th>
+            <th className="pb-2 ps-1 font-medium">Line note</th>
             <th />
           </tr>
         </thead>
         <tbody>
           {lines.map((l) => (
             <tr key={l.key}>
-              <td className="py-1 pr-2">
+              <td className="py-1 pe-2">
                 <select name="account" defaultValue="" className={input} aria-label="Account">
                   <option value="">Choose</option>
                   {groups.map((g) => (
@@ -49,9 +49,9 @@ export function JournalLines({ accounts }: { accounts: Option[] }) {
                   ))}
                 </select>
               </td>
-              <td className="py-1 pr-2"><input name="debit" inputMode="decimal" value={l.debit} onChange={(e) => set(l.key, { debit: e.target.value, credit: e.target.value ? "" : l.credit })} className={`${input} text-right`} aria-label="Debit" /></td>
-              <td className="py-1 pr-2"><input name="credit" inputMode="decimal" value={l.credit} onChange={(e) => set(l.key, { credit: e.target.value, debit: e.target.value ? "" : l.debit })} className={`${input} text-right`} aria-label="Credit" /></td>
-              <td className="py-1 pr-2"><input name="lineMemo" className={input} aria-label="Line note" /></td>
+              <td className="py-1 pe-2"><input name="debit" inputMode="decimal" value={l.debit} onChange={(e) => set(l.key, { debit: e.target.value, credit: e.target.value ? "" : l.credit })} className={`${input} text-end`} aria-label="Debit" /></td>
+              <td className="py-1 pe-2"><input name="credit" inputMode="decimal" value={l.credit} onChange={(e) => set(l.key, { credit: e.target.value, debit: e.target.value ? "" : l.debit })} className={`${input} text-end`} aria-label="Credit" /></td>
+              <td className="py-1 pe-2"><input name="lineMemo" className={input} aria-label="Line note" /></td>
               <td className="py-1">
                 {lines.length > 2 && (
                   <button type="button" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} className="text-slate-400 hover:text-red-600" aria-label="Remove line">×</button>
@@ -69,7 +69,7 @@ export function JournalLines({ accounts }: { accounts: Option[] }) {
             </td>
             <td className="num pt-2">{debit.toFixed(2)}</td>
             <td className="num pt-2">{credit.toFixed(2)}</td>
-            <td colSpan={2} className={`pt-2 pl-2 text-sm ${diff.isZero() ? "text-emerald-700" : "text-amber-700"}`}>
+            <td colSpan={2} className={`pt-2 ps-2 text-sm ${diff.isZero() ? "text-emerald-700" : "text-amber-700"}`}>
               {diff.isZero() ? (debit.isZero() ? "" : "Balanced") : `Off by ${diff.abs().toFixed(2)}`}
             </td>
           </tr>

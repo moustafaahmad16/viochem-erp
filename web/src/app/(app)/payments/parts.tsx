@@ -49,7 +49,7 @@ export function OpenBills({ account }: { account: Account }) {
             <td>{formatDate(b.date)}</td>
             <td>
               {formatDate(b.dueDate)}
-              {late > 0 && <span className="ml-2"><Badge color={late > 60 ? "red" : "amber"}>{late} days late</Badge></span>}
+              {late > 0 && <span className="ms-2"><Badge color={late > 60 ? "red" : "amber"}>{late} days late</Badge></span>}
             </td>
             <td className="num">{money(b.amount)}</td>
             <td className="num">{b.paid.isZero() ? "" : money(b.paid)}</td>
@@ -80,7 +80,7 @@ export function Statement({ account, onDelete }: { account: Account; onDelete?: 
             <td className="num">{l.charge.isZero() ? "" : money(l.charge)}</td>
             <td className="num">{l.payment.isZero() ? "" : money(l.payment)}</td>
             <td className={`num font-medium ${l.balance.lt(0) ? "text-brand-700" : ""}`}>{money(l.balance)}</td>
-            <td className="text-right">
+            <td className="text-end">
               {del && (
                 <form action={del}>
                   <button className="text-xs text-slate-400 hover:text-red-600">Delete</button>

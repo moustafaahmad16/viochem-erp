@@ -44,7 +44,7 @@ export default async function JournalEntryPage({ params }: PageProps<"/ledger/jo
         >
           {lines.map((l) => (
             <tr key={l.id}>
-              <td><span className="mr-2 font-mono text-xs text-slate-400">{l.code}</span><AccountLink code={l.code}>{l.name}</AccountLink></td>
+              <td><span className="me-2 font-mono text-xs text-slate-400">{l.code}</span><AccountLink code={l.code}>{l.name}</AccountLink></td>
               <td className="text-slate-600">{l.memo}</td>
               <td className="num">{Number(l.debit) ? money(l.debit) : ""}</td>
               <td className="num">{Number(l.credit) ? money(l.credit) : ""}</td>

@@ -23,7 +23,7 @@ export default async function TrialBalancePage({ searchParams }: PageProps<"/led
           empty="Nothing posted yet."
           footer={
             <tr>
-              <td colSpan={3}>Total {balanced ? <span className="ml-2 text-emerald-700">Balanced</span> : <span className="ml-2 text-red-700">Not balanced</span>}</td>
+              <td colSpan={3}>Total {balanced ? <span className="ms-2 text-emerald-700">Balanced</span> : <span className="ms-2 text-red-700">Not balanced</span>}</td>
               <td className="num">{money(tb.debit)}</td>
               <td className="num">{money(tb.credit)}</td>
             </tr>

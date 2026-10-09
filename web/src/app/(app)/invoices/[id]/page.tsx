@@ -75,7 +75,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                       <div className="text-xs text-slate-500">
                         {l.moves.length > 0
                           ? l.moves.map((m) => (
-                              <span key={m.id} className="mr-2">
+                              <span key={m.id} className="me-2">
                                 <RowLink href={`/stock/lots/${m.lotId}`}>{m.lot.lotNo}</RowLink> ({qty(new Decimal(m.qty.toString()).neg())})
                               </span>
                             ))
@@ -88,7 +88,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                     <td className="num">{money(l.unitPrice)}</td>
                     <td className="num">{money(amount)}</td>
                     {!isDraft && <td className={`num ${lm.lt(0) ? "text-red-700" : "text-slate-600"}`}>{amount.isZero() ? "" : pct(lm.div(amount).times(100))}</td>}
-                    <td className="text-right">
+                    <td className="text-end">
                       {isDraft && (
                         <form action={removeLine.bind(null, inv.id, l.id)}>
                           <button className="text-xs text-slate-400 hover:text-red-600">Remove</button>
@@ -152,7 +152,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                     {etaMissing.length > 0 && (
                       <div className="rounded-lg bg-amber-50 p-3 text-amber-900">
                         <p className="font-medium">Before sending:</p>
-                        <ul className="mt-1 list-disc pl-5">{etaMissing.map((m) => <li key={m}>{m}</li>)}</ul>
+                        <ul className="mt-1 list-disc ps-5">{etaMissing.map((m) => <li key={m}>{m}</li>)}</ul>
                       </div>
                     )}
                     {inv.status === "POSTED" && etaMissing.length === 0 && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) && (
