@@ -2,6 +2,7 @@ import { ActionForm, Field, Submit, TextArea } from "@/components/forms";
 import { Card, PageHeader } from "@/components/ui";
 import { db } from "@/lib/db";
 import { lowStock } from "@/lib/services/alerts";
+import { productMovement, safetyStock } from "@/lib/services/rankings";
 import { getT } from "@/i18n/server";
 import { createRfq } from "../actions";
 import { ProductRows } from "../product-rows";
@@ -12,10 +13,13 @@ export async function generateMetadata() {
 
 export default async function NewRfqPage({ searchParams }: PageProps<"/rfqs/new">) {
   const t = await getT();
-  const fromLow = (await searchParams).from === "low-stock";
-  const [items, low] = await Promise.all([
+  const sp = await searchParams;
+  const months = [1, 2, 3].includes(Number(sp.months)) ? Number(sp.months) : 1;
+  const [items, start] = await Promise.all([
     db.item.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
-    fromLow ? lowStock() : Promise.resolve([]),
+    sp.from === "low-stock" ? lowStock().then((rows) => rows.map((r) => ({ itemId: r.itemId, short: r.short })))
+    : sp.from === "safety" ? productMovement().then((rows) => safetyStock(rows).map((r) => ({ itemId: r.itemId, short: r.periods[months - 1].short.toDecimalPlaces(0, 0) })))
+    : Promise.resolve([]),
   ]);
 
   return (
@@ -29,7 +33,7 @@ export default async function NewRfqPage({ searchParams }: PageProps<"/rfqs/new"
         <Card padded={false}>
           <ProductRows
             items={items.map((i) => ({ id: i.id, code: i.code, name: i.name, cas: i.casNumber, unit: i.unit }))}
-            initial={low.filter((r) => r.short.gt(0)).map((r) => ({ itemId: r.itemId, qty: r.short.toString() }))}
+            initial={start.filter((r) => r.short.gt(0)).map((r) => ({ itemId: r.itemId, qty: r.short.toString() }))}
           />
         </Card>
         <details className="text-sm">

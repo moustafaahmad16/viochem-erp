@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
+import { ExportButtons } from "@/components/export-buttons";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
 import { db } from "@/lib/db";
 import { money, pct, qty } from "@/lib/format";
@@ -42,7 +43,12 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         title={item.name}
         subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${unit}` })}</>}
         back={{ href: "/products", label: t("Products") }}
-        actions={<ButtonLink href={`/stock/opening?item=${item.id}`} variant="secondary">{t("Add opening stock")}</ButtonLink>}
+        actions={
+          <>
+            {tab === "movements" && <ExportButtons report="product-moves" query={{ id: String(item.id) }} />}
+            <ButtonLink href={`/stock/opening?item=${item.id}`} variant="secondary">{t("Add opening stock")}</ButtonLink>
+          </>
+        }
       />
       <div className="mb-6 flex w-fit gap-1 rounded-lg border border-slate-200 bg-white p-1">
         {TABS.map((x) => (

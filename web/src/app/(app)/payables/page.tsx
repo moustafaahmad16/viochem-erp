@@ -1,3 +1,4 @@
+import { ExportButtons } from "@/components/export-buttons";
 import { Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
 import { money } from "@/lib/format";
 import { getT } from "@/i18n/server";
@@ -19,7 +20,7 @@ export default async function PayablesPage() {
 
   return (
     <>
-      <PageHeader title={t("You owe")} subtitle={t("What is still to be paid to each supplier, in the currency they bill in")} />
+      <PageHeader title={t("You owe")} subtitle={t("What is still to be paid to each supplier, in the currency they bill in")} actions={<ExportButtons report="payables" />} />
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Stat label={t("You owe suppliers")} value={totals.length ? totals.map((x) => <div key={x.currency}>{x.currency} {money(x.balance, 0)}</div>) : t("Nothing")} />
         <Stat

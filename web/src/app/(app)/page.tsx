@@ -9,10 +9,12 @@ import { StatusBadge } from "./shipments/status";
 import { getT } from "@/i18n/server";
 import { lowStock } from "@/lib/services/alerts";
 import { chequesDue } from "@/lib/services/cheques";
+import { dailyBudget } from "@/lib/services/rankings";
+import { ExportButtons } from "@/components/export-buttons";
 
 export default async function Dashboard() {
   const t = await getT();
-  const [s, customers, suppliers, due, low] = await Promise.all([dashboardStats(), customerAccounts(), supplierAccounts(), chequesDue(7), lowStock()]);
+  const [s, customers, suppliers, due, low, budget] = await Promise.all([dashboardStats(), customerAccounts(), supplierAccounts(), chequesDue(7), lowStock(), dailyBudget()]);
   const sum = (cs: { amount: { toString(): string } }[]) => cs.reduce((total, c) => total.plus(c.amount.toString()), new Decimal(0));
   const dueCheques = [...due.received.map((c) => ({ ...c, party: c.customer?.name ?? "" })), ...due.issued.map((c) => ({ ...c, party: c.supplier?.name ?? "" }))].sort(
     (a, b) => a.dueDate.getTime() - b.dueDate.getTime() || a.id - b.id,
@@ -30,11 +32,66 @@ export default async function Dashboard() {
         subtitle={t.date(now)}
         actions={
           <>
+            <ExportButtons report="dashboard" />
             <ButtonLink href="/shipments/new" variant="secondary">{t("New shipment")}</ButtonLink>
             <ButtonLink href="/invoices/new">{t("New invoice")}</ButtonLink>
           </>
         }
       />
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {budget.periods.map((p) => (
+          <Stat
+            key={p.key}
+            label={t("Net profit {period}", { period: t(p.label).toLowerCase() })}
+            value={<span dir="ltr">EGP {money(p.netProfit, 0)}</span>}
+            tone={p.netProfit.lt(0) ? "warn" : p.netProfit.gt(0) ? "good" : "default"}
+            hint={t("Sales {sales} · gross profit {gross}", { sales: money(p.sales, 0), gross: money(p.grossProfit, 0) })}
+          />
+        ))}
+        <Stat
+          label={t("Cash and banks")}
+          value={`EGP ${money(budget.cash.total, 0)}`}
+          hint={<RowLink href="/accounts">{t("{n} accounts", { n: budget.cash.rows.length })}</RowLink>}
+        />
+      </div>
+
+      <Card title={t("Daily budget")} actions={<span className="text-xs text-slate-500">{t("Foreign currency at the latest shipment rate.")}</span>} padded={false} className="mb-6">
+        <div className="grid lg:grid-cols-5">
+          <div className="border-slate-100 lg:col-span-3 lg:border-e">
+            <Table
+              head={<tr><th>{t("Account")}</th><th className="num">{t("Balance")}</th><th className="num">{t("Balance (EGP)")}</th></tr>}
+              empty={t("Add your bank accounts and cash box")}
+              footer={budget.cash.rows.length > 0 && <tr><td>{t("Total")}</td><td /><td className="num">{money(budget.cash.total, 0)}</td></tr>}
+            >
+              {budget.cash.rows.map((r) => (
+                <tr key={r.id}>
+                  <td><RowLink href={`/accounts/${r.id}`}>{r.name}</RowLink><span className="ms-2 text-xs text-slate-500">{t(r.kind === "BANK" ? "Bank" : "Cash")}</span></td>
+                  <td className={`num ${r.balance.lt(0) ? "text-red-700" : ""}`}>{r.currency} {money(r.balance)}</td>
+                  <td className="num">{r.egp ? money(r.egp, 0) : <span className="text-xs text-amber-700">{t("No rate yet")}</span>}</td>
+                </tr>
+              ))}
+            </Table>
+          </div>
+          <dl className="space-y-2.5 p-5 text-sm lg:col-span-2">
+            {[
+              { label: "Cash and banks", value: budget.cash.total, href: "/accounts" },
+              { label: "Stock at landed cost", value: budget.stockValue, href: "/stock" },
+              { label: "Customers owe you", value: budget.receivable, href: "/receivables" },
+              { label: "You owe suppliers", value: budget.payable.neg(), href: "/payables" },
+            ].map((x) => (
+              <div key={x.label} className="flex justify-between gap-4">
+                <dt><a href={x.href} className="text-slate-600 hover:underline">{t(x.label)}</a></dt>
+                <dd dir="ltr" className={`num ${x.value.lt(0) ? "text-red-700" : ""}`}>{x.value.lt(0) ? "−" : ""}{money(x.value.abs(), 0)}</dd>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 border-t border-slate-200 pt-2.5 font-semibold">
+              <dt>{t("Net position")}</dt>
+              <dd dir="ltr" className="num">EGP {money(budget.net, 0)}</dd>
+            </div>
+          </dl>
+        </div>
+      </Card>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t("Sales in {month}", { month })} value={`EGP ${money(s.salesThisMonth, 0)}`} hint={t("Before VAT")} />

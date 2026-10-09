@@ -1,3 +1,4 @@
+import { ExportButtons } from "@/components/export-buttons";
 import { ActionForm } from "@/components/forms";
 import { Badge, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { getT } from "@/i18n/server";
@@ -20,6 +21,7 @@ export default async function AccountsPage() {
       <PageHeader
         title={t("Bank & cash")}
         subtitle={totals.size ? [...totals].map(([cur, v]) => `${cur} ${money(v)}`).join(" · ") : t("Add your bank accounts and cash box")}
+        actions={<ExportButtons report="accounts" />}
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <Card padded={false} className="lg:col-span-2">

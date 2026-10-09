@@ -1,3 +1,4 @@
+import { ExportButtons } from "@/components/export-buttons";
 import { Card, PageHeader, Table } from "@/components/ui";
 import { parseInputDate, toInputDate, today } from "@/lib/dates";
 import { money, pct, qty } from "@/lib/format";
@@ -35,7 +36,7 @@ export default async function MarginPage({ searchParams }: PageProps<"/reports/m
 
   return (
     <>
-      <PageHeader title={t("Margins")} subtitle={t("Sales against the real landed cost of the lots that were sold")} />
+      <PageHeader title={t("Margins")} subtitle={t("Sales against the real landed cost of the lots that were sold")} actions={<ExportButtons report="margin" query={{ from: toInputDate(from), to: toInputDate(to), by: groupBy }} />} />
       <Card className="mb-4">
         <form className="flex flex-wrap items-end gap-3 text-sm">
           <label>
