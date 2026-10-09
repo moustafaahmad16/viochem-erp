@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
-import { Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
+import { ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
+import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import { supplierAccounts } from "@/lib/services/accounts";
 import { updateSupplier } from "../actions";
+import { PendingCheques } from "../../cheques/pending";
 import { CURRENCIES, SupplierFields } from "../fields";
 import { StatusBadge } from "../../shipments/status";
 import { deleteSupplierPayment, paySupplier } from "../../payments/actions";
@@ -14,7 +16,12 @@ import { accountOptions, Balance, OpenBills, PaySupplierForm, Statement } from "
 export default async function SupplierPage({ params }: PageProps<"/suppliers/[id]">) {
   const t = await getT();
   const id = Number((await params).id);
-  const [[acc], user, accounts] = await Promise.all([supplierAccounts({ id }), currentUser(), accountOptions()]);
+  const [[acc], user, accounts, openOrders] = await Promise.all([
+    supplierAccounts({ id }),
+    currentUser(),
+    accountOptions(),
+    db.purchaseOrder.findMany({ where: { supplierId: id, status: "OPEN" }, orderBy: [{ date: "desc" }, { id: "desc" }], take: 10 }),
+  ]);
   if (!acc) notFound();
   const s = acc.supplier;
   const deletes = user?.role === "ADMIN" ? new Map(acc.payments.map((p) => [p.number, deleteSupplierPayment.bind(null, p.id)])) : undefined;
@@ -27,6 +34,7 @@ export default async function SupplierPage({ params }: PageProps<"/suppliers/[id
         title={s.name}
         subtitle={[s.country, s.currency, s.paymentTermsDays ? t("Paid {n} days after order", { n: s.paymentTermsDays }) : t("Paid when ordered")].filter(Boolean).join(" · ")}
         back={{ href: "/suppliers", label: t("Suppliers") }}
+        actions={<ButtonLink href={`/purchase-orders/new?supplier=${s.id}`} variant="secondary">{t("New purchase order")}</ButtonLink>}
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat
@@ -65,6 +73,19 @@ export default async function SupplierPage({ params }: PageProps<"/suppliers/[id
           </Card>
         </div>
         <div className="space-y-6">
+          {openOrders.length > 0 && (
+            <Card title={t("Open purchase orders")} padded={false}>
+              <Table head={<tr><th>{t("Order")}</th><th>{t("Expected")}</th></tr>}>
+                {openOrders.map((o) => (
+                  <tr key={o.id}>
+                    <td><RowLink href={`/purchase-orders/${o.id}`}>{o.number}</RowLink></td>
+                    <td>{t.date(o.expectedDate)}</td>
+                  </tr>
+                ))}
+              </Table>
+            </Card>
+          )}
+          <PendingCheques supplierId={s.id} />
           <Card title={t("Pay this supplier")}>
             <PaySupplierForm
               action={paySupplier.bind(null, s.id)}

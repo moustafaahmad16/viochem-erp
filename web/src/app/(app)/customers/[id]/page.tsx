@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
 import { ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
@@ -9,6 +10,7 @@ import { customerAccounts } from "@/lib/services/accounts";
 import { getT } from "@/i18n/server";
 import { updateCustomer } from "../actions";
 import { CustomerFields } from "../fields";
+import { PendingCheques } from "../../cheques/pending";
 import { InvoiceStatusBadge } from "../../invoices/status";
 import { deleteCustomerPayment, receivePayment } from "../../payments/actions";
 import { accountOptions, Balance, OpenBills, ReceivePaymentForm, Statement } from "../../payments/parts";
@@ -35,14 +37,21 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         actions={
           <>
             <ButtonLink href={`/print/statements/${c.id}`} variant="secondary">{t("Print statement")}</ButtonLink>
+            <ButtonLink href={`/quotes/new?customer=${c.id}`} variant="secondary">{t("New quotation")}</ButtonLink>
             <ButtonLink href={`/invoices/new?customer=${c.id}`}>{t("New invoice")}</ButtonLink>
           </>
         }
       />
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t("Balance")} value={<Balance value={acc.balance} currency="EGP" />} />
         <Stat label={t("Overdue")} value={`EGP ${money(acc.overdue)}`} tone={acc.overdue.gt(0) ? "warn" : "default"} />
         <Stat label={t("Payment terms")} value={t("{n} days", { n: c.paymentTermsDays })} />
+        <Stat
+          label={t("Credit limit")}
+          value={c.creditLimit ? `EGP ${money(c.creditLimit)}` : t("No limit")}
+          hint={c.creditLimit ? (acc.balance.gt(c.creditLimit.toString()) ? t("Over the limit") : t("EGP {amount} still available", { amount: money(new Decimal(c.creditLimit.toString()).minus(acc.balance)) })) : undefined}
+          tone={c.creditLimit && acc.balance.gt(c.creditLimit.toString()) ? "warn" : "default"}
+        />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -68,6 +77,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           )}
         </div>
         <div className="space-y-6">
+          <PendingCheques customerId={c.id} />
           <Card title={t("Receive a payment")}>
             <ReceivePaymentForm action={receivePayment.bind(null, c.id)} bills={acc.bills} accounts={accounts} />
           </Card>

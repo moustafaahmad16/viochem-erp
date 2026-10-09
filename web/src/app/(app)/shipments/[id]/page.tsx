@@ -19,7 +19,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
   const id = Number((await params).id);
   const s = await db.shipment.findUnique({
     where: { id },
-    include: { supplier: true, lines: { include: { item: true, lot: true }, orderBy: { id: "asc" } }, charges: { include: { account: true }, orderBy: { id: "asc" } } },
+    include: { supplier: true, purchaseOrder: { select: { id: true, number: true } }, lines: { include: { item: true, lot: true }, orderBy: { id: "asc" } }, charges: { include: { account: true }, orderBy: { id: "asc" } } },
   });
   if (!s) notFound();
   const received = s.status === "RECEIVED";
@@ -42,7 +42,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
     <>
       <PageHeader
         title={<span className="flex items-center gap-3">{s.ref} <StatusBadge status={s.status} /></span>}
-        subtitle={<>{t("From")} <RowLink href={`/suppliers/${s.supplierId}`}>{s.supplier.name}</RowLink> · {t("ordered {date}", { date: t.date(s.orderDate) })}</>}
+        subtitle={<>{t("From")} <RowLink href={`/suppliers/${s.supplierId}`}>{s.supplier.name}</RowLink> · {t("ordered {date}", { date: t.date(s.orderDate) })}{s.purchaseOrder && <> · {t("From purchase order")} <RowLink href={`/purchase-orders/${s.purchaseOrder.id}`}>{s.purchaseOrder.number}</RowLink></>}</>}
         back={{ href: "/shipments", label: t("Shipments") }}
       />
 

@@ -12,6 +12,7 @@ export function ItemFields({ item, t }: { item?: Item; t: T }) {
       <Field label={t("Hazard class")} name="hazardClass" defaultValue={item?.hazardClass ?? ""} placeholder={t("e.g. Flammable liquid, Class 3")} />
       <Field label={t("ETA item code")} name="etaItemCode" defaultValue={item?.etaItemCode ?? ""} placeholder="EG-100324932-LIN001" hint={t("As registered on the ETA portal. Needed to send e-invoices.")} />
       <Select label={t("ETA code type")} name="etaItemType" defaultValue={item?.etaItemType ?? "EGS"} options={[{ value: "EGS", label: t("EGS (your own code)") }, { value: "GS1", label: t("GS1 (barcode)") }]} />
+      <Field label={t("Alert when stock falls to")} name="minQty" inputMode="decimal" defaultValue={item?.minQty?.toString() ?? ""} hint={t("In the product's unit. Leave empty for no alert.")} />
       <TextArea label={t("Notes")} name="notes" defaultValue={item?.notes ?? ""} className="sm:col-span-2" />
       {item && (
         <label className="flex items-center gap-2 text-sm text-slate-700">

@@ -7,10 +7,16 @@ import { customerAccounts, supplierAccounts, totalsByCurrency } from "@/lib/serv
 import Decimal from "decimal.js";
 import { StatusBadge } from "./shipments/status";
 import { getT } from "@/i18n/server";
+import { lowStock } from "@/lib/services/alerts";
+import { chequesDue } from "@/lib/services/cheques";
 
 export default async function Dashboard() {
   const t = await getT();
-  const [s, customers, suppliers] = await Promise.all([dashboardStats(), customerAccounts(), supplierAccounts()]);
+  const [s, customers, suppliers, due, low] = await Promise.all([dashboardStats(), customerAccounts(), supplierAccounts(), chequesDue(7), lowStock()]);
+  const sum = (cs: { amount: { toString(): string } }[]) => cs.reduce((total, c) => total.plus(c.amount.toString()), new Decimal(0));
+  const dueCheques = [...due.received.map((c) => ({ ...c, party: c.customer?.name ?? "" })), ...due.issued.map((c) => ({ ...c, party: c.supplier?.name ?? "" }))].sort(
+    (a, b) => a.dueDate.getTime() - b.dueDate.getTime() || a.id - b.id,
+  );
   const owedToUs = customers.reduce((sum, a) => sum.plus(Decimal.max(a.balance, 0)), new Decimal(0));
   const overdueToUs = customers.reduce((sum, a) => sum.plus(a.overdue), new Decimal(0));
   const weOwe = totalsByCurrency(suppliers.flatMap((x) => x.accounts).filter((a) => a.balance.gt(0)));
@@ -48,7 +54,42 @@ export default async function Dashboard() {
         />
       </div>
 
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Stat
+          label={t("Cheques to collect in 7 days")}
+          value={`EGP ${money(sum(due.received), 0)}`}
+          tone={due.received.length ? "warn" : "default"}
+          hint={<RowLink href="/cheques?tab=received">{t("{n} cheques", { n: due.received.length })}</RowLink>}
+        />
+        <Stat
+          label={t("Cheques to pay in 7 days")}
+          value={`EGP ${money(sum(due.issued), 0)}`}
+          tone={due.issued.length ? "warn" : "default"}
+          hint={<RowLink href="/cheques?tab=issued">{t("{n} cheques", { n: due.issued.length })}</RowLink>}
+        />
+        <Stat
+          label={t("Products running low")}
+          value={low.length}
+          tone={low.some((r) => r.short.gt(0)) ? "warn" : "default"}
+          hint={<RowLink href="/reports/low-stock">{low.some((r) => r.short.gt(0)) ? t("{n} still to order", { n: low.filter((r) => r.short.gt(0)).length }) : t("See them")}</RowLink>}
+        />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
+        {dueCheques.length > 0 && (
+          <Card title={t("Cheques due in 7 days")} actions={<RowLink href="/cheques">{t("All")}</RowLink>} padded={false} className="lg:col-span-2">
+            <Table head={<tr><th>{t("Cheque")}</th><th>{t("From or to")}</th><th>{t("Due")}</th><th className="num">{t("Amount (EGP)")}</th></tr>}>
+              {dueCheques.map((c) => (
+                <tr key={c.id}>
+                  <td><RowLink href={`/cheques/${c.id}`}>{c.chequeNo}</RowLink>{c.bank && <span className="ms-2 inline-block text-xs text-slate-500">{c.bank}</span>}</td>
+                  <td>{c.direction === "RECEIVED" ? t("From {name}", { name: c.party }) : t("To {name}", { name: c.party })}</td>
+                  <td className={c.dueDate < now ? "font-medium text-red-700" : ""}>{t.date(c.dueDate)}</td>
+                  <td className={`num ${c.direction === "ISSUED" ? "text-slate-600" : ""}`}>{c.direction === "ISSUED" ? "−" : ""}{money(c.amount)}</td>
+                </tr>
+              ))}
+            </Table>
+          </Card>
+        )}
         <Card title={t("Shipments on the way")} actions={<RowLink href="/shipments">{t("All")}</RowLink>} padded={false}>
           <Table head={<tr><th>{t("Shipment")}</th><th>{t("Supplier")}</th><th>{t("ETA")}</th><th>{t("Status")}</th></tr>} empty={t("Nothing on the way.")}>
             {s.openShipments.map((sh) => {

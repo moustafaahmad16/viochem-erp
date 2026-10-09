@@ -21,14 +21,17 @@ const ZERO = new Decimal(0);
 export const CODES = {
   unassigned: "1190",
   customers: "1210",
+  chequesIn: "1220",
   stock: "1310",
   transit: "1320",
   vatIn: "1410",
   suppliers: "2110",
+  chequesOut: "2120",
   vatOut: "2210",
   retained: "3200",
   opening: "3900",
   sales: "4100",
+  returns: "4110",
   cogs: "5100",
   countDiff: "5200",
   otherExpense: "6220",
@@ -111,7 +114,7 @@ type Pending = { date: Date; rank: number; seq: number; build: () => GlEntry | n
 
 /** Build the whole ledger: the chart, every journal entry in date order, and anything that needs fixing. */
 export async function generalLedger() {
-  const [chart, moneyAccounts, customers, suppliers, shipments, moves, invoices, customerPayments, supplierPayments, expenses, transfers, manual] = await Promise.all([
+  const [chart, moneyAccounts, customers, suppliers, shipments, moves, invoices, customerPayments, supplierPayments, expenses, transfers, manual, creditNotes, cheques] = await Promise.all([
     db.ledgerAccount.findMany({ orderBy: { code: "asc" } }),
     db.moneyAccount.findMany({ orderBy: { id: "asc" } }),
     db.customer.findMany({ where: { NOT: { openingBalance: 0 } } }),
@@ -124,6 +127,8 @@ export async function generalLedger() {
     db.expense.findMany(),
     db.transfer.findMany({ include: { fromAccount: true, toAccount: true } }),
     db.journalEntry.findMany({ include: { lines: { include: { ledgerAccount: true, moneyAccount: true } } } }),
+    db.creditNote.findMany({ where: { status: "POSTED" }, include: { customer: true, invoice: true, lines: { include: { moves: true } } } }),
+    db.cheque.findMany({ include: { customer: true, supplier: true } }),
   ]);
 
   const accounts: GlAccount[] = [
@@ -261,6 +266,23 @@ export async function generalLedger() {
     });
   }
 
+  // Credit notes: sales given back, and returned goods back into stock at the cost they left at.
+  for (const cn of creditNotes) {
+    add(cn.date, 4, 1e9 + cn.id, () => {
+      const t = invoiceTotals(cn.lines, cn.vatRate.toString());
+      const cost = cn.lines.flatMap((l) => l.moves).reduce((s, m) => s.plus(dec(m.qty).times(dec(m.unitCostEgp))), ZERO).toDecimalPlaces(2);
+      return {
+        date: cn.date,
+        ref: cn.number,
+        href: `/credit-notes/${cn.id}`,
+        memo: `${cn.customer.name} · ${cn.invoice.number}`,
+        lines: [line(CODES.returns, t.net), line(CODES.vatOut, t.vat), line(CODES.customers, t.total.neg()), line(CODES.stock, cost), line(CODES.cogs, cost.neg())].filter(
+          (l) => !l.debit.isZero() || !l.credit.isZero(),
+        ),
+      };
+    });
+  }
+
   // Money in and out.
   for (const p of customerPayments) {
     add(p.date, 5, p.createdAt.getTime(), () => ({
@@ -317,6 +339,38 @@ export async function generalLedger() {
         lines: balanced([out, moneyLine(t.toAccountId, toAmount, toRate)]),
       };
     });
+  }
+
+  // Cheques: settle the customer or supplier when received or written, move money when cleared.
+  for (const c of cheques) {
+    const amount = dec(c.amount);
+    const one = new Decimal(1);
+    const href = `/cheques/${c.id}`;
+    const seq = c.createdAt.getTime();
+    if (c.direction === "RECEIVED") {
+      const memo = `From ${c.customer?.name ?? ""} · Cheque ${c.chequeNo}`;
+      add(c.date, 5, seq, () => ({ date: c.date, ref: c.number, href, memo, lines: [line(CODES.chequesIn, amount), line(CODES.customers, amount.neg())] }));
+      if (c.status === "CLEARED" && c.clearedOn) {
+        const d = c.clearedOn;
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Cleared`, lines: [moneyLine(c.accountId, amount, one), line(CODES.chequesIn, amount.neg())] }));
+      }
+      if (c.status === "BOUNCED" && c.bouncedOn) {
+        const d = c.bouncedOn;
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Bounced`, lines: [line(CODES.customers, amount), line(CODES.chequesIn, amount.neg())] }));
+      }
+    } else if (c.supplierId) {
+      const supplierId = c.supplierId;
+      const memo = `To ${c.supplier?.name ?? ""} · Cheque ${c.chequeNo}`;
+      add(c.date, 5, seq, () => ({ date: c.date, ref: c.number, href, memo, lines: [supplierLine(supplierId, "EGP", amount, one), line(CODES.chequesOut, amount.neg())] }));
+      if (c.status === "CLEARED" && c.clearedOn) {
+        const d = c.clearedOn;
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Cashed`, lines: [line(CODES.chequesOut, amount), moneyLine(c.accountId, amount.neg(), one)] }));
+      }
+      if (c.status === "BOUNCED" && c.bouncedOn) {
+        const d = c.bouncedOn;
+        add(d, 5, seq, () => ({ date: d, ref: c.number, href, memo: `${memo} · Returned`, lines: [line(CODES.chequesOut, amount), supplierLine(supplierId, "EGP", amount.neg(), one)] }));
+      }
+    }
   }
 
   for (const j of manual) {

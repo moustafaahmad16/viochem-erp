@@ -1,8 +1,9 @@
 import Decimal from "decimal.js";
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { Badge, ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { addDays, today } from "@/lib/dates";
 import { getT } from "@/i18n/server";
 import { money, qty } from "@/lib/format";
+import { lowStock } from "@/lib/services/alerts";
 import { stockSummary } from "@/lib/services/reports";
 
 export async function generateMetadata() {
@@ -11,7 +12,8 @@ export async function generateMetadata() {
 
 export default async function StockPage() {
   const t = await getT();
-  const rows = await stockSummary();
+  const [rows, low] = await Promise.all([stockSummary(), lowStock()]);
+  const lowIds = new Set(low.map((r) => r.itemId));
   const total = rows.reduce((sum, r) => sum.plus(r.value), new Decimal(0));
   const soon = addDays(today(), 90);
 
@@ -20,7 +22,12 @@ export default async function StockPage() {
       <PageHeader
         title={t("Stock on hand")}
         subtitle={<>{t("Valued at landed cost:")} <span className="font-semibold text-slate-800">EGP {money(total)}</span></>}
-        actions={<ButtonLink href="/stock/opening" variant="secondary">{t("Add opening stock")}</ButtonLink>}
+        actions={
+          <>
+            {low.length > 0 && <ButtonLink href="/reports/low-stock" variant="secondary">{t("{n} running low", { n: low.length })}</ButtonLink>}
+            <ButtonLink href="/stock/opening" variant="secondary">{t("Add opening stock")}</ButtonLink>
+          </>
+        }
       />
       <Card padded={false}>
         <Table
@@ -31,7 +38,7 @@ export default async function StockPage() {
           {rows.map((r) => (
             <tr key={r.itemId} className="hover:bg-slate-50">
               <td><RowLink href={`/products/${r.itemId}`}>{r.name}</RowLink> <span className="text-xs text-slate-500">{r.code}</span></td>
-              <td className="num">{qty(r.qty)} {t(r.unit)}</td>
+              <td className="num">{lowIds.has(r.itemId) && <span className="me-2"><Badge color="amber">{t("Low")}</Badge></span>}{qty(r.qty)} {t(r.unit)}</td>
               <td className="num">{r.lots}</td>
               <td className={r.nextExpiry && r.nextExpiry <= soon ? "font-medium text-amber-700" : ""}>{t.date(r.nextExpiry)}</td>
               <td className="num">{money(r.value.div(r.qty))}</td>

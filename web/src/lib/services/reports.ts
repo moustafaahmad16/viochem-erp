@@ -10,14 +10,21 @@ export type MarginRow = { key: string; label: string; sub?: string; qty: Decimal
 
 /**
  * Sales margin from posted invoices, using the real landed cost of the exact lots that were sold.
+ * Goods returned on credit notes come off at the price credited and the cost they went back in at;
+ * price allowances reduce sales only.
  */
 export async function marginReport(from: Date, to: Date, groupBy: MarginGroup): Promise<{ rows: MarginRow[]; total: MarginRow }> {
   const moves = await db.stockMove.findMany({
-    where: { kind: "SALE", date: { gte: from, lte: to }, invoiceLine: { invoice: { status: "POSTED" } } },
+    where: { date: { gte: from, lte: to }, OR: [{ kind: "SALE", invoiceLine: { invoice: { status: "POSTED" } } }, { kind: "RETURN" }] },
     include: {
       lot: { include: { item: true, shipmentLine: { include: { shipment: { include: { supplier: true } } } } } },
       invoiceLine: { include: { invoice: { include: { customer: true } } } },
+      creditLine: { include: { creditNote: { include: { customer: true } } } },
     },
+  });
+  const allowances = await db.creditNoteLine.findMany({
+    where: { restock: false, creditNote: { status: "POSTED", date: { gte: from, lte: to } } },
+    include: { invoiceLine: { include: { item: true } }, creditNote: { include: { customer: true } } },
   });
 
   const groups = new Map<string, MarginRow>();
@@ -27,18 +34,31 @@ export async function marginReport(from: Date, to: Date, groupBy: MarginGroup): 
 
   for (const m of moves) {
     const qty = dec(m.qty).neg();
-    const revenue = qty.times(dec(m.invoiceLine!.unitPrice));
+    // A sale takes stock out (negative), a return puts it back, so a return counts against sales.
+    const revenue = qty.times(dec(m.invoiceLine?.unitPrice ?? m.creditLine?.unitPrice));
     const cost = qty.times(dec(m.unitCostEgp));
     const shipment = m.lot.shipmentLine?.shipment;
+    const customer = m.invoiceLine?.invoice.customer ?? m.creditLine!.creditNote.customer;
     const [key, label, sub] =
       groupBy === "item" ? [`i${m.lot.itemId}`, m.lot.item.name, m.lot.item.code]
-      : groupBy === "customer" ? [`c${m.invoiceLine!.invoice.customerId}`, m.invoiceLine!.invoice.customer.name]
+      : groupBy === "customer" ? [`c${customer.id}`, customer.name]
       : groupBy === "shipment" ? (shipment ? [`s${shipment.id}`, shipment.ref, shipment.supplier.name] : ["opening", "Opening stock"])
       : [`l${m.lotId}`, m.lot.lotNo, m.lot.item.name];
     const row = groups.get(key) ?? blank(key, label, sub);
     row.qty = row.qty.plus(qty);
     row.revenue = row.revenue.plus(revenue);
     row.cost = row.cost.plus(cost);
+    groups.set(key, row);
+  }
+  for (const l of allowances) {
+    const item = l.invoiceLine.item;
+    const customer = l.creditNote.customer;
+    const [key, label, sub] =
+      groupBy === "item" ? [`i${item.id}`, item.name, item.code]
+      : groupBy === "customer" ? [`c${customer.id}`, customer.name]
+      : ["allowances", "Price allowances"];
+    const row = groups.get(key) ?? blank(key, label, sub);
+    row.revenue = row.revenue.minus(dec(l.qty).times(dec(l.unitPrice)));
     groups.set(key, row);
   }
 

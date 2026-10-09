@@ -6,6 +6,8 @@ import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { invoiceTotals } from "@/lib/costing";
+import { creditCheck } from "@/lib/services/credit";
 import { UserError } from "@/lib/services/errors";
 import { cancelOnEta, refreshStatus, sendInvoice } from "@/lib/services/einvoice";
 import { cancelInvoice as cancel, createInvoice as create, postInvoice as post } from "@/lib/services/inventory";
@@ -75,9 +77,14 @@ export async function removeLine(id: number, lineId: number) {
   revalidatePath(`/invoices/${id}`);
 }
 
-export async function postInvoice(id: number): Promise<FormState> {
-  await requireUser();
+export async function postInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
   try {
+    const inv = await db.invoice.findUniqueOrThrow({ where: { id }, include: { lines: true } });
+    const check = await creditCheck(inv.customerId, invoiceTotals(inv.lines, inv.vatRate.toString()).total);
+    if (check.overLimit && !(user.role === "ADMIN" && fd.get("overLimit") === "on")) {
+      throw new UserError(`${check.warnings[0]} ${user.role === "ADMIN" ? "Tick \"Post anyway\" to post it." : "Ask an admin to post it."}`);
+    }
     await post(id);
   } catch (e) {
     return fail(e);

@@ -6,7 +6,7 @@ import { money, qty } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import { adjustLot } from "../../actions";
 
-const KIND = { OPENING: "Opening stock", RECEIPT: "Received", SALE: "Sold", ADJUSTMENT: "Stock count" } as const;
+const KIND = { OPENING: "Opening stock", RECEIPT: "Received", SALE: "Sold", ADJUSTMENT: "Stock count", RETURN: "Returned" } as const;
 
 export default async function LotPage({ params }: PageProps<"/stock/lots/[id]">) {
   const t = await getT();
@@ -16,7 +16,7 @@ export default async function LotPage({ params }: PageProps<"/stock/lots/[id]">)
     include: {
       item: true,
       shipmentLine: { include: { shipment: { include: { supplier: true } } } },
-      moves: { orderBy: [{ date: "asc" }, { id: "asc" }], include: { invoiceLine: { include: { invoice: { include: { customer: true } } } } } },
+      moves: { orderBy: [{ date: "asc" }, { id: "asc" }], include: { invoiceLine: { include: { invoice: { include: { customer: true } } } }, creditLine: { include: { creditNote: { include: { customer: true } } } } } },
     },
   });
   if (!lot) notFound();
@@ -40,6 +40,7 @@ export default async function LotPage({ params }: PageProps<"/stock/lots/[id]">)
                   <td>
                     {t(KIND[m.kind])}
                     {inv && <> {t("on")} <RowLink href={`/invoices/${inv.id}`}>{inv.number}</RowLink> {t("to")} {inv.customer.name}</>}
+                    {m.creditLine && <> {t("on")} <RowLink href={`/credit-notes/${m.creditLine.creditNoteId}`}>{m.creditLine.creditNote.number}</RowLink> {t("from")} {m.creditLine.creditNote.customer.name}</>}
                     {m.kind === "ADJUSTMENT" && m.note && <span className="text-slate-500"> · {m.note}</span>}
                   </td>
                   <td className={`num ${Number(m.qty) < 0 ? "text-red-700" : "text-emerald-700"}`}>{Number(m.qty) > 0 ? "+" : ""}{qty(m.qty)}</td>

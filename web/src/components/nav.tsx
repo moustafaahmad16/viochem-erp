@@ -5,13 +5,28 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
-  { title: "Sales", links: [{ href: "/invoices", label: "Invoices", icon: Receipt }, { href: "/customers", label: "Customers", icon: Users }] },
-  { title: "Imports", links: [{ href: "/shipments", label: "Shipments", icon: Ship }, { href: "/suppliers", label: "Suppliers", icon: Building2 }] },
-  { title: "Money", links: [{ href: "/receivables", label: "Owed to you", icon: Wallet }, { href: "/payables", label: "You owe", icon: HandCoins }, { href: "/accounts", label: "Bank & cash", icon: Landmark }, { href: "/expenses", label: "Expenses", icon: ReceiptText }] },
+  {
+    title: "Sales",
+    links: [
+      { href: "/quotes", label: "Quotations", icon: FileText },
+      { href: "/invoices", label: "Invoices", icon: Receipt },
+      { href: "/credit-notes", label: "Credit notes", icon: Undo2 },
+      { href: "/customers", label: "Customers", icon: Users },
+    ],
+  },
+  {
+    title: "Imports",
+    links: [
+      { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
+      { href: "/shipments", label: "Shipments", icon: Ship },
+      { href: "/suppliers", label: "Suppliers", icon: Building2 },
+    ],
+  },
+  { title: "Money", links: [{ href: "/receivables", label: "Owed to you", icon: Wallet }, { href: "/payables", label: "You owe", icon: HandCoins }, { href: "/accounts", label: "Bank & cash", icon: Landmark }, { href: "/cheques", label: "Cheques", icon: BadgeCheck }, { href: "/expenses", label: "Expenses", icon: ReceiptText }] },
   { title: "Stock", links: [{ href: "/stock", label: "Stock on hand", icon: Boxes }, { href: "/products", label: "Products", icon: FlaskConical }, { href: "/import", label: "Import from Excel", icon: Upload }] },
   {
     title: "Accounting",
@@ -23,7 +38,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
       { href: "/ledger", label: "Chart of accounts", icon: BookOpen },
     ],
   },
-  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }] },
+  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }] },
 ];
 
 export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean; logout: () => Promise<void> }) {

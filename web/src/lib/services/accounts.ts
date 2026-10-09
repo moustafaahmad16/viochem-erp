@@ -1,6 +1,6 @@
 import Decimal from "decimal.js";
 import { invoiceTotals } from "@/lib/costing";
-import { dayOf, today } from "@/lib/dates";
+import { dayOf, formatDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { aging, settle, type Bill, type Credit, type SettledBill } from "@/lib/ledger";
 
@@ -49,6 +49,29 @@ function account(currency: string, bills: (Bill & BillInfo)[], credits: Credit[]
   };
 }
 
+const CHEQUE_STATUS: Record<string, string> = { PENDING: "Pending", DEPOSITED: "Deposited", CLEARED: "Cleared", BOUNCED: "Bounced" };
+
+/** A cheque counts as paid when received or written; if it bounces, a second line bills it again. */
+function chequeEntries(
+  ch: { id: number; number: string; chequeNo: string; bank: string | null; date: Date; dueDate: Date; amount: { toString(): string }; status: string; bouncedOn: Date | null },
+  forDoc: string | null,
+): Entry[] {
+  const href = `/cheques/${ch.id}`;
+  const amount = dec(ch.amount);
+  const zero = new Decimal(0);
+  const paid: Entry = {
+    date: ch.date,
+    order: 1e9 + 1e6 + ch.id,
+    label: ch.number,
+    href,
+    detail: [`Cheque ${ch.chequeNo}`, ch.bank, `Due ${formatDate(ch.dueDate)}`, CHEQUE_STATUS[ch.status], forDoc].filter(Boolean).join(" · "),
+    charge: zero,
+    payment: amount,
+  };
+  if (ch.status !== "BOUNCED" || !ch.bouncedOn) return [paid];
+  return [paid, { date: ch.bouncedOn, order: 1e9 + 2e6 + ch.id, label: ch.number, href, detail: `Cheque bounced · Cheque ${ch.chequeNo}`, charge: amount, payment: zero }];
+}
+
 /** Each customer's account, in EGP. */
 export async function customerAccounts(where: { id?: number } = {}) {
   const asOf = today();
@@ -58,6 +81,8 @@ export async function customerAccounts(where: { id?: number } = {}) {
     include: {
       invoices: { where: { status: "POSTED" }, include: { lines: true } },
       payments: { include: { invoice: true } },
+      creditNotes: { where: { status: "POSTED" }, include: { lines: true, invoice: true } },
+      cheques: { include: { invoice: true } },
     },
   });
   return customers.map((c) => {
@@ -76,6 +101,12 @@ export async function customerAccounts(where: { id?: number } = {}) {
       bills.push({ key, date: inv.date, dueDate: inv.dueDate ?? inv.date, amount, label: inv.number, href: `/invoices/${inv.id}` });
       entries.push({ date: inv.date, order: inv.id, label: inv.number, href: `/invoices/${inv.id}`, charge: amount, payment: new Decimal(0) });
     }
+    // A credit note always reduces its own invoice first.
+    for (const cn of c.creditNotes) {
+      const amount = invoiceTotals(cn.lines, cn.vatRate.toString()).total;
+      credits.push({ amount, billKey: `inv:${cn.invoiceId}` });
+      entries.push({ date: cn.date, order: 5e8 + cn.id, label: cn.number, href: `/credit-notes/${cn.id}`, detail: `Credit for ${cn.invoice.number}`, charge: new Decimal(0), payment: amount });
+    }
     for (const p of c.payments) {
       credits.push({ amount: dec(p.amount), billKey: p.invoiceId ? `inv:${p.invoiceId}` : null });
       entries.push({
@@ -87,6 +118,10 @@ export async function customerAccounts(where: { id?: number } = {}) {
         payment: dec(p.amount),
       });
     }
+    for (const ch of c.cheques) {
+      if (ch.status !== "BOUNCED") credits.push({ amount: dec(ch.amount), billKey: ch.invoiceId ? `inv:${ch.invoiceId}` : null });
+      entries.push(...chequeEntries(ch, ch.invoice && `for ${ch.invoice.number}`));
+    }
     return { customer: c, payments: c.payments, ...account("EGP", bills, credits, entries, asOf) };
   });
 }
@@ -97,7 +132,7 @@ export async function supplierAccounts(where: { id?: number } = {}) {
   const suppliers = await db.supplier.findMany({
     where,
     orderBy: { name: "asc" },
-    include: { shipments: { include: { lines: true } }, payments: { include: { shipment: true } } },
+    include: { shipments: { include: { lines: true } }, payments: { include: { shipment: true } }, cheques: { include: { shipment: true } } },
   });
   return suppliers.map((s) => {
     const byCurrency = new Map<string, { bills: (Bill & BillInfo)[]; credits: Credit[]; entries: Entry[] }>();
@@ -141,6 +176,11 @@ export async function supplierAccounts(where: { id?: number } = {}) {
         charge: new Decimal(0),
         payment: dec(p.amount),
       });
+    }
+    for (const ch of s.cheques) {
+      const g = group("EGP");
+      if (ch.status !== "BOUNCED") g.credits.push({ amount: dec(ch.amount), billKey: ch.shipmentId ? `shp:${ch.shipmentId}` : null });
+      g.entries.push(...chequeEntries(ch, ch.shipment && `for ${ch.shipment.ref}`));
     }
     const accounts = [...byCurrency.entries()]
       .sort(([a], [b]) => (a === s.currency ? -1 : b === s.currency ? 1 : a.localeCompare(b)))

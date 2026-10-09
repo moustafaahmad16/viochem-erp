@@ -44,6 +44,7 @@ export async function accountLedgers(where: { id?: number } = {}) {
       transfersOut: { include: { toAccount: true } },
       transfersIn: { include: { fromAccount: true } },
       journalLines: { include: { entry: true } },
+      cheques: { where: { status: "CLEARED" }, include: { customer: true, supplier: true } },
     },
   });
   return accounts.map((a) => {
@@ -71,6 +72,12 @@ export async function accountLedgers(where: { id?: number } = {}) {
     }
     for (const l of a.journalLines) {
       moves.push({ date: l.entry.date, order: l.entry.createdAt.getTime(), label: l.entry.number, detail: [l.entry.memo, l.memo].filter(Boolean).join(" · "), href: `/ledger/journal/${l.entryId}`, amount: dec(l.debit).minus(dec(l.credit)) });
+    }
+    for (const c of a.cheques) {
+      if (!c.clearedOn) continue;
+      const received = c.direction === "RECEIVED";
+      const detail = `${received ? `From ${c.customer?.name ?? ""}` : `To ${c.supplier?.name ?? ""}`} · Cheque ${c.chequeNo}`;
+      moves.push({ date: c.clearedOn, order: c.createdAt.getTime(), label: c.number, detail, href: `/cheques/${c.id}`, amount: received ? dec(c.amount) : dec(c.amount).neg() });
     }
     let balance = new Decimal(0);
     const ledger = moves

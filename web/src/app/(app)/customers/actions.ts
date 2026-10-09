@@ -21,6 +21,7 @@ const data = (fd: FormData) => ({
   buildingNo: text(fd, "buildingNo"),
   notes: text(fd, "notes"),
   paymentTermsDays: terms(fd),
+  creditLimit: text(fd, "creditLimit") ? decimal(fd, "creditLimit", "Credit limit", { allowZero: true }) : null,
   openingBalance: text(fd, "openingBalance") ? decimal(fd, "openingBalance", "Opening balance", { min: -1e12, allowZero: true }) : "0",
   openingBalanceDate: optionalDate(fd, "openingBalanceDate"),
 });

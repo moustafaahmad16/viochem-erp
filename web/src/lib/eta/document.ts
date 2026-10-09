@@ -62,6 +62,8 @@ export type Document = {
   activityCode: string;
   version: string;
   documentType?: "I" | "C" | "D";
+  /** For a credit or debit note: the ETA uuids of the invoices it corrects. */
+  references?: string[];
   lines: Line[];
 };
 
@@ -95,7 +97,7 @@ function line(l: Line) {
   };
 }
 
-/** The JSON ETA expects for one invoice, without its signature. */
+/** The JSON ETA expects for one invoice (or credit note), without its signature. */
 export function buildDocument(d: Document) {
   const lines = d.lines.map(line);
   const sum = (f: (l: (typeof lines)[number]) => number) => round(lines.reduce((s, l) => s.plus(f(l)), new Decimal(0)));
@@ -106,6 +108,7 @@ export function buildDocument(d: Document) {
     receiver: party(d.receiver),
     documentType: d.documentType ?? "I",
     documentTypeVersion: d.version,
+    ...(d.references ? { references: d.references } : {}),
     dateTimeIssued: d.dateTimeIssued,
     taxpayerActivityCode: d.activityCode,
     internalID: d.internalId,
