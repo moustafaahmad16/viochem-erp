@@ -29,21 +29,25 @@ model Counter {
 }
 
 model Item {
-  id            Int            @id @default(autoincrement())
-  code          String         @unique
+  id            Int                 @id @default(autoincrement())
+  code          String              @unique
   name          String
   casNumber     String?
-  unit          String         @default("kg")
+  unit          String              @default("kg")
   hazardClass   String?
   notes         String?
   // The item code registered with the Egyptian Tax Authority, e.g. EG-100324932-LIN001 (EGS) or a GS1 barcode.
   etaItemCode   String?
-  etaItemType   String         @default("EGS")
-  active        Boolean        @default(true)
-  createdAt     DateTime       @default(now())
+  etaItemType   String              @default("EGS")
+  active        Boolean             @default(true)
+  // Warn when stock on hand falls to this or below. Empty means no alert.
+  minQty        Decimal?            @db.Decimal(14, 3)
+  createdAt     DateTime            @default(now())
   lots          Lot[]
   shipmentLines ShipmentLine[]
   invoiceLines  InvoiceLine[]
+  quoteLines    QuoteLine[]
+  orderLines    PurchaseOrderLine[]
 }
 
 model Supplier {
@@ -63,6 +67,8 @@ model Supplier {
   createdAt          DateTime          @default(now())
   shipments          Shipment[]
   payments           SupplierPayment[]
+  purchaseOrders     PurchaseOrder[]
+  cheques            Cheque[]
 }
 
 model Customer {
@@ -85,9 +91,14 @@ model Customer {
   // What this customer owed before using this system, in EGP. Negative if they had credit.
   openingBalance     Decimal           @default(0) @db.Decimal(14, 2)
   openingBalanceDate DateTime?         @db.Date
+  // Most this customer may owe at once, in EGP. Empty means no limit.
+  creditLimit        Decimal?          @db.Decimal(14, 2)
   createdAt          DateTime          @default(now())
   invoices           Invoice[]
   payments           CustomerPayment[]
+  quotes             Quote[]
+  creditNotes        CreditNote[]
+  cheques            Cheque[]
 }
 
 enum ShipmentStatus {
@@ -119,23 +130,29 @@ model Shipment {
   dueDate           DateTime?         @db.Date
   status            ShipmentStatus    @default(ORDERED)
   notes             String?
+  // The purchase order this shipment delivers, when there is one.
+  purchaseOrderId   Int?
+  purchaseOrder     PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id])
   createdAt         DateTime          @default(now())
   lines             ShipmentLine[]
   charges           ShipmentCharge[]
   payments          SupplierPayment[]
+  cheques           Cheque[]
 }
 
 model ShipmentLine {
-  id              Int       @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   shipmentId      Int
-  shipment        Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment        Shipment           @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   itemId          Int
-  item            Item      @relation(fields: [itemId], references: [id])
-  qty             Decimal   @db.Decimal(14, 3)
-  unitPrice       Decimal   @db.Decimal(14, 4)
+  item            Item               @relation(fields: [itemId], references: [id])
+  qty             Decimal            @db.Decimal(14, 3)
+  unitPrice       Decimal            @db.Decimal(14, 4)
   supplierBatchNo String?
-  expiryDate      DateTime? @db.Date
+  expiryDate      DateTime?          @db.Date
   lot             Lot?
+  orderLineId     Int?
+  orderLine       PurchaseOrderLine? @relation(fields: [orderLineId], references: [id])
 }
 
 model ShipmentCharge {
@@ -174,21 +191,25 @@ enum MoveKind {
   RECEIPT
   SALE
   ADJUSTMENT
+  RETURN
 }
 
 // Every change to a lot's quantity. qty is negative for stock going out.
 model StockMove {
-  id            Int          @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   lotId         Int
-  lot           Lot          @relation(fields: [lotId], references: [id])
-  date          DateTime     @db.Date
+  lot           Lot             @relation(fields: [lotId], references: [id])
+  date          DateTime        @db.Date
   kind          MoveKind
-  qty           Decimal      @db.Decimal(14, 3)
-  unitCostEgp   Decimal      @db.Decimal(14, 4)
+  qty           Decimal         @db.Decimal(14, 3)
+  unitCostEgp   Decimal         @db.Decimal(14, 4)
   invoiceLineId Int?
-  invoiceLine   InvoiceLine? @relation(fields: [invoiceLineId], references: [id])
+  invoiceLine   InvoiceLine?    @relation(fields: [invoiceLineId], references: [id])
+  // Stock a customer sent back, on a credit note.
+  creditLineId  Int?
+  creditLine    CreditNoteLine? @relation(fields: [creditLineId], references: [id])
   note          String?
-  createdAt     DateTime     @default(now())
+  createdAt     DateTime        @default(now())
 
   @@index([lotId])
   @@index([date])
@@ -222,22 +243,26 @@ model Invoice {
   postedAt          DateTime?
   lines             InvoiceLine[]
   payments          CustomerPayment[]
+  quote             Quote?
+  creditNotes       CreditNote[]
+  cheques           Cheque[]
 
   @@index([date])
 }
 
 model InvoiceLine {
-  id        Int         @id @default(autoincrement())
+  id        Int              @id @default(autoincrement())
   invoiceId Int
-  invoice   Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice   Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   itemId    Int
-  item      Item        @relation(fields: [itemId], references: [id])
+  item      Item             @relation(fields: [itemId], references: [id])
   // A specific lot the customer asked for; left empty, stock is taken earliest-expiry first.
   lotId     Int?
-  lot       Lot?        @relation(fields: [lotId], references: [id])
-  qty       Decimal     @db.Decimal(14, 3)
-  unitPrice Decimal     @db.Decimal(14, 4)
+  lot       Lot?             @relation(fields: [lotId], references: [id])
+  qty       Decimal          @db.Decimal(14, 3)
+  unitPrice Decimal          @db.Decimal(14, 4)
   moves     StockMove[]
+  credited  CreditNoteLine[]
 }
 
 enum PaymentMethod {
@@ -313,6 +338,7 @@ model MoneyAccount {
   transfersOut     Transfer[]        @relation("TransferFrom")
   transfersIn      Transfer[]        @relation("TransferTo")
   journalLines     JournalLine[]
+  cheques          Cheque[]
 }
 
 // Running costs of the business: rent, salaries, transport. Import costs belong on the shipment instead.
@@ -435,4 +461,170 @@ model JournalLine {
   memo            String?
 
   @@index([entryId])
+}
+
+enum QuoteStatus {
+  OPEN
+  ACCEPTED // turned into an invoice
+  DECLINED
+}
+
+// A price offer to a customer. Accepting it makes a draft invoice with the same lines.
+model Quote {
+  id         Int         @id @default(autoincrement())
+  number     String      @unique
+  customerId Int
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  date       DateTime    @db.Date
+  validUntil DateTime?   @db.Date
+  status     QuoteStatus @default(OPEN)
+  vatRate    Decimal     @default(14) @db.Decimal(5, 2)
+  notes      String?
+  invoiceId  Int?        @unique
+  invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
+  createdAt  DateTime    @default(now())
+  lines      QuoteLine[]
+
+  @@index([date])
+}
+
+model QuoteLine {
+  id        Int     @id @default(autoincrement())
+  quoteId   Int
+  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  itemId    Int
+  item      Item    @relation(fields: [itemId], references: [id])
+  qty       Decimal @db.Decimal(14, 3)
+  unitPrice Decimal @db.Decimal(14, 4)
+}
+
+enum CreditNoteStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+// Money given back on a posted invoice: goods returned, or a price reduced. Sent to ETA as a credit note.
+model CreditNote {
+  id                Int              @id @default(autoincrement())
+  number            String           @unique
+  invoiceId         Int
+  invoice           Invoice          @relation(fields: [invoiceId], references: [id])
+  customerId        Int
+  customer          Customer         @relation(fields: [customerId], references: [id])
+  date              DateTime         @db.Date
+  reason            String
+  status            CreditNoteStatus @default(DRAFT)
+  // The invoice's VAT rate, so the credit reverses exactly what was charged.
+  vatRate           Decimal          @db.Decimal(5, 2)
+  etaStatus         EtaStatus        @default(NOT_SENT)
+  etaUuid           String?          @unique
+  etaLongId         String?
+  etaSubmissionUuid String?
+  etaError          String?
+  etaSentAt         DateTime?
+  createdAt         DateTime         @default(now())
+  postedAt          DateTime?
+  lines             CreditNoteLine[]
+
+  @@index([invoiceId])
+  @@index([date])
+}
+
+model CreditNoteLine {
+  id            Int         @id @default(autoincrement())
+  creditNoteId  Int
+  creditNote    CreditNote  @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  invoiceLineId Int
+  invoiceLine   InvoiceLine @relation(fields: [invoiceLineId], references: [id])
+  qty           Decimal     @db.Decimal(14, 3)
+  // Before VAT, per unit.
+  unitPrice     Decimal     @db.Decimal(14, 4)
+  // The goods came back and go into stock again; otherwise only the price is credited.
+  restock       Boolean     @default(true)
+  moves         StockMove[]
+}
+
+enum PurchaseOrderStatus {
+  OPEN
+  CLOSED // everything shipped, or closed by hand
+  CANCELLED
+}
+
+// What VIOCHEM ordered from a supplier. Shipments are made from it as the goods are sent.
+model PurchaseOrder {
+  id           Int                 @id @default(autoincrement())
+  number       String              @unique
+  supplierId   Int
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  date         DateTime            @db.Date
+  expectedDate DateTime?           @db.Date
+  currency     String
+  status       PurchaseOrderStatus @default(OPEN)
+  notes        String?
+  createdAt    DateTime            @default(now())
+  lines        PurchaseOrderLine[]
+  shipments    Shipment[]
+}
+
+model PurchaseOrderLine {
+  id            Int            @id @default(autoincrement())
+  orderId       Int
+  order         PurchaseOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId        Int
+  item          Item           @relation(fields: [itemId], references: [id])
+  qty           Decimal        @db.Decimal(14, 3)
+  unitPrice     Decimal        @db.Decimal(14, 4)
+  shipmentLines ShipmentLine[]
+}
+
+enum ChequeDirection {
+  RECEIVED // from a customer
+  ISSUED // to a supplier
+}
+
+enum ChequeStatus {
+  PENDING // received and in hand, or written and not yet cashed
+  DEPOSITED // received cheque handed to the bank
+  CLEARED // the money moved
+  BOUNCED // refused by the bank, or returned
+}
+
+/**
+ * A cheque, usually post-dated. A received cheque settles the customer's balance when received and
+ * waits in 1220 until it clears into the bank; if it bounces the customer owes the amount again.
+ * An issued cheque settles the supplier and waits in 2120 until it is cashed. Amounts are in EGP.
+ */
+model Cheque {
+  id          Int             @id @default(autoincrement())
+  number      String          @unique
+  direction   ChequeDirection
+  chequeNo    String
+  bank        String?
+  customerId  Int?
+  customer    Customer?       @relation(fields: [customerId], references: [id])
+  supplierId  Int?
+  supplier    Supplier?       @relation(fields: [supplierId], references: [id])
+  invoiceId   Int?
+  invoice     Invoice?        @relation(fields: [invoiceId], references: [id])
+  shipmentId  Int?
+  shipment    Shipment?       @relation(fields: [shipmentId], references: [id])
+  // When it was received or written.
+  date        DateTime        @db.Date
+  // The date on the cheque: it can't be cashed before.
+  dueDate     DateTime        @db.Date
+  amount      Decimal         @db.Decimal(14, 2)
+  status      ChequeStatus    @default(PENDING)
+  // Received: the account it was deposited into. Issued: the account it is drawn on.
+  accountId   Int?
+  account     MoneyAccount?   @relation(fields: [accountId], references: [id])
+  depositedOn DateTime?       @db.Date
+  clearedOn   DateTime?       @db.Date
+  bouncedOn   DateTime?       @db.Date
+  notes       String?
+  createdAt   DateTime        @default(now())
+
+  @@index([dueDate])
+  @@index([customerId])
+  @@index([supplierId])
 }
