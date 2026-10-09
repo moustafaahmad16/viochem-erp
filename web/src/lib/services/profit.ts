@@ -3,28 +3,56 @@ import { db } from "@/lib/db";
 import { addDays } from "@/lib/dates";
 import { marginReport } from "./reports";
 
-export const EXPENSE_CATEGORIES = [
-  "Salaries",
-  "Rent",
-  "Electricity and water",
-  "Phone and internet",
-  "Transport to customers",
-  "Warehouse",
-  "Bank charges",
-  "Government fees",
-  "Marketing",
-  "Office supplies",
-  "Professional fees",
-  "Maintenance",
-  "Other",
-];
+/**
+ * Expense categories grouped the way an Egyptian income statement presents expenses by function
+ * (EAS 1): selling and distribution, general and administrative, then finance costs below
+ * operating profit. A category typed in by hand counts as general and administrative.
+ */
+export const EXPENSE_GROUPS = [
+  {
+    name: "Selling and distribution",
+    categories: ["Transport to customers", "Sales commissions", "Marketing", "Exhibitions and samples", "Lab tests and certificates", "Packaging", "Courier"],
+  },
+  {
+    name: "General and administrative",
+    categories: [
+      "Salaries",
+      "Social insurance",
+      "Rent",
+      "Electricity and water",
+      "Phone and internet",
+      "Warehouse",
+      "Vehicles and fuel",
+      "Travel",
+      "Insurance",
+      "Office supplies",
+      "Software and subscriptions",
+      "Professional fees",
+      "Government fees",
+      "Maintenance",
+      "Cleaning and security",
+      "Hospitality",
+      "Training",
+      "Donations",
+      "Other",
+    ],
+  },
+  { name: "Finance costs", categories: ["Bank charges", "Loan interest"] },
+] as const;
+
+export type ExpenseGroup = (typeof EXPENSE_GROUPS)[number]["name"];
+
+export const EXPENSE_CATEGORIES: { category: string; group: ExpenseGroup }[] = EXPENSE_GROUPS.flatMap((g) => g.categories.map((category) => ({ category, group: g.name })));
+
+const groupOf = new Map(EXPENSE_CATEGORIES.map((c) => [c.category.toLowerCase(), c.group]));
+export const expenseGroup = (category: string): ExpenseGroup => groupOf.get(category.trim().toLowerCase()) ?? "General and administrative";
 
 const dec = (v: { toString(): string }) => new Decimal(v.toString());
 
 /**
- * Profit and loss for a period, before tax. Sales and their cost come from the exact lots sold,
- * so the cost includes freight, duty and clearance. Stock count differences and running
- * expenses come off after that.
+ * Profit and loss for a period, before tax, laid out like a standard income statement. Sales and
+ * their cost come from the exact lots sold, so the cost includes freight, duty and clearance.
+ * Stock count differences are part of the cost of sales.
  */
 export async function profitAndLoss(from: Date, to: Date) {
   const [margin, adjustments, expenses] = await Promise.all([
@@ -32,23 +60,33 @@ export async function profitAndLoss(from: Date, to: Date) {
     db.stockMove.findMany({ where: { kind: "ADJUSTMENT", date: { gte: from, lte: to } } }),
     db.expense.findMany({ where: { date: { gte: from, lte: to } } }),
   ]);
-  const stockDifferences = adjustments.reduce((s, m) => s.plus(dec(m.qty).times(dec(m.unitCostEgp))), new Decimal(0)).toDecimalPlaces(2);
+  const zero = new Decimal(0);
+  const stockDifferences = adjustments.reduce((s, m) => s.plus(dec(m.qty).times(dec(m.unitCostEgp))), zero).toDecimalPlaces(2);
   const byCategory = new Map<string, Decimal>();
-  for (const e of expenses) byCategory.set(e.category, (byCategory.get(e.category) ?? new Decimal(0)).plus(dec(e.amount)));
-  const totalExpenses = [...byCategory.values()].reduce((s, v) => s.plus(v), new Decimal(0));
+  for (const e of expenses) byCategory.set(e.category, (byCategory.get(e.category) ?? zero).plus(dec(e.amount)));
+  const groups = EXPENSE_GROUPS.map((g) => {
+    const lines = [...byCategory]
+      .filter(([category]) => expenseGroup(category) === g.name)
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount.cmp(a.amount));
+    return { name: g.name as ExpenseGroup, lines, total: lines.reduce((s, l) => s.plus(l.amount), zero) };
+  });
+  const total = (name: ExpenseGroup) => groups.find((g) => g.name === name)!.total;
   const sales = margin.total.revenue.toDecimalPlaces(2);
-  const costOfSales = margin.total.cost.toDecimalPlaces(2);
+  const costOfSales = margin.total.cost.toDecimalPlaces(2).minus(stockDifferences);
   const grossProfit = sales.minus(costOfSales);
-  const netProfit = grossProfit.plus(stockDifferences).minus(totalExpenses);
+  const operatingProfit = grossProfit.minus(total("Selling and distribution")).minus(total("General and administrative"));
+  const netProfit = operatingProfit.minus(total("Finance costs"));
   return {
     sales,
     costOfSales,
-    grossProfit,
     stockDifferences,
-    expenses: [...byCategory].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount.cmp(a.amount)),
-    totalExpenses,
+    grossProfit,
+    groups,
+    totalExpenses: groups.reduce((s, g) => s.plus(g.total), zero),
+    operatingProfit,
     netProfit,
-    netMargin: sales.isZero() ? new Decimal(0) : netProfit.div(sales).times(100),
+    netMargin: sales.isZero() ? zero : netProfit.div(sales).times(100),
   };
 }
 

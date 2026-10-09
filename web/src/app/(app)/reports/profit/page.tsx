@@ -19,6 +19,10 @@ const Amount = ({ v, strong = false }: { v: Decimal; strong?: boolean }) => (
   <td className={`num ${strong ? "font-semibold" : ""} ${v.lt(0) ? "text-red-700" : ""}`}>{v.lt(0) ? `(${money(v.neg())})` : money(v)}</td>
 );
 
+type PL = Awaited<ReturnType<typeof profitAndLoss>>;
+const groupTotal = (p: PL, name: string) => p.groups.find((g) => g.name === name)!.total;
+const groupLine = (p: PL, name: string, category: string) => p.groups.find((g) => g.name === name)!.lines.find((l) => l.category === category)?.amount ?? new Decimal(0);
+
 export default async function ProfitPage({ searchParams }: PageProps<"/reports/profit">) {
   const sp = await searchParams;
   const now = today();
@@ -32,7 +36,6 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
   const first = byMonth.findIndex((p) => !p.sales.isZero() || !p.totalExpenses.isZero() || !p.stockDifferences.isZero());
   const cols = first < 0 ? [] : byMonth.slice(first);
   const periods = first < 0 ? [] : allMonths.slice(first);
-  const categories = total.expenses.map((e) => e.category);
   const quick = [
     { label: "This month", from: new Date(Date.UTC(y, m, 1)), to: now },
     { label: "Last month", from: new Date(Date.UTC(y, m - 1, 1)), to: addDays(new Date(Date.UTC(y, m, 1)), -1) },
@@ -41,8 +44,8 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
   ];
 
   const row = (label: string, get: (p: typeof total) => Decimal, { strong = false, indent = false } = {}) => (
-    <tr key={label} className={strong ? "bg-slate-50" : ""}>
-      <td className={`whitespace-nowrap ${strong ? "font-semibold" : ""} ${indent ? "pl-8" : ""}`}>{label}</td>
+    <tr key={label} className={strong ? "bg-brand-50/60" : ""}>
+      <td className={`whitespace-nowrap ${strong ? "font-semibold text-brand-900" : ""} ${indent ? "pl-8 text-slate-600" : ""}`}>{label}</td>
       {cols.map((c, i) => <Amount key={i} v={get(c)} strong={strong} />)}
       <Amount v={get(total)} strong />
     </tr>
@@ -61,7 +64,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
             <span className="mb-1 block text-slate-600">To</span>
             <input type="date" name="to" defaultValue={toInputDate(to)} className="rounded-lg border border-slate-300 px-3 py-2" />
           </label>
-          <button className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">Show</button>
+          <button className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">Show</button>
           <span className="ml-auto flex gap-3">
             {quick.map((q) => (
               <Link key={q.label} href={`?from=${toInputDate(q.from)}&to=${toInputDate(q.to)}`} className="text-brand-700 hover:underline">{q.label}</Link>
@@ -72,12 +75,19 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
       <Card padded={false}>
         <Table head={<tr><th /> {cols.map((_, i) => <th key={i} className="num">{periods[i].label}</th>)}<th className="num">Total</th></tr>}>
           {row("Sales (before VAT)", (p) => p.sales)}
-          {row("Cost of goods sold (landed)", (p) => p.costOfSales.neg())}
+          {row("Cost of sales", (p) => p.costOfSales.neg())}
+          {!total.stockDifferences.isZero() && row("of which stock count differences", (p) => p.stockDifferences, { indent: true })}
           {row("Gross profit", (p) => p.grossProfit, { strong: true })}
-          {row("Stock count differences", (p) => p.stockDifferences)}
-          {categories.map((cat) => row(cat, (p) => (p.expenses.find((e) => e.category === cat)?.amount ?? new Decimal(0)).neg(), { indent: true }))}
-          {row("Total expenses", (p) => p.totalExpenses.neg())}
-          {row("Net profit", (p) => p.netProfit, { strong: true })}
+          {total.groups.filter((g) => g.name !== "Finance costs").map((g) => [
+            ...g.lines.map((l) => row(l.category, (p) => groupLine(p, g.name, l.category).neg(), { indent: true })),
+            row(`${g.name} expenses`, (p) => groupTotal(p, g.name).neg()),
+          ])}
+          {row("Operating profit", (p) => p.operatingProfit, { strong: true })}
+          {total.groups.filter((g) => g.name === "Finance costs").map((g) => [
+            ...g.lines.map((l) => row(l.category, (p) => groupLine(p, g.name, l.category).neg(), { indent: true })),
+            row("Finance costs", (p) => groupTotal(p, g.name).neg()),
+          ])}
+          {row("Profit before tax", (p) => p.netProfit, { strong: true })}
           <tr>
             <td className="text-slate-500">Net margin</td>
             {cols.map((c, i) => <td key={i} className="num text-slate-500">{pct(c.netMargin)}</td>)}
