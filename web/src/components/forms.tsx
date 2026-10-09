@@ -32,7 +32,7 @@ export function ActionForm({ action, children, className = "space-y-4", resetOnS
         startTransition(() => formAction(fd));
       }}
     >
-      {state?.error && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{state.error}</div>}
+      {state?.error && <div role="alert" className="mb-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{state.error}</div>}
       {state?.ok && <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{state.ok}</div>}
       <div className={className}>
         <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>
