@@ -23,8 +23,8 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
       <article className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
         <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5">
           <div>
-            <div className="text-2xl font-bold tracking-tight text-brand-700">VIOCHEM</div>
-            <div className="text-slate-500">Aroma chemicals</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
           </div>
           <div className="text-right">
             <div className="text-xl font-semibold">Statement of account</div>
