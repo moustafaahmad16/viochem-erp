@@ -20,13 +20,13 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
       <div className="mx-auto mb-4 flex max-w-[210mm] justify-end print:hidden">
         <PrintButton />
       </div>
-      <article className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
+      <article dir="ltr" className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
         <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5 shadow-[0_2px_0_0_var(--color-accent-500)]">
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
           </div>
-          <div className="text-end">
+          <div className="text-right">
             <div className="text-xl font-semibold">Statement of account</div>
             <div className="text-xl font-semibold" dir="rtl">كشف حساب</div>
           </div>
@@ -39,7 +39,7 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
             {c.address && <div className="whitespace-pre-line text-slate-600">{c.address}</div>}
             {c.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {c.taxId}</div>}
           </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-end">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">
             <dt className="text-slate-500">Date · التاريخ</dt>
             <dd>{formatDate(today())}</dd>
             <dt className="text-slate-500">Balance due · الرصيد المستحق</dt>
@@ -49,12 +49,12 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
 
         <table className="mt-8 w-full">
           <thead>
-            <tr className="border-b border-slate-300 text-start text-xs text-slate-500 [&>th]:pb-2">
+            <tr className="border-b border-slate-300 text-left text-xs text-slate-500 [&>th]:pb-2">
               <th>Date · التاريخ</th>
               <th>Document · المستند</th>
-              <th className="text-end">Debit · مدين</th>
-              <th className="text-end">Credit · دائن</th>
-              <th className="text-end">Balance · الرصيد</th>
+              <th className="text-right">Debit · مدين</th>
+              <th className="text-right">Credit · دائن</th>
+              <th className="text-right">Balance · الرصيد</th>
             </tr>
           </thead>
           <tbody>
@@ -65,9 +65,9 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
                   {l.label}
                   {l.detail && <div className="text-xs text-slate-500">{l.detail}</div>}
                 </td>
-                <td className="text-end tabular-nums">{l.charge.isZero() ? "" : money(l.charge)}</td>
-                <td className="text-end tabular-nums">{l.payment.isZero() ? "" : money(l.payment)}</td>
-                <td className="text-end font-medium tabular-nums">{money(l.balance)}</td>
+                <td className="text-right tabular-nums">{l.charge.isZero() ? "" : money(l.charge)}</td>
+                <td className="text-right tabular-nums">{l.payment.isZero() ? "" : money(l.payment)}</td>
+                <td className="text-right font-medium tabular-nums">{money(l.balance)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,20 +1,23 @@
 import { notFound } from "next/navigation";
 import { ActionForm, Field, Select, Submit, TextArea } from "@/components/forms";
 import { Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
+import { getT } from "@/i18n/server";
 import { currentUser } from "@/lib/auth";
-import { formatDate, toInputDate, today } from "@/lib/dates";
+import { toInputDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import { accountLedgers } from "@/lib/services/banking";
 import { transfer, updateAccount } from "../actions";
+import { memoText } from "../../ledger/parts";
 import { AccountFields } from "../fields";
 
 export default async function AccountPage({ params }: PageProps<"/accounts/[id]">) {
   const id = Number((await params).id);
-  const [[l], user, others] = await Promise.all([
+  const [[l], user, others, t] = await Promise.all([
     accountLedgers({ id }),
     currentUser(),
     db.moneyAccount.findMany({ where: { active: true, id: { not: id } }, orderBy: { name: "asc" } }),
+    getT(),
   ]);
   if (!l) notFound();
   const a = l.account;
@@ -26,21 +29,21 @@ export default async function AccountPage({ params }: PageProps<"/accounts/[id]"
 
   return (
     <>
-      <PageHeader title={a.name} subtitle={`${a.kind === "BANK" ? "Bank account" : "Cash"} · ${a.currency}`} back={{ href: "/accounts", label: "Bank & cash" }} />
+      <PageHeader title={a.name} subtitle={`${t(a.kind === "BANK" ? "Bank account" : "Cash")} · ${a.currency}`} back={{ href: "/accounts", label: t("Bank & cash") }} />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Stat label="Balance" value={`${a.currency} ${money(l.balance)}`} tone={l.balance.lt(0) ? "warn" : "default"} />
-        <Stat label="In this month" value={`${a.currency} ${money(inflow)}`} />
-        <Stat label="Out this month" value={`${a.currency} ${money(outflow)}`} />
+        <Stat label={t("Balance")} value={`${a.currency} ${money(l.balance)}`} tone={l.balance.lt(0) ? "warn" : "default"} />
+        <Stat label={t("In this month")} value={`${a.currency} ${money(inflow)}`} />
+        <Stat label={t("Out this month")} value={`${a.currency} ${money(outflow)}`} />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card title="Movements" padded={false} className="lg:col-span-2">
-          <Table head={<tr><th>Date</th><th>What</th><th className="num">In</th><th className="num">Out</th><th className="num">Balance</th></tr>} empty="Nothing has gone in or out yet.">
+        <Card title={t("Movements")} padded={false} className="lg:col-span-2">
+          <Table head={<tr><th>{t("Date")}</th><th>{t("What")}</th><th className="num">{t("In")}</th><th className="num">{t("Out")}</th><th className="num">{t("Balance")}</th></tr>} empty={t("Nothing has gone in or out yet.")}>
             {[...l.ledger].reverse().map((m, i) => (
               <tr key={i}>
-                <td>{formatDate(m.date)}</td>
+                <td>{t.date(m.date)}</td>
                 <td>
-                  {m.href ? <RowLink href={m.href}>{m.label}</RowLink> : m.label}
-                  {m.detail && <div className="text-xs text-slate-500">{m.detail}</div>}
+                  {m.href ? <RowLink href={m.href}>{t(m.label)}</RowLink> : t(m.label)}
+                  {m.detail && <div className="text-xs text-slate-500">{memoText(t, m.detail)}</div>}
                 </td>
                 <td className="num">{m.amount.gt(0) ? money(m.amount) : ""}</td>
                 <td className="num">{m.amount.lt(0) ? money(m.amount.neg()) : ""}</td>
@@ -51,21 +54,21 @@ export default async function AccountPage({ params }: PageProps<"/accounts/[id]"
         </Card>
         <div className="space-y-6">
           {a.active && others.length > 0 && (
-            <Card title="Move money to another account">
+            <Card title={t("Move money to another account")}>
               <ActionForm action={transfer.bind(null, a.id)} resetOnSuccess>
-                <Select label="To" name="toAccountId" options={others.map((o) => ({ value: o.id, label: `${o.name} (${o.currency})` }))} />
+                <Select label={t("To")} name="toAccountId" options={others.map((o) => ({ value: o.id, label: `${o.name} (${o.currency})` }))} />
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label={`Amount (${a.currency})`} name="amount" inputMode="decimal" required />
-                  <Field label="Date" name="date" type="date" defaultValue={toInputDate(today())} required />
+                  <Field label={t("Amount ({currency})", { currency: a.currency })} name="amount" inputMode="decimal" required />
+                  <Field label={t("Date")} name="date" type="date" defaultValue={toInputDate(today())} required />
                 </div>
-                <Field label="Amount received" name="toAmount" inputMode="decimal" hint="Only when the other account is in a different currency" />
-                <TextArea label="Note" name="note" />
-                <Submit variant="secondary">Save transfer</Submit>
+                <Field label={t("Amount received")} name="toAmount" inputMode="decimal" hint={t("Only when the other account is in a different currency")} />
+                <TextArea label={t("Note")} name="note" />
+                <Submit variant="secondary">{t("Save transfer")}</Submit>
               </ActionForm>
             </Card>
           )}
           {user?.role === "ADMIN" && (
-            <Card title="Details">
+            <Card title={t("Details")}>
               <ActionForm action={updateAccount.bind(null, a.id)}>
                 <AccountFields a={a} />
               </ActionForm>

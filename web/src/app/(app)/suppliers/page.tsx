@@ -1,19 +1,23 @@
 import { ActionForm } from "@/components/forms";
 import { Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { db } from "@/lib/db";
+import { getT } from "@/i18n/server";
 import { createSupplier } from "./actions";
 import { SupplierFields } from "./fields";
 
-export const metadata = { title: "Suppliers" };
+export async function generateMetadata() {
+  return { title: (await getT())("Suppliers") };
+}
 
 export default async function SuppliersPage() {
+  const t = await getT();
   const suppliers = await db.supplier.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { shipments: true } } } });
   return (
     <>
-      <PageHeader title="Suppliers" subtitle={`${suppliers.length} suppliers`} />
+      <PageHeader title={t("Suppliers")} subtitle={t("{n} suppliers", { n: suppliers.length })} />
       <div className="grid gap-6 lg:grid-cols-3">
         <Card padded={false} className="lg:col-span-2">
-          <Table head={<tr><th>Supplier</th><th>Country</th><th>Currency</th><th className="num">Shipments</th></tr>} empty="No suppliers yet.">
+          <Table head={<tr><th>{t("Supplier")}</th><th>{t("Country")}</th><th>{t("Currency")}</th><th className="num">{t("Shipments")}</th></tr>} empty={t("No suppliers yet.")}>
             {suppliers.map((s) => (
               <tr key={s.id}>
                 <td><RowLink href={`/suppliers/${s.id}`}>{s.name}</RowLink></td>
@@ -24,9 +28,9 @@ export default async function SuppliersPage() {
             ))}
           </Table>
         </Card>
-        <Card title="Add a supplier">
+        <Card title={t("Add a supplier")}>
           <ActionForm action={createSupplier} resetOnSuccess>
-            <SupplierFields />
+            <SupplierFields t={t} />
           </ActionForm>
         </Card>
       </div>
