@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, PageHeader, Table } from "@/components/ui";
 import { addDays, formatDate, parseInputDate, toInputDate, today } from "@/lib/dates";
 import { money, pct } from "@/lib/format";
+import { generalLedger } from "@/lib/services/gl";
 import { months, profitAndLoss } from "@/lib/services/profit";
 
 export const metadata = { title: "Profit and loss" };
@@ -19,9 +20,9 @@ const Amount = ({ v, strong = false }: { v: Decimal; strong?: boolean }) => (
   <td className={`num ${strong ? "font-semibold" : ""} ${v.lt(0) ? "text-red-700" : ""}`}>{v.lt(0) ? `(${money(v.neg())})` : money(v)}</td>
 );
 
-type PL = Awaited<ReturnType<typeof profitAndLoss>>;
-const groupTotal = (p: PL, name: string) => p.groups.find((g) => g.name === name)!.total;
-const groupLine = (p: PL, name: string, category: string) => p.groups.find((g) => g.name === name)!.lines.find((l) => l.category === category)?.amount ?? new Decimal(0);
+type PL = ReturnType<typeof profitAndLoss>;
+type Part = "revenue" | "costOfSales" | "selling" | "admin" | "otherIncome" | "finance" | "incomeTax";
+const lineOf = (p: PL, part: Part, code: string) => p[part].lines.find((l) => l.account.code === code)?.amount ?? new Decimal(0);
 
 export default async function ProfitPage({ searchParams }: PageProps<"/reports/profit">) {
   const sp = await searchParams;
@@ -31,9 +32,11 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
   const from = safeDate(sp.from, new Date(Date.UTC(y, 0, 1)));
   const to = safeDate(sp.to, now);
   const allMonths = months(from, to);
-  const [total, ...byMonth] = await Promise.all([profitAndLoss(from, to), ...(allMonths.length > 1 ? allMonths.map((p) => profitAndLoss(p.from, p.to)) : [])]);
+  const gl = await generalLedger();
+  const total = profitAndLoss(gl, from, to);
+  const byMonth = allMonths.length > 1 ? allMonths.map((p) => profitAndLoss(gl, p.from, p.to)) : [];
   // Leave out the empty months before anything happened.
-  const first = byMonth.findIndex((p) => !p.sales.isZero() || !p.totalExpenses.isZero() || !p.stockDifferences.isZero());
+  const first = byMonth.findIndex((p) => [p.revenue, p.costOfSales, p.selling, p.admin, p.finance, p.otherIncome].some((x) => x.lines.length));
   const cols = first < 0 ? [] : byMonth.slice(first);
   const periods = first < 0 ? [] : allMonths.slice(first);
   const quick = [
@@ -51,9 +54,20 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
     </tr>
   );
 
+  /** A section's accounts, then its total. A single-account section shows just the total under the section's name. */
+  const section = (label: string, part: Part, cost = false) => {
+    const sign = (v: Decimal) => (cost ? v.neg() : v);
+    const lines = total[part].lines;
+    if (lines.length <= 1) return row(label, (p) => sign(p[part].total));
+    return [
+      ...lines.map((l) => row(`${l.account.code} ${l.account.name}`, (p) => sign(lineOf(p, part, l.account.code)), { indent: true })),
+      row(label, (p) => sign(p[part].total)),
+    ];
+  };
+
   return (
     <>
-      <PageHeader title="Profit and loss" subtitle={`${formatDate(from)} to ${formatDate(to)} · EGP, before income tax`} />
+      <PageHeader title="Profit and loss" subtitle={`${formatDate(from)} to ${formatDate(to)} · EGP · from the general ledger`} />
       <Card className="mb-4">
         <form className="flex flex-wrap items-end gap-3 text-sm">
           <label>
@@ -74,20 +88,16 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
       </Card>
       <Card padded={false}>
         <Table head={<tr><th /> {cols.map((_, i) => <th key={i} className="num">{periods[i].label}</th>)}<th className="num">Total</th></tr>}>
-          {row("Sales (before VAT)", (p) => p.sales)}
-          {row("Cost of sales", (p) => p.costOfSales.neg())}
-          {!total.stockDifferences.isZero() && row("of which stock count differences", (p) => p.stockDifferences, { indent: true })}
+          {section("Sales (before VAT)", "revenue")}
+          {section("Cost of sales", "costOfSales", true)}
           {row("Gross profit", (p) => p.grossProfit, { strong: true })}
-          {total.groups.filter((g) => g.name !== "Finance costs").map((g) => [
-            ...g.lines.map((l) => row(l.category, (p) => groupLine(p, g.name, l.category).neg(), { indent: true })),
-            row(`${g.name} expenses`, (p) => groupTotal(p, g.name).neg()),
-          ])}
+          {section("Selling and distribution expenses", "selling", true)}
+          {section("General and administrative expenses", "admin", true)}
+          {total.otherIncome.lines.length > 0 && section("Other income", "otherIncome")}
           {row("Operating profit", (p) => p.operatingProfit, { strong: true })}
-          {total.groups.filter((g) => g.name === "Finance costs").map((g) => [
-            ...g.lines.map((l) => row(l.category, (p) => groupLine(p, g.name, l.category).neg(), { indent: true })),
-            row("Finance costs", (p) => groupTotal(p, g.name).neg()),
-          ])}
-          {row("Profit before tax", (p) => p.netProfit, { strong: true })}
+          {section("Finance costs", "finance", true)}
+          {row("Profit before tax", (p) => p.profitBeforeTax, { strong: true })}
+          {total.incomeTax.lines.length > 0 && [section("Income tax", "incomeTax", true), row("Profit after tax", (p) => p.netProfit, { strong: true })]}
           <tr>
             <td className="text-slate-500">Net margin</td>
             {cols.map((c, i) => <td key={i} className="num text-slate-500">{pct(c.netMargin)}</td>)}
@@ -96,7 +106,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
         </Table>
       </Card>
       <p className="mt-3 text-xs text-slate-500">
-        Freight, duty and clearance are inside the cost of goods, counted when the goods are sold. Exchange gains or losses on supplier payments are not shown here yet.
+        Freight, duty and clearance are inside the cost of goods, counted when the goods are sold. Exchange differences on foreign payments are in finance costs, and a negative amount there is a gain.
       </p>
     </>
   );

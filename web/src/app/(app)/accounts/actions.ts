@@ -17,6 +17,7 @@ const data = (fd: FormData) => {
     currency: required(fd, "currency", "Currency").toUpperCase(),
     openingBalance: text(fd, "openingBalance") ? decimal(fd, "openingBalance", "Opening balance", { min: -1e12, allowZero: true }) : "0",
     openingDate: optionalDate(fd, "openingDate"),
+    openingFxRate: text(fd, "openingFxRate") ? decimal(fd, "openingFxRate", "Opening balance rate") : null,
     notes: text(fd, "notes"),
   };
 };

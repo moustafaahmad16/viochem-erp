@@ -1,11 +1,11 @@
 import Decimal from "decimal.js";
-import { ActionForm, Field, Submit } from "@/components/forms";
+import { ActionForm, Field, Select, Submit } from "@/components/forms";
 import { Card, PageHeader, Table } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
 import { formatDate, parseInputDate, toInputDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
-import { EXPENSE_CATEGORIES, expenseGroup } from "@/lib/services/profit";
+import { expenseAccounts } from "@/lib/services/profit";
 import { accountOptions, AccountSelect } from "../payments/parts";
 import { addExpense, deleteExpense } from "./actions";
 
@@ -24,11 +24,13 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
   const now = today();
   const from = safeDate(sp.from, new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)));
   const to = safeDate(sp.to, now);
-  const [expenses, accounts, user] = await Promise.all([
+  const [expenses, accounts, user, categories] = await Promise.all([
     db.expense.findMany({ where: { date: { gte: from, lte: to } }, include: { account: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     accountOptions({ egpOnly: true }),
     currentUser(),
+    expenseAccounts(),
   ]);
+  const groupOf = new Map(categories.map((c) => [c.category.toLowerCase(), c.group]));
   const byCategory = new Map<string, Decimal>();
   for (const e of expenses) byCategory.set(e.category, (byCategory.get(e.category) ?? new Decimal(0)).plus(e.amount.toString()));
   const total = [...byCategory.values()].reduce((s, v) => s.plus(v), new Decimal(0));
@@ -56,7 +58,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
           <Card title="By category" padded={false}>
             <Table head={<tr><th>Category</th><th className="num">Amount (EGP)</th><th className="num">Share</th></tr>} empty="No expenses in these dates." footer={total.gt(0) && <tr><td>Total</td><td className="num">{money(total)}</td><td /></tr>}>
               {[...byCategory].sort((a, b) => b[1].cmp(a[1])).map(([cat, v]) => (
-                <tr key={cat}><td>{cat}<div className="text-xs text-slate-500">{expenseGroup(cat)}</div></td><td className="num">{money(v)}</td><td className="num">{v.div(total).times(100).toFixed(0)}%</td></tr>
+                <tr key={cat}><td>{cat}<div className="text-xs text-slate-500">{groupOf.get(cat.toLowerCase()) ?? "General and administrative · Other"}</div></td><td className="num">{money(v)}</td><td className="num">{v.div(total).times(100).toFixed(0)}%</td></tr>
               ))}
             </Table>
           </Card>
@@ -86,8 +88,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         </div>
         <Card title="Add an expense">
           <ActionForm action={addExpense} resetOnSuccess>
-            <Field label="Category" name="category" list="expense-categories" required hint="Pick one or type your own" />
-            <datalist id="expense-categories">{EXPENSE_CATEGORIES.map((c) => <option key={c.category} value={c.category} label={c.group} />)}</datalist>
+            <Select label="Category" name="category" required placeholder="Choose" options={categories.map((c) => ({ value: c.category, label: c.category, group: c.group }))} hint="Your accountant can add more in the chart of accounts" />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Amount before VAT (EGP)" name="amount" inputMode="decimal" required />
               <Field label="VAT (EGP)" name="vat" inputMode="decimal" hint="If the bill shows VAT" />
