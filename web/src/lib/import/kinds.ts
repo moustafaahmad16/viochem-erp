@@ -39,6 +39,7 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "paymentTermsDays", title: "Payment terms (days)", example: 0, note: "Empty keeps what is saved, or 0 for a new supplier" },
       { key: "openingBalance", title: "Opening balance", example: 0, note: "What was owed before this system, in the supplier's currency. Negative for credit." },
       { key: "openingBalanceDate", title: "Opening balance date", example: "2026-09-30", note: "A date cell, or text like 2026-09-30" },
+      { key: "openingFxRate", title: "Opening balance rate", example: 48.5, note: "EGP for 1 unit of the supplier's currency on that date, to value the opening balance in the books" },
       { key: "notes", title: "Notes", example: "" },
     ],
   },
@@ -144,7 +145,7 @@ function number(v: Cell, label: string, { allowZero = false } = {}): string {
 export type ProductRow = { code: string; name: string; casNumber: string | null; unit: string; hazardClass: string | null; notes: string | null; etaItemCode: string | null };
 // Left out when the cell is empty, so importing a file without them never wipes what is already saved.
 type Terms = { paymentTermsDays?: number; openingBalance?: string; openingBalanceDate?: Date };
-export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null } & Terms;
+export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null; openingFxRate?: string } & Terms;
 export type CustomerRow = {
   name: string;
   taxId: string | null;
@@ -189,7 +190,8 @@ const PARSERS = {
   suppliers: (r: Record<string, Cell>): SupplierRow => {
     const currency = (text(r.currency) ?? "USD").toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) throw new Error(`Currency "${currency}" should be three letters, like USD`);
-    return { name: text(r.name)!, country: text(r.country), currency, email: text(r.email), phone: text(r.phone), notes: text(r.notes), ...terms(r) };
+    const rate = text(r.openingFxRate) ? { openingFxRate: number(r.openingFxRate, "Opening balance rate") } : {};
+    return { name: text(r.name)!, country: text(r.country), currency, email: text(r.email), phone: text(r.phone), notes: text(r.notes), ...rate, ...terms(r) };
   },
   customers: (r: Record<string, Cell>): CustomerRow => ({
     ...customerType(r.etaType),

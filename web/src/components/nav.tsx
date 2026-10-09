@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, Landmark, ReceiptText, TrendingUp, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
@@ -11,14 +11,29 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
   { title: "Imports", links: [{ href: "/shipments", label: "Shipments", icon: Ship }, { href: "/suppliers", label: "Suppliers", icon: Building2 }] },
   { title: "Money", links: [{ href: "/receivables", label: "Owed to you", icon: Wallet }, { href: "/payables", label: "You owe", icon: HandCoins }, { href: "/accounts", label: "Bank & cash", icon: Landmark }, { href: "/expenses", label: "Expenses", icon: ReceiptText }] },
   { title: "Stock", links: [{ href: "/stock", label: "Stock on hand", icon: Boxes }, { href: "/products", label: "Products", icon: FlaskConical }, { href: "/import", label: "Import from Excel", icon: Upload }] },
-  { title: "Reports", links: [{ href: "/reports/profit", label: "Profit and loss", icon: TrendingUp }, { href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }] },
+  {
+    title: "Accounting",
+    links: [
+      { href: "/reports/profit", label: "Profit and loss", icon: TrendingUp },
+      { href: "/ledger/balance-sheet", label: "Balance sheet", icon: Scale },
+      { href: "/ledger/trial-balance", label: "Trial balance", icon: ListTree },
+      { href: "/ledger/journal", label: "Journal", icon: NotebookPen },
+      { href: "/ledger", label: "Chart of accounts", icon: BookOpen },
+    ],
+  },
+  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }] },
 ];
 
 export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean; logout: () => Promise<void> }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
-  const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const sections = isAdmin ? [...SECTIONS, { title: "Settings", links: [{ href: "/users", label: "Users", icon: Settings }, { href: "/settings/eta", label: "E-invoice", icon: FileCheck }] }] : SECTIONS;
+  // The closest match wins, so /ledger/journal lights up Journal and not Chart of accounts.
+  const current = sections
+    .flatMap((s) => s.links.map((l) => l.href))
+    .filter((h) => (h === "/" ? path === "/" : path === h || path.startsWith(`${h}/`)))
+    .sort((a, b) => b.length - a.length)[0];
+  const active = (href: string) => href === current;
 
   return (
     <>

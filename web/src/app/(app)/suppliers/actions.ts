@@ -17,6 +17,7 @@ const data = (fd: FormData) => ({
   paymentTermsDays: terms(fd),
   openingBalance: text(fd, "openingBalance") ? decimal(fd, "openingBalance", "Opening balance", { min: -1e12, allowZero: true }) : "0",
   openingBalanceDate: optionalDate(fd, "openingBalanceDate"),
+  openingFxRate: text(fd, "openingFxRate") ? decimal(fd, "openingFxRate", "Opening balance rate") : null,
 });
 
 function terms(fd: FormData) {

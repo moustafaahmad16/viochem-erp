@@ -122,17 +122,28 @@ export function TextArea({ label, name, hint, className = "", ...input }: FieldP
   return <Labelled label={label} hint={hint} className={className}>{(id, hintId) => <textarea id={id} name={name} rows={3} aria-describedby={hintId} className={inputClass} {...input} />}</Labelled>;
 }
 
-export function Select({ label, name, hint, className = "", options, placeholder, ...input }: FieldProps & React.SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string | number; label: string }[]; placeholder?: string }) {
+export function Select({ label, name, hint, className = "", options, placeholder, ...input }: FieldProps & React.SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string | number; label: string; group?: string }[]; placeholder?: string }) {
+  const option = (o: { value: string | number; label: string }) => (
+    <option key={o.value} value={o.value}>
+      {o.label}
+    </option>
+  );
+  // Options that name a group are shown under it, in the order the groups first appear.
+  const groups = [...new Set(options.map((o) => o.group))];
   return (
     <Labelled label={label} hint={hint} className={className}>
       {(id, hintId) => (
         <select id={id} name={name} aria-describedby={hintId} className={inputClass} {...input}>
           {placeholder !== undefined && <option value="">{placeholder}</option>}
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
+          {groups.map((g) =>
+            g ? (
+              <optgroup key={g} label={g}>
+                {options.filter((o) => o.group === g).map(option)}
+              </optgroup>
+            ) : (
+              options.filter((o) => !o.group).map(option)
+            ),
+          )}
         </select>
       )}
     </Labelled>

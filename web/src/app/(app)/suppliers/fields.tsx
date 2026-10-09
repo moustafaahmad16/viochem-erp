@@ -19,6 +19,7 @@ export function SupplierFields({ s }: { s?: Supplier }) {
         <Field label="Opening balance" name="openingBalance" inputMode="decimal" defaultValue={s ? s.openingBalance.toString() : ""} hint="Owed before this system, in their currency." />
         <Field label="As of" name="openingBalanceDate" type="date" defaultValue={toInputDate(s?.openingBalanceDate)} />
       </div>
+      <Field label="Rate on that date" name="openingFxRate" inputMode="decimal" defaultValue={s?.openingFxRate?.toString() ?? ""} hint="EGP for 1 unit, to value the opening balance in the books. Not needed for EGP." />
       <TextArea label="Notes" name="notes" defaultValue={s?.notes ?? ""} />
       <Submit>{s ? "Save changes" : "Add supplier"}</Submit>
     </>

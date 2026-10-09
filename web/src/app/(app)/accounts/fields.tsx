@@ -16,6 +16,9 @@ export function AccountFields({ a }: { a?: MoneyAccount }) {
         <Field label="Opening balance" name="openingBalance" inputMode="decimal" defaultValue={a ? a.openingBalance.toString() : ""} hint="From the bank statement" />
         <Field label="On" name="openingDate" type="date" defaultValue={toInputDate(a?.openingDate)} />
       </div>
+      {a?.currency !== "EGP" && (
+        <Field label="Rate on that date" name="openingFxRate" inputMode="decimal" defaultValue={a?.openingFxRate?.toString() ?? ""} hint="EGP for 1 unit, to value a foreign currency balance in the books. Not needed for EGP." />
+      )}
       <TextArea label="Notes" name="notes" defaultValue={a?.notes ?? ""} hint="Account number, branch" />
       {a && (
         <label className="flex items-center gap-2 text-sm">

@@ -59,6 +59,7 @@ model Supplier {
   // What was owed to this supplier before using this system, in the supplier's currency.
   openingBalance     Decimal           @default(0) @db.Decimal(14, 2)
   openingBalanceDate DateTime?         @db.Date
+  openingFxRate      Decimal?          @db.Decimal(14, 6) // EGP for 1 unit of the opening balance's currency
   createdAt          DateTime          @default(now())
   shipments          Shipment[]
   payments           SupplierPayment[]
@@ -301,6 +302,7 @@ model MoneyAccount {
   currency         String            @default("EGP")
   openingBalance   Decimal           @default(0) @db.Decimal(14, 2)
   openingDate      DateTime?         @db.Date
+  openingFxRate    Decimal?          @db.Decimal(14, 6) // EGP for 1 unit, for a foreign currency account
   active           Boolean           @default(true)
   notes            String?
   createdAt        DateTime          @default(now())
@@ -310,6 +312,7 @@ model MoneyAccount {
   expenses         Expense[]
   transfersOut     Transfer[]        @relation("TransferFrom")
   transfersIn      Transfer[]        @relation("TransferTo")
+  journalLines     JournalLine[]
 }
 
 // Running costs of the business: rent, salaries, transport. Import costs belong on the shipment instead.
@@ -371,4 +374,65 @@ model EtaSettings {
   // 0.9 needs no signature and is only for pre-production testing; 1.0 must be signed.
   documentVersion String   @default("1.0")
   updatedAt       DateTime @updatedAt
+}
+
+/**
+ * Where an account appears in the balance sheet or income statement.
+ */
+enum LedgerSection {
+  CURRENT_ASSETS
+  FIXED_ASSETS
+  CURRENT_LIABILITIES
+  LONG_TERM_LIABILITIES
+  EQUITY
+  REVENUE
+  COST_OF_SALES
+  SELLING
+  ADMIN
+  FINANCE
+  OTHER_INCOME
+  INCOME_TAX
+}
+
+/**
+ * The chart of accounts. Bank and cash accounts are added from MoneyAccount, one each.
+ */
+model LedgerAccount {
+  id        Int           @id @default(autoincrement())
+  code      String        @unique
+  name      String
+  section   LedgerSection
+  // Kept by the system from documents, so it can't take manual entries or be removed.
+  system    Boolean       @default(false)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  lines     JournalLine[]
+}
+
+/**
+ * A manual journal entry, for what no document records: capital, loans, depreciation, VAT settlement.
+ */
+model JournalEntry {
+  id        Int           @id @default(autoincrement())
+  number    String        @unique
+  date      DateTime      @db.Date
+  memo      String
+  createdBy String?
+  createdAt DateTime      @default(now())
+  lines     JournalLine[]
+}
+
+model JournalLine {
+  id              Int            @id @default(autoincrement())
+  entryId         Int
+  entry           JournalEntry   @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  ledgerAccountId Int?
+  ledgerAccount   LedgerAccount? @relation(fields: [ledgerAccountId], references: [id])
+  moneyAccountId  Int?
+  moneyAccount    MoneyAccount?  @relation(fields: [moneyAccountId], references: [id])
+  debit           Decimal        @default(0) @db.Decimal(14, 2)
+  credit          Decimal        @default(0) @db.Decimal(14, 2)
+  memo            String?
+
+  @@index([entryId])
 }

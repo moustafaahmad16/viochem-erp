@@ -4,7 +4,7 @@ import { dayOf, parseInputDate } from "@/lib/dates";
 import { accountLedgers, recordExpense, recordTransfer } from "@/lib/services/banking";
 import { addOpeningStock, adjustLot, createInvoice, postInvoice } from "@/lib/services/inventory";
 import { recordCustomerPayment, recordSupplierPayment } from "@/lib/services/payments";
-import { months, profitAndLoss } from "@/lib/services/profit";
+import { loadProfitAndLoss, months } from "@/lib/services/profit";
 
 // 2023 dates keep these document numbers apart from the other test files.
 const d = (s: string) => parseInputDate(s)!;
@@ -66,14 +66,14 @@ describe("profit and loss", () => {
     // A count is dated today; move it into the period being tested.
     await db.stockMove.updateMany({ where: { lotId, kind: "ADJUSTMENT" }, data: { date: d("2023-03-20") } });
 
-    const p = await profitAndLoss(d("2023-03-01"), d("2023-03-31"));
+    const p = await loadProfitAndLoss(d("2023-03-01"), d("2023-03-31"));
     // Cost of sales is the landed cost of what was sold plus the unit lost in the count.
-    expect([p.sales, p.costOfSales, p.grossProfit, p.operatingProfit, p.totalExpenses, p.netProfit].map(n)).toEqual([1000, 500, 500, 180, 330, 170]);
-    expect(p.groups.map((g) => [g.name, n(g.total), g.lines.map((l) => l.category)])).toEqual([
-      ["Selling and distribution", 0, []],
-      ["General and administrative", 320, ["Salaries", "Tea for staff"]],
-      ["Finance costs", 10, ["Bank charges"]],
-    ]);
+    expect([p.revenue.total, p.costOfSales.total, p.grossProfit, p.operatingProfit, p.profitBeforeTax].map(n)).toEqual([1000, 500, 500, 180, 170]);
+    const names = (part: typeof p.admin) => part.lines.map((l) => [l.account.name, n(l.amount)]);
+    expect(names(p.costOfSales)).toEqual([["Cost of goods sold", 400], ["Stock count differences", 100]]);
+    // A category typed by hand goes to Other.
+    expect(names(p.admin)).toEqual([["Salaries", 300], ["Other", 20]]);
+    expect(names(p.finance)).toEqual([["Bank charges", 10]]);
   });
 
   it("splits a period into calendar months", () => {
