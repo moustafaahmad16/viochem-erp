@@ -16,7 +16,12 @@ export default async function LowStockPage() {
       <PageHeader
         title={t("Low stock")}
         subtitle={t("Products at or below their alert level. Set the level on each product.")}
-        actions={<ButtonLink href="/purchase-orders/new">{t("New purchase order")}</ButtonLink>}
+        actions={
+          <>
+            <ButtonLink href="/rfqs/new?from=low-stock" variant="secondary">{t("Ask suppliers for prices")}</ButtonLink>
+            <ButtonLink href="/purchase-orders/new">{t("New purchase order")}</ButtonLink>
+          </>
+        }
       />
       <Card padded={false}>
         <Table
