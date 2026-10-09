@@ -85,7 +85,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
               <td className="whitespace-nowrap">{t.date(i.lastSale)}</td>
               <td className="num whitespace-nowrap">
                 {qty(i.onHand)} {t(i.unit)}
-                {i.coverMonths && <div className={`text-xs ${i.coverMonths.lt(1) ? "font-medium text-amber-700" : "text-slate-500"}`}>{t("{n} months", { n: qty(i.coverMonths.toDecimalPlaces(1)) })}</div>}
+                {i.coverMonths && <div className={`text-xs ${i.coverMonths.lt(1) ? "font-medium text-amber-700" : "text-slate-500"}`}>{i.coverMonths.toDecimalPlaces(1).eq(1) ? t("1 month") : t("{n} months", { n: qty(i.coverMonths.toDecimalPlaces(1)) })}</div>}
               </td>
             </tr>
           ))}
