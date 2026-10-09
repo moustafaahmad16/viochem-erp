@@ -6,7 +6,7 @@ import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, required, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { addCreditLine, cancelCreditNote as cancel, createCreditNote as create, deleteCreditNote, postCreditNote as post, removeCreditLine } from "@/lib/services/credits";
-import { cancelCreditNoteOnEta, refreshCreditNoteStatus, sendCreditNote } from "@/lib/services/einvoice";
+import { cancelCreditNoteOnEta, refreshCreditNoteStatus } from "@/lib/services/einvoice";
 
 const refresh = (id: number) => {
   revalidatePath(`/credit-notes/${id}`);
@@ -74,18 +74,6 @@ export async function deleteDraft(id: number) {
   await requireUser();
   await deleteCreditNote(id);
   redirect("/credit-notes");
-}
-
-export async function sendToEta(id: number): Promise<FormState> {
-  await requireUser();
-  let status;
-  try {
-    status = (await sendCreditNote(id)).etaStatus;
-  } catch (e) {
-    return fail(e);
-  }
-  refresh(id);
-  return status === "SUBMITTED" ? { ok: "Sent. The tax authority is checking it; check again in a minute." } : { error: "The tax authority refused it. The reasons are shown above." };
 }
 
 export async function checkEta(id: number): Promise<FormState> {

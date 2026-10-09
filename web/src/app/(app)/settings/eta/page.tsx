@@ -1,13 +1,14 @@
 import { revalidatePath } from "next/cache";
 import { ActionForm, Field, Select, Submit, type FormState } from "@/components/forms";
-import { Badge, Card, Detail, PageHeader } from "@/components/ui";
+import { Badge, buttonClass, Card, Detail, PageHeader } from "@/components/ui";
 import { fail, text } from "@/lib/actions";
 import { getT } from "@/i18n/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { accessToken, etaConfig } from "@/lib/eta/client";
+import { accessToken, etaConfig, signingMode } from "@/lib/eta/client";
 import { etaSettings } from "@/lib/services/einvoice";
 import { UserError } from "@/lib/services/errors";
+import { SignerCheck } from "./signer-check";
 
 export async function generateMetadata() {
   return { title: (await getT())("E-invoice settings") };
@@ -63,6 +64,7 @@ export default async function EtaSettingsPage() {
   const s = await etaSettings();
   const c = etaConfig();
   const t = await getT();
+  const mode = signingMode(s.documentVersion);
   return (
     <>
       <PageHeader title={t("E-invoice settings")} subtitle={t("How VIOCHEM is registered with the Egyptian Tax Authority")} />
@@ -93,10 +95,10 @@ export default async function EtaSettingsPage() {
           <dl className="space-y-3">
             <Detail label={t("Environment")}>{t(c.environment === "production" ? "Production (real invoices)" : "Pre-production (testing)")}</Detail>
             <Detail label={t("Client ID and secret")}><Yes on={Boolean(c.clientId && c.clientSecret)} /></Detail>
-            <Detail label={t("Signing service")}><Yes on={Boolean(c.signerUrl)} /></Detail>
+            <Detail label={t("Signing")}>{t(mode === "none" ? "Not needed for version 0.9" : mode === "server" ? "Signing service (ETA_SIGNER_URL)" : "E-seal on the computer that sends")}</Detail>
           </dl>
           <p className="mt-4 text-xs text-slate-500">
-            {t("These are kept in Vercel, not here: ETA_ENVIRONMENT, ETA_CLIENT_ID, ETA_CLIENT_SECRET and ETA_SIGNER_URL. After changing them, redeploy.")}
+            {t("These are kept in Vercel, not here: ETA_ENVIRONMENT, ETA_CLIENT_ID and ETA_CLIENT_SECRET. After changing them, redeploy.")}
           </p>
           <div className="mt-4">
             <ActionForm action={testLogin}>
@@ -104,6 +106,24 @@ export default async function EtaSettingsPage() {
             </ActionForm>
           </div>
         </Card>
+        {mode === "browser" && (
+          <Card title={t("E-seal signer")} className="lg:col-span-3">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ol className="list-decimal space-y-2 ps-5 text-sm text-slate-700">
+                <li>{t("On the computer the e-seal USB token is plugged into, install the token's driver from its supplier (Egypt Trust or MCDR) if it isn't already.")}</li>
+                <li>{t("On that computer, download VIOCHEM signer and double-click it. If Windows warns about the file, choose More info, then Run anyway.")}</li>
+                <li>{t("Enter the token's PIN when Windows asks. Leave the black window open; it signs each invoice you send.")}</li>
+                <li>{t("Send e-invoices from that computer. If the browser asks to allow access to devices on your network, allow it.")}</li>
+                <li>{t("To start it with Windows, put a shortcut to the file in the Startup folder (press Win+R, type shell:startup).")}</li>
+              </ol>
+              <div className="space-y-4">
+                <a href="/settings/eta/signer" download className={buttonClass("primary")}>{t("Download VIOCHEM signer")}</a>
+                <SignerCheck />
+                <p className="text-xs text-slate-500">{t("The signer only signs for this website, and only while the token is plugged in. The invoice never leaves VIOCHEM's systems except to the tax authority.")}</p>
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
     </>
   );

@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { invoiceTotals } from "@/lib/costing";
 import { creditCheck } from "@/lib/services/credit";
 import { UserError } from "@/lib/services/errors";
-import { cancelOnEta, refreshStatus, sendInvoice } from "@/lib/services/einvoice";
+import { cancelOnEta, refreshStatus } from "@/lib/services/einvoice";
 import { cancelInvoice as cancel, createInvoice as create, postInvoice as post } from "@/lib/services/inventory";
 
 async function draft(id: number) {
@@ -110,18 +110,6 @@ export async function deleteDraft(id: number) {
   await draft(id);
   await db.invoice.delete({ where: { id } });
   redirect("/invoices");
-}
-
-export async function sendToEta(id: number): Promise<FormState> {
-  await requireUser();
-  let status;
-  try {
-    status = (await sendInvoice(id)).etaStatus;
-  } catch (e) {
-    return fail(e);
-  }
-  revalidatePath(`/invoices/${id}`);
-  return status === "SUBMITTED" ? { ok: "Sent. The tax authority is checking it; check again in a minute." } : { error: "The tax authority refused it. The reasons are shown above." };
 }
 
 export async function checkEta(id: number): Promise<FormState> {

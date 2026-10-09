@@ -2,7 +2,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { parseInputDate } from "@/lib/dates";
 import { buildDocument, issuedAt, problems, serialize, type Party } from "@/lib/eta/document";
-import { refreshStatus, sendInvoice } from "@/lib/services/einvoice";
+import { refreshStatus, sendInvoice, textToSign } from "@/lib/services/einvoice";
+import { signingMode } from "@/lib/eta/client";
 import { addOpeningStock, createInvoice, postInvoice } from "@/lib/services/inventory";
 
 const issuer: Party = { type: "B", id: "100324932", name: "VIOCHEM", country: "EG", governate: "Cairo", city: "Nasr City", street: "Abbas El Akkad", buildingNo: "12", branchId: "0" };
@@ -90,5 +91,30 @@ describe("sending to ETA", () => {
 
     inv = await refreshStatus(invoiceId);
     expect(inv.etaStatus).toBe("VALID");
+  });
+
+  it("sends a version 1.0 invoice with the signature made by the e-seal next to the browser", async () => {
+    await db.etaSettings.update({ where: { id: 1 }, data: { documentVersion: "1.0" } });
+    expect([signingMode("0.9"), signingMode("1.0")]).toEqual(["none", "browser"]);
+    const source = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { lines: true } });
+    const inv = await createInvoice(source.customerId, d("2022-02-02"));
+    await db.invoiceLine.create({ data: { invoiceId: inv.id, itemId: source.lines[0].itemId, qty: 1, unitPrice: 500 } });
+    await postInvoice(inv.id);
+
+    const { serialized, number } = await textToSign("invoice", inv.id);
+    expect(number).toBe(inv.number);
+    expect(serialized).toContain(`"INTERNALID""${inv.number}"`);
+    await expect(sendInvoice(inv.id, { serialized: serialized.replace("500", "5"), signature: "SIG" })).rejects.toThrow(/changed while it was being signed/);
+
+    const fetch = respond({ "connect/token": { access_token: "t" }, documentsubmissions: { submissionId: "S2", acceptedDocuments: [{ uuid: "U2", longId: "L2", internalId: inv.number }], rejectedDocuments: [] } });
+    vi.stubGlobal("fetch", fetch);
+    const sent = await sendInvoice(inv.id, { serialized, signature: "SIG" });
+    expect(sent.etaStatus).toBe("SUBMITTED");
+    const doc = JSON.parse(String(fetch.mock.calls[1][1]!.body)).documents[0];
+    expect(doc.signatures).toEqual([{ signatureType: "I", value: "SIG" }]);
+    const { signatures, ...unsigned } = doc;
+    expect(signatures).toBeDefined();
+    expect(serialize(unsigned)).toBe(serialized);
+    await db.etaSettings.update({ where: { id: 1 }, data: { documentVersion: "0.9" } });
   });
 });

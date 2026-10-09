@@ -6,8 +6,11 @@ import { serialize, type EtaDocument } from "./document";
  *   ETA_ENVIRONMENT    "production" or "preprod" (the default, for testing)
  *   ETA_CLIENT_ID      from the ETA portal, under ERP system registration
  *   ETA_CLIENT_SECRET
- *   ETA_SIGNER_URL     a signing service next to the e-seal USB token, needed for version 1.0
+ *   ETA_SIGNER_URL     optional: a signing service the server can reach, next to the e-seal USB token
  *   ETA_SIGNER_TOKEN   optional password for that service
+ *
+ * Version 1.0 documents must be signed with the e-seal. Without ETA_SIGNER_URL they are signed in the
+ * browser instead, by the VIOCHEM signer running on the computer the token is plugged into.
  */
 
 const HOSTS = {
@@ -25,6 +28,12 @@ export function etaConfig() {
     signerUrl: process.env.ETA_SIGNER_URL ?? "",
     signerToken: process.env.ETA_SIGNER_TOKEN ?? "",
   } as const;
+}
+
+/** Where signatures come from: none for version 0.9, a service the server calls, or the signer next to the browser. */
+export function signingMode(version: string): "none" | "server" | "browser" {
+  if (version === "0.9") return "none";
+  return etaConfig().signerUrl ? "server" : "browser";
 }
 
 /** Link anyone can open to see the document on the ETA portal. */
