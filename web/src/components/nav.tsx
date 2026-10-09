@@ -23,7 +23,8 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
   return (
     <>
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
-        <span className="font-bold text-brand-700">VIOCHEM</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Viochem" className="h-8 w-auto" />
         <button onClick={() => setOpen(!open)} className="rounded-md border border-slate-300 px-2.5 py-1 text-sm" aria-label="Menu">
           ☰
         </button>
@@ -33,8 +34,9 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
         onClick={() => setOpen(false)}
       >
         <div className="px-5 py-5">
-          <Link href="/" className="text-xl font-bold tracking-tight text-brand-700">
-            VIOCHEM
+          <Link href="/" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Viochem" className="h-14 w-auto" />
           </Link>
         </div>
         <nav className="space-y-5 px-3 pb-24">

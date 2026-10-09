@@ -8,7 +8,8 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="text-3xl font-bold tracking-tight text-brand-700">VIOCHEM</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Viochem for Trading and Industry" className="mx-auto h-24 w-auto" />
           <div className="mt-1 text-sm text-slate-500">Aroma chemicals · Imports · Sales</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

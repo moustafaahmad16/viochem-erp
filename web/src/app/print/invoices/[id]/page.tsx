@@ -29,8 +29,8 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
         {inv.status === "CANCELLED" && <div className="mb-4 rounded border-2 border-red-600 py-2 text-center text-lg font-bold text-red-600">CANCELLED · ملغاة</div>}
         <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5">
           <div>
-            <div className="text-2xl font-bold tracking-tight text-brand-700">VIOCHEM</div>
-            <div className="text-slate-500">Aroma chemicals</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
           </div>
           <div className="text-right">
             <div className="text-xl font-semibold">Tax Invoice</div>
