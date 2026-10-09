@@ -2,7 +2,7 @@ import type { EtaStatus } from "@prisma/client";
 import { invoiceTotals } from "@/lib/costing";
 import { db } from "@/lib/db";
 import { cancelDocument, documentStatus, sign, submit } from "@/lib/eta/client";
-import { buildDocument, issuedAt, problems, UNIT_TYPES, withSignature, type EtaDocument, type Party } from "@/lib/eta/document";
+import { buildDocument, issuedAt, problems, serialize, UNIT_TYPES, withSignature, type EtaDocument, type Party } from "@/lib/eta/document";
 import { UserError } from "./errors";
 
 export const etaSettings = () => db.etaSettings.upsert({ where: { id: 1 }, create: {}, update: {} });
@@ -93,9 +93,42 @@ export async function prepareCreditNote(creditNoteId: number) {
 
 const SENDABLE: EtaStatus[] = ["NOT_SENT", "REJECTED", "INVALID"];
 
-/** Sign and send one document; what to keep on the invoice or credit note afterwards. */
-async function sendDocument(document: EtaDocument, internalId: string) {
-  const result = await submit([withSignature(document, await sign(document))]);
+export type EtaKind = "invoice" | "credit";
+
+/** A signature made in the browser by the e-seal signer on the user's computer, with the text it signed. */
+export type BrowserSignature = { serialized: string; signature: string };
+
+/** A posted invoice or credit note that can go to ETA now, as the document to send. */
+async function ready(kind: EtaKind, id: number) {
+  if (kind === "invoice") {
+    const { invoice, document, problems: missing } = await prepare(id);
+    if (invoice.status !== "POSTED") throw new UserError("Only posted invoices can be sent to the tax authority.");
+    if (!SENDABLE.includes(invoice.etaStatus)) throw new UserError("This invoice is already with the tax authority.");
+    if (missing.length) throw new UserError(`Fix these first:\n${missing.join("\n")}`);
+    return { document, number: invoice.number };
+  }
+  const { creditNote: cn, document, problems: missing } = await prepareCreditNote(id);
+  if (cn.status !== "POSTED") throw new UserError("Only posted credit notes can be sent to the tax authority.");
+  if (!SENDABLE.includes(cn.etaStatus)) throw new UserError("This credit note is already with the tax authority.");
+  if (!cn.invoice.etaUuid) throw new UserError(`Send ${cn.invoice.number} to the tax authority first.`);
+  if (missing.length) throw new UserError(`Fix these first:\n${missing.join("\n")}`);
+  return { document, number: cn.number };
+}
+
+/** The exact text the e-seal must sign for a document, after checking it can be sent. */
+export async function textToSign(kind: EtaKind, id: number) {
+  const { document, number } = await ready(kind, id);
+  return { serialized: serialize(document), number };
+}
+
+/**
+ * Sign and send one document; what to keep on the invoice or credit note afterwards. A signature made in
+ * the browser is only used if it was made over this same document, so nothing changed in between.
+ */
+async function sendDocument(document: EtaDocument, internalId: string, signed?: BrowserSignature) {
+  if (signed && signed.serialized !== serialize(document)) throw new UserError("The document changed while it was being signed. Send it again.");
+  const signature = signed ? signed.signature : await sign(document);
+  const result = await submit([withSignature(document, signature)]);
   const accepted = result.accepted.find((d) => d.internalId === internalId) ?? result.accepted[0];
   return accepted
     ? { etaStatus: "SUBMITTED" as const, etaUuid: accepted.uuid, etaLongId: accepted.longId, etaSubmissionUuid: result.submissionId, etaError: null, etaSentAt: new Date() }
@@ -107,22 +140,15 @@ async function sendDocument(document: EtaDocument, internalId: string) {
 }
 
 /** Sign and send one posted invoice to ETA, and keep what ETA said on the invoice. */
-export async function sendInvoice(invoiceId: number) {
-  const { invoice, document, problems: missing } = await prepare(invoiceId);
-  if (invoice.status !== "POSTED") throw new UserError("Only posted invoices can be sent to the tax authority.");
-  if (!SENDABLE.includes(invoice.etaStatus)) throw new UserError("This invoice is already with the tax authority.");
-  if (missing.length) throw new UserError(`Fix these first:\n${missing.join("\n")}`);
-  return db.invoice.update({ where: { id: invoiceId }, data: await sendDocument(document, invoice.number) });
+export async function sendInvoice(invoiceId: number, signed?: BrowserSignature) {
+  const { document, number } = await ready("invoice", invoiceId);
+  return db.invoice.update({ where: { id: invoiceId }, data: await sendDocument(document, number, signed) });
 }
 
 /** Sign and send one posted credit note to ETA, referring to its invoice's e-invoice. */
-export async function sendCreditNote(creditNoteId: number) {
-  const { creditNote: cn, document, problems: missing } = await prepareCreditNote(creditNoteId);
-  if (cn.status !== "POSTED") throw new UserError("Only posted credit notes can be sent to the tax authority.");
-  if (!SENDABLE.includes(cn.etaStatus)) throw new UserError("This credit note is already with the tax authority.");
-  if (!cn.invoice.etaUuid) throw new UserError(`Send ${cn.invoice.number} to the tax authority first.`);
-  if (missing.length) throw new UserError(`Fix these first:\n${missing.join("\n")}`);
-  return db.creditNote.update({ where: { id: creditNoteId }, data: await sendDocument(document, cn.number) });
+export async function sendCreditNote(creditNoteId: number, signed?: BrowserSignature) {
+  const { document, number } = await ready("credit", creditNoteId);
+  return db.creditNote.update({ where: { id: creditNoteId }, data: await sendDocument(document, number, signed) });
 }
 
 const STATUS: Record<string, EtaStatus> = { Submitted: "SUBMITTED", Valid: "VALID", Invalid: "INVALID", Rejected: "REJECTED", Cancelled: "CANCELLED" };

@@ -10,10 +10,11 @@ import { daysLate } from "@/lib/ledger";
 import { customerAccounts } from "@/lib/services/accounts";
 import { creditCheck } from "@/lib/services/credit";
 import { currentUser } from "@/lib/auth";
-import { addLine, cancelInvoice, checkEta, deleteDraft, postInvoice, removeLine, sendToEta, updateInvoice } from "../actions";
+import { addLine, cancelInvoice, checkEta, deleteDraft, postInvoice, removeLine, updateInvoice } from "../actions";
 import { EtaBadge, InvoiceStatusBadge } from "../status";
-import { prepare } from "@/lib/services/einvoice";
-import { shareUrl } from "@/lib/eta/client";
+import { etaSettings, prepare } from "@/lib/services/einvoice";
+import { EtaSend } from "@/components/eta-send";
+import { shareUrl, signingMode } from "@/lib/eta/client";
 import { getT } from "@/i18n/server";
 import { LineForm } from "./line-form";
 import { InvoiceCreditNotes } from "../../credit-notes/invoice-card";
@@ -175,9 +176,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                       </div>
                     )}
                     {inv.status === "POSTED" && etaMissing.length === 0 && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) && (
-                      <ActionForm action={sendToEta.bind(null, inv.id)}>
-                        <Submit confirm={t("Send {number} to the tax authority?", { number: inv.number })}>{inv.etaStatus === "NOT_SENT" ? t("Send to ETA") : t("Send again")}</Submit>
-                      </ActionForm>
+                      <EtaSend kind="invoice" id={inv.id} number={inv.number} again={inv.etaStatus !== "NOT_SENT"} mode={signingMode((await etaSettings()).documentVersion)} />
                     )}
                     {inv.etaUuid && ["SUBMITTED", "VALID", "INVALID"].includes(inv.etaStatus) && (
                       <ActionForm action={checkEta.bind(null, inv.id)}>

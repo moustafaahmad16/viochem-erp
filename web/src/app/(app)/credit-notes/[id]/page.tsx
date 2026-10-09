@@ -3,13 +3,14 @@ import { notFound } from "next/navigation";
 import { ActionForm, Submit, TextArea } from "@/components/forms";
 import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { db } from "@/lib/db";
-import { shareUrl } from "@/lib/eta/client";
+import { shareUrl, signingMode } from "@/lib/eta/client";
+import { EtaSend } from "@/components/eta-send";
 import { money, qty } from "@/lib/format";
 import { creditableLines, creditTotals } from "@/lib/services/credits";
-import { prepareCreditNote } from "@/lib/services/einvoice";
+import { etaSettings, prepareCreditNote } from "@/lib/services/einvoice";
 import { getT } from "@/i18n/server";
 import { EtaBadge, InvoiceStatusBadge } from "../../invoices/status";
-import { addLine, cancelCreditNote, checkEta, deleteDraft, postCreditNote, removeLine, sendToEta } from "../actions";
+import { addLine, cancelCreditNote, checkEta, deleteDraft, postCreditNote, removeLine } from "../actions";
 import { CreditLineForm } from "./line-form";
 
 export async function generateMetadata({ params }: PageProps<"/credit-notes/[id]">) {
@@ -152,9 +153,7 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
                       </div>
                     )}
                     {sendable && etaMissing.length === 0 && (
-                      <ActionForm action={sendToEta.bind(null, cn.id)}>
-                        <Submit confirm={t("Send {number} to the tax authority?", { number: cn.number })}>{cn.etaStatus === "NOT_SENT" ? t("Send to ETA") : t("Send again")}</Submit>
-                      </ActionForm>
+                      <EtaSend kind="credit" id={cn.id} number={cn.number} again={cn.etaStatus !== "NOT_SENT"} mode={signingMode((await etaSettings()).documentVersion)} />
                     )}
                     {cn.etaUuid && ["SUBMITTED", "VALID", "INVALID"].includes(cn.etaStatus) && (
                       <ActionForm action={checkEta.bind(null, cn.id)}>
