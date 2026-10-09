@@ -48,6 +48,7 @@ model Item {
   invoiceLines  InvoiceLine[]
   quoteLines    QuoteLine[]
   orderLines    PurchaseOrderLine[]
+  rfqLines      RfqLine[]
 }
 
 model Supplier {
@@ -69,6 +70,8 @@ model Supplier {
   payments           SupplierPayment[]
   purchaseOrders     PurchaseOrder[]
   cheques            Cheque[]
+  rfqs               RfqSupplier[]
+  rfqQuotes          RfqQuote[]
 }
 
 model Customer {
@@ -565,6 +568,7 @@ model PurchaseOrder {
   createdAt    DateTime            @default(now())
   lines        PurchaseOrderLine[]
   shipments    Shipment[]
+  rfqQuotes    RfqQuote[]
 }
 
 model PurchaseOrderLine {
@@ -627,4 +631,98 @@ model Cheque {
   @@index([dueDate])
   @@index([customerId])
   @@index([supplierId])
+}
+
+enum RfqStatus {
+  OPEN // collecting prices from suppliers
+  ORDERED // purchase orders made from the chosen prices
+  CANCELLED
+}
+
+/**
+ * A request for quotation: the materials needed, sent to several suppliers as an Excel sheet.
+ * Their prices come back on the same sheet and are compared at landed cost in EGP.
+ */
+model Rfq {
+  id        Int           @id @default(autoincrement())
+  number    String        @unique
+  date      DateTime      @db.Date
+  // When suppliers should reply by, and when the goods are needed in Egypt.
+  replyBy   DateTime?     @db.Date
+  neededBy  DateTime?     @db.Date
+  status    RfqStatus     @default(OPEN)
+  notes     String?
+  createdAt DateTime      @default(now())
+  lines     RfqLine[]
+  suppliers RfqSupplier[]
+  quotes    RfqQuote[]
+  rates     RfqRate[]
+}
+
+model RfqLine {
+  id     Int        @id @default(autoincrement())
+  rfqId  Int
+  rfq    Rfq        @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  itemId Int
+  item   Item       @relation(fields: [itemId], references: [id])
+  qty    Decimal    @db.Decimal(14, 3)
+  notes  String?
+  quotes RfqQuote[]
+}
+
+/**
+ * A supplier asked to quote.
+ */
+model RfqSupplier {
+  id         Int       @id @default(autoincrement())
+  rfqId      Int
+  rfq        Rfq       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierId Int
+  supplier   Supplier  @relation(fields: [supplierId], references: [id])
+  // When the sheet was downloaded for them, and when their reply was loaded.
+  sentAt     DateTime?
+  repliedAt  DateTime?
+
+  @@unique([rfqId, supplierId])
+}
+
+/**
+ * One supplier's price for one line.
+ */
+model RfqQuote {
+  id               Int            @id @default(autoincrement())
+  rfqId            Int
+  rfq              Rfq            @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  rfqLineId        Int
+  line             RfqLine        @relation(fields: [rfqLineId], references: [id], onDelete: Cascade)
+  supplierId       Int
+  supplier         Supplier       @relation(fields: [supplierId], references: [id])
+  currency         String
+  unitPrice        Decimal        @db.Decimal(14, 4)
+  // The smallest quantity they will sell.
+  moq              Decimal?       @db.Decimal(14, 3)
+  leadTimeDays     Int?
+  paymentTermsDays Int?
+  validUntil       DateTime?      @db.Date
+  incoterm         String?
+  notes            String?
+  // How much to buy at this price, once chosen.
+  awardQty         Decimal?       @db.Decimal(14, 3)
+  purchaseOrderId  Int?
+  purchaseOrder    PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+
+  @@unique([rfqLineId, supplierId])
+}
+
+/**
+ * EGP for 1 unit of each currency quoted, used to compare prices.
+ */
+model RfqRate {
+  id       Int     @id @default(autoincrement())
+  rfqId    Int
+  rfq      Rfq     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  currency String
+  rate     Decimal @db.Decimal(14, 6)
+
+  @@unique([rfqId, currency])
 }
