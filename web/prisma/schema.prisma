@@ -36,6 +36,9 @@ model Item {
   unit          String         @default("kg")
   hazardClass   String?
   notes         String?
+  // The item code registered with the Egyptian Tax Authority, e.g. EG-100324932-LIN001 (EGS) or a GS1 barcode.
+  etaItemCode   String?
+  etaItemType   String         @default("EGS")
   active        Boolean        @default(true)
   createdAt     DateTime       @default(now())
   lots          Lot[]
@@ -68,6 +71,13 @@ model Customer {
   phone              String?
   email              String?
   address            String?
+  // Address parts the Egyptian Tax Authority needs on an e-invoice.
+  etaType            String            @default("B") // B business, P person, F foreign
+  country            String            @default("EG")
+  governate          String?
+  city               String?
+  street             String?
+  buildingNo         String?
   notes              String?
   // Days after the invoice date that payment is due.
   paymentTermsDays   Int               @default(30)
@@ -190,20 +200,27 @@ enum InvoiceStatus {
 }
 
 model Invoice {
-  id         Int               @id @default(autoincrement())
-  number     String            @unique
-  customerId Int
-  customer   Customer          @relation(fields: [customerId], references: [id])
-  date       DateTime          @db.Date
+  id                Int               @id @default(autoincrement())
+  number            String            @unique
+  customerId        Int
+  customer          Customer          @relation(fields: [customerId], references: [id])
+  date              DateTime          @db.Date
   // Set when posted, from the customer's payment terms.
-  dueDate    DateTime?         @db.Date
-  status     InvoiceStatus     @default(DRAFT)
-  vatRate    Decimal           @default(14) @db.Decimal(5, 2)
-  notes      String?
-  createdAt  DateTime          @default(now())
-  postedAt   DateTime?
-  lines      InvoiceLine[]
-  payments   CustomerPayment[]
+  dueDate           DateTime?         @db.Date
+  // Egyptian Tax Authority e-invoice: what happened when it was sent.
+  etaStatus         EtaStatus         @default(NOT_SENT)
+  etaUuid           String?           @unique
+  etaLongId         String?
+  etaSubmissionUuid String?
+  etaError          String?
+  etaSentAt         DateTime?
+  status            InvoiceStatus     @default(DRAFT)
+  vatRate           Decimal           @default(14) @db.Decimal(5, 2)
+  notes             String?
+  createdAt         DateTime          @default(now())
+  postedAt          DateTime?
+  lines             InvoiceLine[]
+  payments          CustomerPayment[]
 
   @@index([date])
 }
@@ -328,4 +345,30 @@ model Transfer {
   toAmount      Decimal      @db.Decimal(14, 2)
   note          String?
   createdAt     DateTime     @default(now())
+}
+
+enum EtaStatus {
+  NOT_SENT
+  SUBMITTED // accepted for checking; ETA is still validating it
+  VALID
+  INVALID
+  REJECTED // refused on submission; fix and send again
+  CANCELLED
+}
+
+// VIOCHEM's own details as registered with the Egyptian Tax Authority. One row.
+model EtaSettings {
+  id              Int      @id @default(1)
+  taxId           String   @default("")
+  name            String   @default("VIOCHEM")
+  activityCode    String   @default("")
+  branchId        String   @default("0")
+  governate       String   @default("")
+  city            String   @default("")
+  street          String   @default("")
+  buildingNo      String   @default("")
+  postalCode      String?
+  // 0.9 needs no signature and is only for pre-production testing; 1.0 must be signed.
+  documentVersion String   @default("1.0")
+  updatedAt       DateTime @updatedAt
 }

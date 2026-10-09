@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, Wallet, HandCoins, Landmark, ReceiptText, TrendingUp, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, Landmark, ReceiptText, TrendingUp, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
@@ -18,7 +18,7 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
-  const sections = isAdmin ? [...SECTIONS, { title: "Settings", links: [{ href: "/users", label: "Users", icon: Settings }] }] : SECTIONS;
+  const sections = isAdmin ? [...SECTIONS, { title: "Settings", links: [{ href: "/users", label: "Users", icon: Settings }, { href: "/settings/eta", label: "E-invoice", icon: FileCheck }] }] : SECTIONS;
 
   return (
     <>

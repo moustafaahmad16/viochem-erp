@@ -19,6 +19,8 @@ function itemData(fd: FormData) {
     unit: required(fd, "unit", "Unit"),
     hazardClass: text(fd, "hazardClass"),
     notes: text(fd, "notes"),
+    etaItemCode: text(fd, "etaItemCode"),
+    etaItemType: text(fd, "etaItemType") === "GS1" ? "GS1" : "EGS",
   };
 }
 
