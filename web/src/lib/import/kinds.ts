@@ -35,6 +35,9 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "currency", title: "Currency", example: "EUR", note: "Three letters, like USD or EUR. Empty means USD." },
       { key: "email", title: "Email", example: "" },
       { key: "phone", title: "Phone", example: "" },
+      { key: "paymentTermsDays", title: "Payment terms (days)", example: 0, note: "Empty keeps what is saved, or 0 for a new supplier" },
+      { key: "openingBalance", title: "Opening balance", example: 0, note: "What was owed before this system, in the supplier's currency. Negative for credit." },
+      { key: "openingBalanceDate", title: "Opening balance date", example: "2026-09-30", note: "A date cell, or text like 2026-09-30" },
       { key: "notes", title: "Notes", example: "" },
     ],
   },
@@ -47,6 +50,9 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "phone", title: "Phone", example: "" },
       { key: "email", title: "Email", example: "" },
       { key: "address", title: "Address", example: "Industrial Zone, 6th of October, Giza" },
+      { key: "paymentTermsDays", title: "Payment terms (days)", example: 30, note: "Empty keeps what is saved, or 30 for a new customer" },
+      { key: "openingBalance", title: "Opening balance", example: 0, note: "What was owed before this system, in EGP. Negative for credit." },
+      { key: "openingBalanceDate", title: "Opening balance date", example: "2026-09-30", note: "A date cell, or text like 2026-09-30" },
       { key: "notes", title: "Notes", example: "" },
     ],
   },
@@ -101,6 +107,21 @@ function text(v: Cell): string | null {
   return s || null;
 }
 
+function signedNumber(v: Cell, label: string): string | undefined {
+  const s = text(v)?.replace(/,/g, "");
+  if (!s) return undefined;
+  if (Number.isNaN(Number(s))) throw new Error(`${label} "${s}" isn't a number`);
+  return new Decimal(s).toString();
+}
+
+function days(v: Cell): number | undefined {
+  const s = text(v);
+  if (!s) return undefined;
+  const n = Number(s);
+  if (!Number.isInteger(n) || n < 0 || n > 365) throw new Error(`Payment terms "${s}" should be whole days, 0 to 365`);
+  return n;
+}
+
 function number(v: Cell, label: string, { allowZero = false } = {}): string {
   const s = text(v)?.replace(/,/g, "");
   if (!s) throw new Error(`${label} is missing`);
@@ -115,8 +136,15 @@ function number(v: Cell, label: string, { allowZero = false } = {}): string {
 }
 
 export type ProductRow = { code: string; name: string; casNumber: string | null; unit: string; hazardClass: string | null; notes: string | null };
-export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null };
-export type CustomerRow = { name: string; taxId: string | null; phone: string | null; email: string | null; address: string | null; notes: string | null };
+// Left out when the cell is empty, so importing a file without them never wipes what is already saved.
+type Terms = { paymentTermsDays?: number; openingBalance?: string; openingBalanceDate?: Date };
+export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null } & Terms;
+export type CustomerRow = { name: string; taxId: string | null; phone: string | null; email: string | null; address: string | null; notes: string | null } & Terms;
+
+function terms(r: Record<string, Cell>): Terms {
+  const t: Terms = { paymentTermsDays: days(r.paymentTermsDays), openingBalance: signedNumber(r.openingBalance, "Opening balance"), openingBalanceDate: readDate(r.openingBalanceDate) ?? undefined };
+  return Object.fromEntries(Object.entries(t).filter(([, v]) => v !== undefined));
+}
 export type StockRow = { code: string; qty: string; unitCostEgp: string; expiryDate: Date | null; supplierBatchNo: string | null; date: Date | null };
 
 const UNITS = ["kg", "L", "g", "pcs"];
@@ -133,7 +161,7 @@ const PARSERS = {
   suppliers: (r: Record<string, Cell>): SupplierRow => {
     const currency = (text(r.currency) ?? "USD").toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) throw new Error(`Currency "${currency}" should be three letters, like USD`);
-    return { name: text(r.name)!, country: text(r.country), currency, email: text(r.email), phone: text(r.phone), notes: text(r.notes) };
+    return { name: text(r.name)!, country: text(r.country), currency, email: text(r.email), phone: text(r.phone), notes: text(r.notes), ...terms(r) };
   },
   customers: (r: Record<string, Cell>): CustomerRow => ({
     name: text(r.name)!,
@@ -142,6 +170,7 @@ const PARSERS = {
     email: text(r.email),
     address: text(r.address),
     notes: text(r.notes),
+    ...terms(r),
   }),
   stock: (r: Record<string, Cell>): StockRow => ({
     code: text(r.code)!.toUpperCase(),

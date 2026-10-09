@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { ActionForm, Field, Select, Submit, TextArea } from "@/components/forms";
 import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
-import { formatDate, toInputDate } from "@/lib/dates";
+import { formatDate, toInputDate, today } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { money, pct, qty } from "@/lib/format";
+import { daysLate } from "@/lib/ledger";
+import { customerAccounts } from "@/lib/services/accounts";
 import { addLine, cancelInvoice, deleteDraft, postInvoice, removeLine, updateInvoice } from "../actions";
 import { InvoiceStatusBadge } from "../status";
 import { LineForm } from "./line-form";
@@ -32,6 +34,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const lineCost = (l: (typeof inv.lines)[number]) => l.moves.reduce((s, m) => s.plus(new Decimal(m.qty.toString()).neg().times(m.unitCostEgp.toString())), new Decimal(0));
   const cost = inv.lines.reduce((s, l) => s.plus(lineCost(l)), new Decimal(0));
   const margin = totals.net.minus(cost);
+  const bill = inv.status === "POSTED" ? (await customerAccounts({ id: inv.customerId }))[0].bills.find((b) => b.key === `inv:${inv.id}`) : undefined;
+  const late = bill && bill.outstanding.gt(0) ? daysLate(bill.dueDate, today()) : 0;
 
   return (
     <>
@@ -132,6 +136,15 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
             </>
           ) : (
             <>
+              {bill && (
+                <Card title="Payment" actions={bill.outstanding.gt(0) && <RowLink href={`/customers/${inv.customerId}`}>Receive</RowLink>}>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between"><dt className="text-slate-500">Due</dt><dd className={late > 0 ? "font-medium text-amber-700" : ""}>{formatDate(bill.dueDate)}{late > 0 && ` · ${late} days late`}</dd></div>
+                    <div className="flex justify-between"><dt className="text-slate-500">Paid</dt><dd className="num">{money(bill.paid)}</dd></div>
+                    <div className="flex justify-between border-t border-slate-100 pt-2 font-semibold"><dt>Still owed</dt><dd className="num">{bill.outstanding.gt(0) ? money(bill.outstanding) : "Paid in full"}</dd></div>
+                  </dl>
+                </Card>
+              )}
               {inv.status === "POSTED" && (
                 <Card title="Profit on this invoice">
                   <dl className="space-y-2 text-sm">
