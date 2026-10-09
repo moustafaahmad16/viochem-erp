@@ -33,7 +33,6 @@ export default async function RfqsPage({ searchParams }: PageProps<"/rfqs">) {
         subtitle={t("Ask several suppliers for prices on one Excel sheet, load their replies, and see who to buy each product from.")}
         actions={
           <>
-            <ButtonLink href="/rfqs/new?from=low-stock" variant="secondary">{t("Start from low stock")}</ButtonLink>
             <ButtonLink href="/rfqs/new">{t("New request")}</ButtonLink>
           </>
         }

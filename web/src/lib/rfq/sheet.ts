@@ -3,8 +3,9 @@ import { formatDate } from "@/lib/dates";
 import { readDate, type Cell } from "@/lib/import/kinds";
 
 /**
- * The Excel sheet sent to a supplier for a request for quotation, and reading it back when they reply.
- * A hidden sheet remembers which request and supplier it was made for, so the reply loads in one step.
+ * The Excel sheet sent to suppliers for a request for quotation, and reading it back when they reply.
+ * One sheet goes to every supplier; each writes their company name at the top. A hidden sheet
+ * remembers which request it was made for, so a reply can't be loaded onto the wrong one.
  */
 
 export const COLUMNS = [
@@ -30,7 +31,8 @@ const HEAD_FILL: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { 
 
 export type SheetInput = {
   rfq: { id: number; number: string; date: Date; replyBy: Date | null; neededBy: Date | null; notes: string | null };
-  supplier: { id: number; name: string; currency: string };
+  /** Only when the sheet is for one supplier; otherwise they write their name in. */
+  supplier?: { id: number; name: string; currency: string } | null;
   lines: { id: number; qty: { toString(): string }; notes: string | null; item: { code: string; name: string; casNumber: string | null; unit: string } }[];
   /** Prices this supplier already sent, so a second sheet can be corrected rather than retyped. */
   quotes?: Map<number, Record<string, Cell>>;
@@ -45,7 +47,7 @@ export async function buildSheet({ rfq, supplier, lines, quotes }: SheetInput): 
   sheet.addRow(["VIOCHEM · Request for quotation"]).font = { bold: true, size: 14 };
   const info: [string, string][] = [
     ["RFQ", rfq.number],
-    ["Supplier", supplier.name],
+    ["Supplier", supplier?.name ?? ""],
     ["Date", formatDate(rfq.date)],
     ["Please reply by", formatDate(rfq.replyBy)],
     ["Needed in Egypt by", formatDate(rfq.neededBy)],
@@ -54,8 +56,13 @@ export async function buildSheet({ rfq, supplier, lines, quotes }: SheetInput): 
   for (const [k, v] of info) {
     const row = sheet.addRow([k, "", v]);
     row.getCell(1).font = { bold: true };
+    if (k === "Supplier" && !supplier) {
+      row.getCell(3).fill = INPUT_FILL;
+      row.getCell(4).value = "← your company name";
+      row.getCell(4).font = { italic: true, color: { argb: "FF64748B" } };
+    }
   }
-  sheet.addRow(["Fill in the yellow columns for each product you can supply, leave the price empty for any you can't, and send this file back."]).font = { italic: true, color: { argb: "FF64748B" } };
+  sheet.addRow(["Write your company name, fill in the yellow columns for each product you can supply, leave the price empty for any you can't, and send this file back."]).font = { italic: true, color: { argb: "FF64748B" } };
   sheet.addRow([]);
 
   const head = sheet.addRow(COLUMNS.map((c) => c.title));
@@ -75,7 +82,7 @@ export async function buildSheet({ rfq, supplier, lines, quotes }: SheetInput): 
       cas: l.item.casNumber ?? "",
       qty: Number(l.qty.toString()),
       unit: l.item.unit,
-      currency: supplier.currency,
+      currency: supplier?.currency ?? "",
       ...q,
     });
     COLUMNS.forEach((c, i) => {
@@ -87,7 +94,7 @@ export async function buildSheet({ rfq, supplier, lines, quotes }: SheetInput): 
 
   const meta = book.addWorksheet(META, { state: "veryHidden" });
   meta.addRow(["rfq", rfq.id]);
-  meta.addRow(["supplier", supplier.id]);
+  if (supplier) meta.addRow(["supplier", supplier.id]);
   meta.addRow(["number", rfq.number]);
   return Buffer.from(await book.xlsx.writeBuffer());
 }
@@ -105,7 +112,15 @@ export type ReplyRow = {
   notes: string | null;
 };
 
-export type Reply = { rfqId: number | null; supplierId: number | null; number: string | null; rows: ReplyRow[]; errors: { row: number; message: string }[] };
+export type Reply = {
+  rfqId: number | null;
+  supplierId: number | null;
+  /** The company name the supplier wrote at the top of the sheet. */
+  supplierName?: string | null;
+  number: string | null;
+  rows: ReplyRow[];
+  errors: { row: number; message: string }[];
+};
 
 function plain(v: ExcelJS.CellValue): Cell {
   if (v == null) return null;
@@ -169,6 +184,17 @@ export async function readReply(data: ArrayBuffer): Promise<Reply> {
     if (sheet) break;
   }
   if (!sheet) throw new Error("This isn't a VIOCHEM quotation sheet: no column titled Ref was found.");
+
+  for (let r = 1; r < headRow; r++) {
+    const row = sheet.getRow(r);
+    if (str(plain(row.getCell(1).value))?.toLowerCase() === "supplier") {
+      // Usually in the third column, but take the first filled cell after the label.
+      for (let c = 2; c <= 6 && !reply.supplierName; c++) {
+        const v = str(plain(row.getCell(c).value));
+        if (v && !v.startsWith("←")) reply.supplierName = v;
+      }
+    }
+  }
 
   // Find columns by title, so a supplier moving a column doesn't break the reply.
   const head = sheet.getRow(headRow);
