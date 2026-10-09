@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { ExportButtons } from "@/components/export-buttons";
 import { Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
 import { money } from "@/lib/format";
 import { customerAccounts } from "@/lib/services/accounts";
@@ -20,7 +21,7 @@ export default async function ReceivablesPage() {
 
   return (
     <>
-      <PageHeader title={t("Owed to you")} subtitle={t("What each customer still has to pay, by how late it is")} />
+      <PageHeader title={t("Owed to you")} subtitle={t("What each customer still has to pay, by how late it is")} actions={<ExportButtons report="receivables" />} />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Stat label={t("Customers owe you")} value={`EGP ${money(total, 0)}`} />
         <Stat label={t("Overdue")} value={`EGP ${money(overdue, 0)}`} tone={overdue.gt(0) ? "warn" : "default"} hint={total.isZero() ? undefined : t("{pct}% of what is owed", { pct: overdue.div(total).times(100).toFixed(0) })} />

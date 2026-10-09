@@ -1,5 +1,6 @@
 import Decimal from "decimal.js";
 import Link from "next/link";
+import { ExportButtons } from "@/components/export-buttons";
 import { Card, PageHeader, Table } from "@/components/ui";
 import { getT } from "@/i18n/server";
 import { addDays, parseInputDate, toInputDate, today } from "@/lib/dates";
@@ -70,7 +71,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/reports/p
 
   return (
     <>
-      <PageHeader title={t("Profit and loss")} subtitle={`${t.date(from)} ${t("to")} ${t.date(to)} · EGP · ${t("from the general ledger")}`} />
+      <PageHeader title={t("Profit and loss")} subtitle={`${t.date(from)} ${t("to")} ${t.date(to)} · EGP · ${t("from the general ledger")}`} actions={<ExportButtons report="profit" query={{ from: toInputDate(from), to: toInputDate(to) }} />} />
       <Card className="mb-4">
         <form className="flex flex-wrap items-end gap-3 text-sm">
           <label>
