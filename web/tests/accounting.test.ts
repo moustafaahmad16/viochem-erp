@@ -53,20 +53,27 @@ describe("bank and cash", () => {
 });
 
 describe("profit and loss", () => {
-  it("takes landed cost, stock differences and expenses off sales", async () => {
+  it("lays out cost of sales, expenses by function and finance costs", async () => {
     await addOpeningStock({ itemId: item, qty: 10, unitCostEgp: 100, date: d("2023-03-01"), expiryDate: null, supplierBatchNo: null });
     const inv = await createInvoice(customer, d("2023-03-10"));
     await db.invoiceLine.create({ data: { invoiceId: inv.id, itemId: item, qty: 4, unitPrice: 250 } });
     await postInvoice(inv.id);
     await recordExpense({ date: d("2023-03-15"), category: "Salaries", description: null, payee: null, amount: "300", vat: "42", accountId: null, reference: null });
+    await recordExpense({ date: d("2023-03-16"), category: "Bank charges", description: null, payee: null, amount: "10", vat: "0", accountId: null, reference: null });
+    await recordExpense({ date: d("2023-03-17"), category: "Tea for staff", description: null, payee: null, amount: "20", vat: "0", accountId: null, reference: null });
     const lotId = (await db.lot.findFirstOrThrow({ where: { itemId: item } })).id;
     await adjustLot(lotId, 5, "Spillage"); // 6 on hand, counted 5: lose one at 100
     // A count is dated today; move it into the period being tested.
     await db.stockMove.updateMany({ where: { lotId, kind: "ADJUSTMENT" }, data: { date: d("2023-03-20") } });
 
     const p = await profitAndLoss(d("2023-03-01"), d("2023-03-31"));
-    expect([p.sales, p.costOfSales, p.grossProfit, p.stockDifferences, p.totalExpenses, p.netProfit].map(n)).toEqual([1000, 400, 600, -100, 300, 200]);
-    expect(p.expenses).toMatchObject([{ category: "Salaries" }]);
+    // Cost of sales is the landed cost of what was sold plus the unit lost in the count.
+    expect([p.sales, p.costOfSales, p.grossProfit, p.operatingProfit, p.totalExpenses, p.netProfit].map(n)).toEqual([1000, 500, 500, 180, 330, 170]);
+    expect(p.groups.map((g) => [g.name, n(g.total), g.lines.map((l) => l.category)])).toEqual([
+      ["Selling and distribution", 0, []],
+      ["General and administrative", 320, ["Salaries", "Tea for staff"]],
+      ["Finance costs", 10, ["Bank charges"]],
+    ]);
   });
 
   it("splits a period into calendar months", () => {

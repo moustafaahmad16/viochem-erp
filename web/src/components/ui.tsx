@@ -35,7 +35,7 @@ export function Card({ title, actions, children, className = "", padded = true }
 }
 
 export function Stat({ label, value, hint, tone = "default" }: { label: string; value: ReactNode; hint?: ReactNode; tone?: "default" | "good" | "warn" }) {
-  const color = tone === "good" ? "text-brand-700" : tone === "warn" ? "text-amber-700" : "text-slate-900";
+  const color = tone === "good" ? "text-emerald-700" : tone === "warn" ? "text-amber-700" : "text-slate-900";
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="text-sm text-slate-500">{label}</div>
@@ -57,13 +57,13 @@ export function buttonClass(variant: "primary" | "secondary" | "danger" = "prima
   const base = "inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
   if (variant === "secondary") return `${base} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50`;
   if (variant === "danger") return `${base} border border-red-200 bg-white text-red-700 hover:bg-red-50`;
-  return `${base} bg-brand-600 text-white shadow-sm hover:bg-brand-700`;
+  return `${base} bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500`;
 }
 
 const BADGE = {
   gray: "bg-slate-100 text-slate-700",
   green: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  blue: "bg-sky-50 text-sky-700 ring-sky-600/20",
+  blue: "bg-brand-50 text-brand-700 ring-brand-600/20",
   amber: "bg-amber-50 text-amber-800 ring-amber-600/20",
   red: "bg-red-50 text-red-700 ring-red-600/20",
 };

@@ -42,14 +42,14 @@ export function Nav({ user, isAdmin, logout }: { user: string; isAdmin: boolean;
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
           {sections.map((s) => (
             <div key={s.title}>
-              {s.title && <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{s.title}</div>}
+              {s.title && <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-brand-900/50">{s.title}</div>}
               {s.links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm ${active(l.href) ? "bg-brand-50 font-medium text-brand-700" : "text-slate-700 hover:bg-slate-50"}`}
+                  className={`flex items-center gap-2.5 rounded-lg border-l-[3px] px-2 py-1.5 text-sm ${active(l.href) ? "border-accent-500 bg-brand-50 font-medium text-brand-700" : "border-transparent text-slate-700 hover:bg-slate-50"}`}
                 >
-                  <l.icon className={`h-4 w-4 ${active(l.href) ? "text-brand-600" : "text-slate-400"}`} strokeWidth={1.75} />
+                  <l.icon className={`h-4 w-4 ${active(l.href) ? "text-accent-600" : "text-slate-400"}`} strokeWidth={1.75} />
                   {l.label}
                 </Link>
               ))}

@@ -50,7 +50,7 @@ export default async function MarginPage({ searchParams }: PageProps<"/reports/m
               ))}
             </select>
           </label>
-          <button className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">Show</button>
+          <button className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">Show</button>
         </form>
       </Card>
       <Card padded={false}>
@@ -73,7 +73,7 @@ export default async function MarginPage({ searchParams }: PageProps<"/reports/m
               <td className="num">
                 <span className="inline-flex items-center gap-2">
                   <span className="hidden h-1.5 w-16 overflow-hidden rounded bg-slate-100 sm:inline-block">
-                    <span className="block h-full bg-brand-500" style={{ width: `${Math.max(0, Math.min(100, r.marginPct.toNumber()))}%` }} />
+                    <span className="block h-full bg-accent-500" style={{ width: `${Math.max(0, Math.min(100, r.marginPct.toNumber()))}%` }} />
                   </span>
                   {pct(r.marginPct)}
                 </span>

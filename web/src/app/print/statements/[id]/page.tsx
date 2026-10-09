@@ -21,7 +21,7 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
         <PrintButton />
       </div>
       <article className="mx-auto max-w-[210mm] bg-white p-12 text-[13px] text-slate-900 shadow print:p-0 print:shadow-none">
-        <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5">
+        <header className="flex items-start justify-between border-b-2 border-brand-600 pb-5 shadow-[0_2px_0_0_var(--color-accent-500)]">
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
