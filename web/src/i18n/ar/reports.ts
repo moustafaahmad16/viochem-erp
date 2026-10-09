@@ -41,6 +41,7 @@ export const reports: Record<string, string> = {
   "Order for {period}": "المطلوب شراؤه لمدة {period}",
   "Ask prices for {period}": "طلب أسعار لمدة {period}",
   "On order": "تحت الطلب",
+  "To order for": "المطلوب شراؤه لمدة",
   "Need {qty}": "المطلوب {qty}",
   "No sales in the last six months to work from.": "لا توجد مبيعات في آخر ستة أشهر لحساب مخزون الأمان.",
   "Sold per month is the average of the last six months.": "متوسط البيع الشهري محسوب على آخر ستة أشهر.",

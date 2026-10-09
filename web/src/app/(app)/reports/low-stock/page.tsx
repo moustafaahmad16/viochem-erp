@@ -61,21 +61,26 @@ export default async function LowStockPage() {
       >
         <Table
           head={
-            <tr>
-              <th>{t("Product")}</th>
-              <th className="num">{t("Sold per month")}</th>
-              <th className="num">{t("On hand")}</th>
-              <th className="num">{t("On order")}</th>
-              <th className="num">{t("Months of stock")}</th>
-              {SAFETY_MONTHS.map((n) => <th key={n} className="num">{t("Order for {period}", { period: monthsLabel(t, n) })}</th>)}
-            </tr>
+            <>
+              <tr>
+                <th colSpan={5} />
+                <th colSpan={SAFETY_MONTHS.length} className="border-b border-slate-200 text-center">{t("To order for")}</th>
+              </tr>
+              <tr>
+                <th>{t("Product")}</th>
+                <th className="num">{t("Sold per month")}</th>
+                <th className="num">{t("On hand")}</th>
+                <th className="num">{t("On order")}</th>
+                <th className="num">{t("Months of stock")}</th>
+                {SAFETY_MONTHS.map((n) => <th key={n} className="num">{monthsLabel(t, n)}</th>)}
+              </tr>
+            </>
           }
           empty={t("No sales in the last six months to work from.")}
         >
           {safety.map((r) => (
             <tr key={r.itemId}>
               <td>
-                <span className="me-2 inline-block font-mono text-xs text-slate-400">{r.code}</span>
                 <RowLink href={`/products/${r.itemId}`}>{r.name}</RowLink>
               </td>
               <td className="num">{qty(r.monthlyRate.toDecimalPlaces(1))} {t(r.unit)}</td>
