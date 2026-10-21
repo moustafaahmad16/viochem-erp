@@ -1,0 +1,75 @@
+{
+  "name": "viochem-desktop",
+  "productName": "VIOCHEM",
+  "version": "1.0.0",
+  "description": "VIOCHEM for Windows: the whole system on one computer, shared on its Wi-Fi",
+  "author": "VIOCHEM",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "prepare-app": "node prepare.mjs",
+    "start": "electron .",
+    "dist": "node prepare.mjs && electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "bonjour-service": "1.4.4"
+  },
+  "devDependencies": {
+    "electron": "43.7.7",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.viochem.erp",
+    "productName": "VIOCHEM",
+    "directories": {
+      "app": ".",
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "signer.js",
+      "splash.html",
+      "build/icon.png",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "app",
+        "to": "app",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "app/node_modules",
+        "to": "app/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "app/.next/node_modules",
+        "to": "app/.next/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "VIOCHEM",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "VIOCHEM-Setup-${version}.exe"
+    }
+  }
+}

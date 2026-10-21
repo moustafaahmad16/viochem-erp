@@ -44,3 +44,24 @@ jobs:
       - run: npx eslint src
       - run: npm test
       - run: npm run build
+
+  # The same tests on a SQLite file, the way the Windows app stores data.
+  web-sqlite:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      TEST_DATABASE_URL: file:./viochem_test.db
+      SESSION_SECRET: ci-only-secret-ci-only-secret-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: node scripts/sqlite-schema.mjs --check
+      - run: npx prisma generate --schema prisma/sqlite/schema.prisma
+      - run: npm test

@@ -81,7 +81,7 @@ export default async function DesktopSettingsPage() {
               <tr key={b.name}>
                 <td dir="ltr">{b.name}</td>
                 <td>{time(b.at)}</td>
-                <td className="text-end">{size(b.size)}</td>
+                <td className="text-end" dir="ltr">{size(b.size)}</td>
               </tr>
             ))}
           </Table>

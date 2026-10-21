@@ -49,6 +49,44 @@ The `Dockerfile` builds a production image. On start it applies database migrati
 
 Import the repository in Vercel with **Root Directory** set to `web`, and add the variables above. Use Neon's connection string with connection pooling turned off. Each deploy applies migrations and creates the first admin if needed (see `vercel.json`).
 
+## Windows app
+
+The same system also comes as a Windows app that keeps all its data on one computer, with no
+internet needed except to send e-invoices. It lives in `desktop/` and runs this server inside
+an Electron window, with the data in a SQLite file instead of PostgreSQL.
+
+- **Install**: download `VIOCHEM-Setup` from the latest run of the *Windows app* workflow (or a
+  `desktop-v*` release) and run it on the computer that will hold the data. It isn't code-signed
+  yet, so Windows asks once: choose More info, then Run anyway. The first start asks for the first admin.
+- **Data**: `%APPDATA%\VIOCHEM\viochem.db`, with everything and all its history. Nothing is ever archived away.
+- **Other devices**: any computer or phone on the same Wi-Fi opens `http://viochem.local:3000`
+  (or the number address shown under Settings → Sharing and backups) and signs in with its own user.
+  The installer allows this through the Windows firewall. It works while the app is open on the main computer.
+- **Backups**: a full copy once a day and before every update, to `Documents\VIOCHEM Backups`
+  or a folder chosen in the app; the newest 30 are kept. File → Restore from backup puts one back,
+  saving the current data first.
+- **E-invoicing**: the client ID and secret are entered under Settings → E-invoice. The app runs the
+  e-seal signer itself (E-invoice → Start e-seal signer), so invoices sent from any device are signed
+  with the token plugged into the main computer.
+
+Build it on Windows with `cd desktop && npm ci && npm run dist`; the installer lands in `desktop/dist`.
+`npm start` in `desktop/` runs it without installing, after `node prepare.mjs`.
+
+### Changing the database
+
+The website and the app share `prisma/schema.prisma`. After changing it, add the PostgreSQL migration
+as usual (`npx prisma migrate dev`), and the SQLite one beside it:
+
+```bash
+node scripts/sqlite-schema.mjs
+npx prisma migrate diff --from-migrations prisma/sqlite/migrations --to-schema-datamodel prisma/sqlite/schema.prisma \
+  --shadow-database-url file:./shadow.db --script > prisma/sqlite/migrations/<timestamp>_<name>/migration.sql
+node scripts/sqlite-schema.mjs --check
+```
+
+Tests run against SQLite with `TEST_DATABASE_URL=file:./viochem_test.db npm test`, after
+`npx prisma generate --schema prisma/sqlite/schema.prisma` (and `npx prisma generate` to go back).
+
 ## E-invoicing (Egyptian Tax Authority)
 
 1. Register the system on the ETA portal (ERP system registration) and add its client ID and secret to Vercel as `ETA_CLIENT_ID` and `ETA_CLIENT_SECRET`. Set `ETA_ENVIRONMENT` to `preprod` to test or `production` for real invoices, then redeploy.
