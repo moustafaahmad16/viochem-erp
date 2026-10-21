@@ -1,3 +1,4 @@
+import { isDesktop, readConfig } from "@/lib/desktop/config";
 import { UserError } from "@/lib/services/errors";
 import { serialize, type EtaDocument } from "./document";
 
@@ -11,6 +12,9 @@ import { serialize, type EtaDocument } from "./document";
  *
  * Version 1.0 documents must be signed with the e-seal. Without ETA_SIGNER_URL they are signed in the
  * browser instead, by the VIOCHEM signer running on the computer the token is plugged into.
+ *
+ * The Windows app keeps the environment, client ID and secret in its desktop.json instead, set from
+ * Settings → E-invoice, and runs the signer itself on the computer it is installed on.
  */
 
 const HOSTS = {
@@ -19,12 +23,13 @@ const HOSTS = {
 };
 
 export function etaConfig() {
-  const environment = process.env.ETA_ENVIRONMENT === "production" ? "production" : "preprod";
+  const saved = isDesktop() ? readConfig().eta : null;
+  const environment = (saved?.environment ?? process.env.ETA_ENVIRONMENT) === "production" ? "production" : "preprod";
   return {
     environment,
     hosts: HOSTS[environment],
-    clientId: process.env.ETA_CLIENT_ID ?? "",
-    clientSecret: process.env.ETA_CLIENT_SECRET ?? "",
+    clientId: saved?.clientId || process.env.ETA_CLIENT_ID || "",
+    clientSecret: saved?.clientSecret || process.env.ETA_CLIENT_SECRET || "",
     signerUrl: process.env.ETA_SIGNER_URL ?? "",
     signerToken: process.env.ETA_SIGNER_TOKEN ?? "",
   } as const;
@@ -49,7 +54,13 @@ async function call(url: string, init: RequestInit) {
 
 export async function accessToken(): Promise<string> {
   const c = etaConfig();
-  if (!c.clientId || !c.clientSecret) throw new UserError("The ETA client ID and secret aren't set. Add ETA_CLIENT_ID and ETA_CLIENT_SECRET in Vercel.");
+  if (!c.clientId || !c.clientSecret) {
+    throw new UserError(
+      isDesktop()
+        ? "The ETA client ID and secret aren't set. Enter them under Settings, E-invoice."
+        : "The ETA client ID and secret aren't set. Add ETA_CLIENT_ID and ETA_CLIENT_SECRET in Vercel.",
+    );
+  }
   const res = await call(`${c.hosts.id}/connect/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -64,11 +75,21 @@ export async function sign(doc: EtaDocument): Promise<string | null> {
   if (doc.documentTypeVersion === "0.9") return null;
   const c = etaConfig();
   if (!c.signerUrl) throw new UserError("Version 1.0 invoices must be signed with VIOCHEM's e-seal. Set ETA_SIGNER_URL to the signing service, or use version 0.9 while testing.");
-  const res = await call(c.signerUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.signerToken}` },
-    body: JSON.stringify({ serialized: serialize(doc) }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(c.signerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.signerToken}` },
+      body: JSON.stringify({ serialized: serialize(doc) }),
+      signal: AbortSignal.timeout(120_000),
+    });
+  } catch {
+    throw new UserError(
+      isDesktop()
+        ? "The e-seal signer isn't running. Plug in the USB token, then choose Start e-seal signer in the app's E-invoice menu."
+        : "Couldn't reach the signing service at ETA_SIGNER_URL.",
+    );
+  }
   if (!res.ok) throw new UserError(`The signing service failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
   return (await res.json()).signature;
 }

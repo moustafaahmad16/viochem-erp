@@ -8,11 +8,8 @@ import type { PrismaClient } from "@prisma/client";
  * Returns the names of the migrations it applied.
  */
 export async function migrateSqlite(db: PrismaClient, dir: string): Promise<string[]> {
-  await db.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "_viochem_migrations" ("name" TEXT PRIMARY KEY, "appliedAt" TEXT NOT NULL)`);
-  const done = new Set((await db.$queryRawUnsafe<{ name: string }[]>(`SELECT "name" FROM "_viochem_migrations"`)).map((r) => r.name));
   const applied: string[] = [];
-  for (const entry of (await readdir(dir, { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name).sort()) {
-    if (done.has(entry)) continue;
+  for (const entry of await pendingMigrations(db, dir)) {
     const sql = await readFile(path.join(dir, entry, "migration.sql"), "utf8");
     await db.$transaction([
       ...statements(sql).map((s) => db.$executeRawUnsafe(s)),
@@ -21,6 +18,14 @@ export async function migrateSqlite(db: PrismaClient, dir: string): Promise<stri
     applied.push(entry);
   }
   return applied;
+}
+
+/** Migrations not yet applied to this file, oldest first. */
+export async function pendingMigrations(db: PrismaClient, dir: string): Promise<string[]> {
+  await db.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "_viochem_migrations" ("name" TEXT PRIMARY KEY, "appliedAt" TEXT NOT NULL)`);
+  const done = new Set((await db.$queryRawUnsafe<{ name: string }[]>(`SELECT "name" FROM "_viochem_migrations"`)).map((r) => r.name));
+  const all = (await readdir(dir, { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  return all.filter((name) => !done.has(name));
 }
 
 /** SQLite runs one statement at a time. Migrations end each statement with ";" at the end of a line. */
