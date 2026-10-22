@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   // The e-seal signer script is read from disk when an admin downloads it.
   outputFileTracingIncludes: { "/settings/eta/signer": ["./signer/**/*"] },
+  experimental: {
+    // Shipment documents are uploaded through a server action; the files may be up to 15 MB.
+    serverActions: { bodySizeLimit: "16mb" },
+    // src/proxy.ts sees every request first and would otherwise cut bodies at 10 MB.
+    proxyClientMaxBodySize: "16mb",
+  },
   turbopack: {
     rules: {
       "*.css": {

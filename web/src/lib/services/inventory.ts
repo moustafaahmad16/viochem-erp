@@ -186,6 +186,7 @@ export async function createShipment(data: {
   etd: Date | null;
   eta: Date | null;
   supplierInvoiceNo: string | null;
+  acidNumber?: string | null;
   allocation: "VALUE" | "QUANTITY";
   notes: string | null;
 }) {

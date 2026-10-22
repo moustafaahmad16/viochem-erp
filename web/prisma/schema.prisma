@@ -122,6 +122,8 @@ model Shipment {
   supplierId        Int
   supplier          Supplier          @relation(fields: [supplierId], references: [id])
   supplierInvoiceNo String?
+  // Egypt's Advance Cargo Information number from Nafeza, required before goods ship.
+  acidNumber        String?
   currency          String
   fxRate            Decimal           @db.Decimal(14, 6)
   allocation        AllocationMethod  @default(VALUE)
@@ -141,6 +143,32 @@ model Shipment {
   charges           ShipmentCharge[]
   payments          SupplierPayment[]
   cheques           Cheque[]
+  documents         ShipmentDocument[]
+}
+
+// A kind of shipping document. Built-in types are seeded by the migration; people add their own.
+model DocumentType {
+  id        Int                @id @default(autoincrement())
+  name      String             @unique
+  builtIn   Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  documents ShipmentDocument[]
+}
+
+// A file attached to a shipment. Stored in the database so every backup carries it.
+model ShipmentDocument {
+  id         Int          @id @default(autoincrement())
+  shipmentId Int
+  shipment   Shipment     @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  typeId     Int
+  type       DocumentType @relation(fields: [typeId], references: [id])
+  fileName   String
+  mimeType   String
+  size       Int
+  content    Bytes
+  uploadedAt DateTime     @default(now())
+
+  @@index([shipmentId])
 }
 
 model ShipmentLine {
