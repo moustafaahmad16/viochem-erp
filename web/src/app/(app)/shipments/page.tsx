@@ -32,7 +32,11 @@ export default async function ShipmentsPage() {
               <tr key={s.id} className="hover:bg-slate-50">
                 <td>
                   <RowLink href={`/shipments/${s.id}`}>{s.ref}</RowLink>
-                  {s.supplierInvoiceNo && <div className="text-xs text-slate-500">{t("Inv. {no}", { no: s.supplierInvoiceNo })}</div>}
+                  {(s.supplierInvoiceNo || s.acidNumber) && (
+                    <div className="text-xs text-slate-500">
+                      {[s.supplierInvoiceNo && t("Inv. {no}", { no: s.supplierInvoiceNo }), s.acidNumber && t("ACID {no}", { no: s.acidNumber })].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
                 </td>
                 <td>{s.supplier.name}</td>
                 <td>{t.date(s.orderDate)}</td>

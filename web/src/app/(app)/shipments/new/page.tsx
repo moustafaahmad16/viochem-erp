@@ -34,7 +34,7 @@ export default async function NewShipmentPage() {
           <Select label={t("Currency")} name="currency" options={CURRENCIES} defaultValue={suppliers[0].currency} />
           <Field label={t("Exchange rate to EGP")} name="fxRate" inputMode="decimal" required placeholder={t("e.g. {value}", { value: "48.50" })} hint={t("The rate you paid the supplier at. You can change it until the goods arrive.")} />
           <Field label={t("Order date")} name="orderDate" type="date" defaultValue={toInputDate(today())} required />
-          <div />
+          <Field label={t("ACID number")} name="acidNumber" inputMode="numeric" hint={t("The 19-digit number from Nafeza. You can add it later.")} />
           <Field label={t("Departure date (ETD)")} name="etd" type="date" />
           <Field label={t("Expected arrival (ETA)")} name="eta" type="date" />
           <Select

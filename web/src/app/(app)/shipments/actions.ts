@@ -9,6 +9,7 @@ import { shipmentDateProblem } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { activeAccount } from "@/lib/services/banking";
 import { UserError } from "@/lib/services/errors";
+import { addShipmentDocument, documentType, removeShipmentDocument } from "@/lib/services/documents";
 import { createShipment as create, receiveShipment as receive, recostShipment } from "@/lib/services/inventory";
 
 const ALLOCATIONS = ["VALUE", "QUANTITY"] as const;
@@ -41,6 +42,7 @@ export async function createShipment(_: FormState, fd: FormData): Promise<FormSt
         etd,
         eta,
         supplierInvoiceNo: text(fd, "supplierInvoiceNo"),
+        acidNumber: text(fd, "acidNumber"),
         allocation: allocation(fd),
         notes: text(fd, "notes"),
       })
@@ -65,7 +67,7 @@ export async function updateShipment(id: number, _: FormState, fd: FormData): Pr
     const etd = optionalDate(fd, "etd");
     const eta = optionalDate(fd, "eta");
     checkDates(etd, eta, s.arrivalDate);
-    const common = { etd, eta, dueDate: optionalDate(fd, "dueDate"), supplierInvoiceNo: text(fd, "supplierInvoiceNo"), notes: text(fd, "notes") };
+    const common = { etd, eta, dueDate: optionalDate(fd, "dueDate"), supplierInvoiceNo: text(fd, "supplierInvoiceNo"), acidNumber: text(fd, "acidNumber"), notes: text(fd, "notes") };
     if (s.status === "RECEIVED") {
       await db.shipment.update({ where: { id }, data: common });
     } else {
@@ -160,4 +162,27 @@ export async function receiveShipment(id: number, _: FormState, fd: FormData): P
   revalidatePath(`/shipments/${id}`);
   revalidatePath("/stock");
   return { ok: "Received. The stock is now available to sell." };
+}
+
+// Documents can be added and removed at any time, even after the shipment is received.
+export async function uploadDocument(id: number, _: FormState, fd: FormData): Promise<FormState> {
+  await requireUser();
+  try {
+    const choice = required(fd, "typeId", "Document type");
+    const typeId = choice === "new" ? (await documentType(text(fd, "newType") ?? "")).id : Number(choice);
+    const file = fd.get("file");
+    if (!(file instanceof File) || file.size === 0) throw new UserError("Choose a file to upload.");
+    await db.shipment.findUniqueOrThrow({ where: { id } });
+    await addShipmentDocument(id, typeId, { name: file.name, type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) });
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/shipments/${id}`);
+  return { ok: "Document uploaded." };
+}
+
+export async function removeDocument(id: number, documentId: number) {
+  await requireUser();
+  await removeShipmentDocument(id, documentId);
+  revalidatePath(`/shipments/${id}`);
 }

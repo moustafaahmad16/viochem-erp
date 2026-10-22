@@ -8,9 +8,11 @@ import { db } from "@/lib/db";
 import { getT } from "@/i18n/server";
 import { money, qty } from "@/lib/format";
 import { supplierAccounts } from "@/lib/services/accounts";
+import { documentTypes, shipmentDocuments } from "@/lib/services/documents";
 import { accountOptions, AccountSelect } from "../../payments/parts";
-import { addCharge, addLine, receiveShipment, removeCharge, removeLine, updateShipment } from "../actions";
+import { addCharge, addLine, receiveShipment, removeCharge, removeDocument, removeLine, updateShipment, uploadDocument } from "../actions";
 import { StatusBadge } from "../status";
+import { DocumentUpload } from "./documents";
 
 const CHARGE_KINDS = ["Freight", "Customs duty", "Customs clearance", "Insurance", "Port fees", "Inland transport", "Bank charges", "Other"];
 
@@ -35,7 +37,10 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
   const goodsForeign = s.lines.reduce((sum, l) => sum.plus(d(l.qty).times(d(l.unitPrice))), new Decimal(0));
   const goodsEgp = goodsForeign.times(d(s.fxRate));
   const charges = s.charges.reduce((sum, c) => sum.plus(d(c.amountEgp)), new Decimal(0));
-  const [[supplierAcc], accounts] = await Promise.all([supplierAccounts({ id: s.supplierId }), accountOptions({ egpOnly: true })]);
+  const [[supplierAcc], accounts, types, documents] = await Promise.all([supplierAccounts({ id: s.supplierId }), accountOptions({ egpOnly: true }), documentTypes(), shipmentDocuments(s.id)]);
+  // The standard documents always show, so it's clear which are still missing; other types only once they have a file.
+  const checklist = types.filter((ty) => ty.builtIn || documents.some((doc) => doc.typeId === ty.id));
+  const missing = checklist.filter((ty) => ty.builtIn && !documents.some((doc) => doc.typeId === ty.id)).length;
   const bill = supplierAcc.accounts.find((a) => a.currency === s.currency)?.bills.find((b) => b.key === `shp:${s.id}`);
 
   return (
@@ -130,6 +135,36 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
               </ActionForm>
             </div>
           </Card>
+          <Card title={t("Documents")} actions={<span className="text-xs text-slate-500">{missing ? t("{n} of the standard documents missing", { n: missing }) : t("All standard documents uploaded")}</span>} padded={false}>
+            <ul className="divide-y divide-slate-100">
+              {checklist.map((ty) => {
+                const files = documents.filter((doc) => doc.typeId === ty.id);
+                return (
+                  <li key={ty.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-slate-800">
+                      <span aria-hidden className={files.length ? "text-emerald-600" : "text-slate-300"}>{files.length ? "✓" : "○"}</span>
+                      {ty.builtIn ? t(ty.name) : ty.name}
+                    </div>
+                    <div className="space-y-1 text-end">
+                      {files.length === 0 && <span className="text-xs text-slate-400">{t("Not uploaded yet")}</span>}
+                      {files.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-end gap-3">
+                          <a href={`/shipments/${s.id}/documents/${doc.id}`} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">{doc.fileName}</a>
+                          <span className="text-xs text-slate-500">{fileSize(doc.size)} · {t.date(doc.uploadedAt)}</span>
+                          <form action={removeDocument.bind(null, s.id, doc.id)}>
+                            <button className="text-xs text-slate-400 hover:text-red-600">{t("Remove")}</button>
+                          </form>
+                        </div>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="border-t border-slate-100 p-4">
+              <DocumentUpload action={uploadDocument.bind(null, s.id)} types={types} />
+            </div>
+          </Card>
         </div>
 
         <div className="space-y-6">
@@ -174,6 +209,7 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
                 </>
               )}
               <Field label={t("Supplier invoice no.")} name="supplierInvoiceNo" defaultValue={s.supplierInvoiceNo ?? ""} />
+              <Field label={t("ACID number")} name="acidNumber" defaultValue={s.acidNumber ?? ""} inputMode="numeric" hint={t("The 19-digit number from Nafeza.")} />
               <Field label={t("Payment due")} name="dueDate" type="date" defaultValue={toInputDate(s.dueDate)} hint={t("Empty means {n} days after the order date, from the supplier's terms.", { n: s.supplier.paymentTermsDays })} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("Departure (ETD)")} name="etd" type="date" defaultValue={toInputDate(s.etd)} />
@@ -187,4 +223,10 @@ export default async function ShipmentPage({ params }: PageProps<"/shipments/[id
       </div>
     </>
   );
+}
+
+function fileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
