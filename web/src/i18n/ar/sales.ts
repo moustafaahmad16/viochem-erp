@@ -162,7 +162,7 @@ export const sales: Record<string, string> = {
   "{name} needs a 9-digit tax registration number.": "{name} يحتاج إلى رقم تسجيل ضريبي من 9 أرقام.",
   "{name} needs a national ID or passport number for invoices of EGP 50,000 or more.":
     "{name} يحتاج إلى رقم قومي أو رقم جواز سفر للفواتير بقيمة 50,000 ج.م أو أكثر.",
-  "{name} needs governorate, city, street and building number.": "{name} يحتاج إلى المحافظة والمدينة والشارع ورقم المبنى.",
+  "{name} needs an address.": "{name} يحتاج إلى عنوان.",
   "{product} has no ETA item code.": "{product} ليس له كود صنف في منظومة الفاتورة الإلكترونية.",
 
   // Customers
@@ -270,4 +270,14 @@ export const sales: Record<string, string> = {
   Debit: "مدين",
   Credit: "دائن",
   "Amounts in Egyptian pounds": "المبالغ بالجنيه المصري",
+  "Invoice number": "رقم الفاتورة",
+  "Leave empty for the next number": "اتركه فارغًا للرقم التالي تلقائيًا",
+  "Delivery note no.": "رقم الإذن",
+  "Delivery note {no}": "إذن رقم {no}",
+  "Invoice number {number} is already used.": "رقم الفاتورة {number} مستخدم بالفعل.",
+  "Product code or name": "كود الصنف أو اسمه",
+  "No product with that code. Pick one from the list.": "لا يوجد صنف بهذا الكود. اختر من القائمة.",
+  "← Back": "→ رجوع",
+  "Address in parts (optional)": "العنوان بالتفصيل (اختياري)",
+  "As printed on invoices, and sent on e-invoices": "كما يُطبع على الفواتير ويُرسل في الفاتورة الإلكترونية",
 };

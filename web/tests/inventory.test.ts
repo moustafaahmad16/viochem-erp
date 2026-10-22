@@ -109,3 +109,15 @@ describe("import to sale", () => {
     expect(num(row.qty)).toBe(98);
   });
 });
+
+describe("invoice numbers", () => {
+  it("takes a number typed in, and the delivery note, instead of the next in sequence", async () => {
+    const inv = await createInvoice(customer, d("2026-05-01"), { number: " 1450 ", deliveryNoteNo: "D-77" });
+    expect([inv.number, inv.deliveryNoteNo]).toEqual(["1450", "D-77"]);
+    expect((await createInvoice(customer, d("2026-05-01"), { number: "" })).number).toMatch(/^INV-2026-\d{4}$/);
+  });
+
+  it("refuses a number already used", async () => {
+    await expect(createInvoice(customer, d("2026-05-02"), { number: "1450" })).rejects.toThrow("Invoice number 1450 is already used.");
+  });
+});

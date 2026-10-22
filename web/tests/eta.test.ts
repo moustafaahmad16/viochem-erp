@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { parseInputDate } from "@/lib/dates";
 import { buildDocument, issuedAt, problems, serialize, type Party } from "@/lib/eta/document";
-import { refreshStatus, sendInvoice, textToSign } from "@/lib/services/einvoice";
+import { receiverAddress, refreshStatus, sendInvoice, textToSign } from "@/lib/services/einvoice";
 import { signingMode } from "@/lib/eta/client";
 import { addOpeningStock, createInvoice, postInvoice } from "@/lib/services/inventory";
 
@@ -39,11 +39,28 @@ describe("ETA documents", () => {
       "VIOCHEM's tax registration number (9 digits) isn't set in E-invoice settings.",
       "The activity code isn't set in E-invoice settings.",
       "Fragrance Co needs a 9-digit tax registration number.",
-      "Fragrance Co needs governorate, city, street and building number.",
+      "Fragrance Co needs an address.",
       "Linalool has no ETA item code.",
     ]);
     // A person buying under EGP 50,000 needs no ID or address.
     expect(problems({ ...base, receiver: { ...base.receiver, type: "P", id: "", street: "" }, total: 49999 })).toEqual([]);
+  });
+});
+
+describe("a customer's address on an e-invoice", () => {
+  const none = { address: null, governate: null, city: null, street: null, buildingNo: null };
+
+  it("fills the parts ETA needs from the one-line address", () => {
+    expect(receiverAddress({ ...none, address: "12 Tahrir St\nDokki, Giza" })).toEqual({ governate: "12 Tahrir St, Dokki, Giza", city: "12 Tahrir St, Dokki, Giza", street: "12 Tahrir St, Dokki, Giza", buildingNo: "0" });
+  });
+
+  it("keeps the parts that were entered", () => {
+    expect(receiverAddress({ ...none, address: "Somewhere", governate: "Giza", city: "Dokki", street: "Tahrir", buildingNo: "5" })).toEqual({ governate: "Giza", city: "Dokki", street: "Tahrir", buildingNo: "5" });
+    expect(receiverAddress({ ...none, address: "Tahrir St", governate: "Giza" })).toEqual({ governate: "Giza", city: "Giza", street: "Tahrir St", buildingNo: "0" });
+  });
+
+  it("leaves it empty when there is no address at all", () => {
+    expect(receiverAddress(none)).toEqual({ governate: "", city: "", street: "", buildingNo: "" });
   });
 });
 

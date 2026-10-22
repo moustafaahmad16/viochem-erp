@@ -4,28 +4,43 @@ import { useState } from "react";
 import { ActionForm, Field, Select, Submit, type FormState } from "@/components/forms";
 import { useT } from "@/i18n/client";
 
-type Option = { id: number; label: string; unit: string };
+type Option = { id: number; code: string; name: string; unit: string };
 type LotOption = { id: number; itemId: number; label: string };
 
-/** Add a product to a draft invoice; the lot list follows the chosen product. */
+const label = (i: Option) => `${i.code} · ${i.name}`;
+
+/**
+ * Add a product to a draft invoice. Type its code (or part of its name) and pick it from the list;
+ * the lot list follows the chosen product.
+ */
 export function LineForm({ action, items, lots }: { action: (s: FormState, fd: FormData) => Promise<FormState>; items: Option[]; lots: LotOption[] }) {
   const t = useT();
-  const [itemId, setItemId] = useState("");
-  const item = items.find((i) => String(i.id) === itemId);
-  const itemLots = lots.filter((l) => String(l.itemId) === itemId);
+  const [query, setQuery] = useState("");
+  const typed = query.trim().toLowerCase();
+  const item = items.find((i) => label(i) === query || i.code.toLowerCase() === typed);
+  const itemLots = item ? lots.filter((l) => l.itemId === item.id) : [];
 
   return (
-    <ActionForm action={action} className="grid gap-3 sm:grid-cols-6" resetOnSuccess>
-      <Select
-        label={t("Product")}
-        name="itemId"
-        value={itemId}
-        onChange={(e) => setItemId(e.target.value)}
-        options={items.map((i) => ({ value: i.id, label: i.label }))}
-        placeholder={t("Choose…")}
-        className="sm:col-span-3"
-        required
-      />
+    <ActionForm action={action} className="grid gap-3 sm:grid-cols-6" resetOnSuccess onSuccess={() => setQuery("")}>
+      <div className="sm:col-span-3">
+        <Field
+          label={t("Product code or name")}
+          name="product"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          list="invoice-products"
+          autoComplete="off"
+          dir="ltr"
+          required
+          hint={item ? item.name : typed ? t("No product with that code. Pick one from the list.") : undefined}
+        />
+        <datalist id="invoice-products">
+          {items.map((i) => (
+            <option key={i.id} value={label(i)} />
+          ))}
+        </datalist>
+        <input type="hidden" name="itemId" value={item?.id ?? ""} />
+      </div>
       <Select
         label={t("Lot")}
         name="lotId"

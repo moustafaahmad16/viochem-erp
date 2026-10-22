@@ -269,6 +269,8 @@ model Invoice {
   etaSentAt         DateTime?
   status            InvoiceStatus     @default(DRAFT)
   vatRate           Decimal           @default(14) @db.Decimal(5, 2)
+  // The warehouse delivery note (رقم الإذن) the goods left on.
+  deliveryNoteNo    String?
   notes             String?
   createdAt         DateTime          @default(now())
   postedAt          DateTime?

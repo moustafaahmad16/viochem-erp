@@ -26,6 +26,10 @@ export default async function NewInvoicePage({ searchParams }: PageProps<"/invoi
           <ActionForm action={createInvoice}>
             <Select label={t("Customer")} name="customerId" defaultValue={selected} options={customers.map((c) => ({ value: c.id, label: c.name }))} placeholder={t("Choose…")} required />
             <Field label={t("Invoice date")} name="date" type="date" defaultValue={toInputDate(today())} required />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("Invoice number")} name="number" dir="ltr" hint={t("Leave empty for the next number")} />
+              <Field label={t("Delivery note no.")} name="deliveryNoteNo" dir="ltr" />
+            </div>
             <Submit>{t("Continue")}</Submit>
           </ActionForm>
         )}

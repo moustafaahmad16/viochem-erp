@@ -153,7 +153,7 @@ export function problems(d: { issuer: Party; activityCode: string; receiver: Par
   const needsDetails = r.type !== "P" || new Decimal(d.total).gte(50000);
   if (r.type === "B" && !/^\d{9}$/.test(r.id)) out.push(`${r.label} needs a 9-digit tax registration number.`);
   if (r.type !== "B" && needsDetails && !r.id) out.push(`${r.label} needs a national ID or passport number for invoices of EGP 50,000 or more.`);
-  if (needsDetails && (!r.governate || !r.city || !r.street || !r.buildingNo)) out.push(`${r.label} needs governorate, city, street and building number.`);
+  if (needsDetails && (!r.governate || !r.city || !r.street || !r.buildingNo)) out.push(`${r.label} needs an address.`);
   for (const l of d.lines) if (!l.itemCode) out.push(`${l.productName} has no ETA item code.`);
   return out;
 }

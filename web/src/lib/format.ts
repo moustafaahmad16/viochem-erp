@@ -15,3 +15,10 @@ export function qty(v: Num): string {
 export function pct(v: Num): string {
   return `${toDecimal(v).toNumber().toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 }
+
+/** A customer's address for printing: as typed, or else built from the parts the tax authority needs. */
+export function customerAddress(c: { address: string | null; buildingNo: string | null; street: string | null; city: string | null; governate: string | null }): string {
+  if (c.address?.trim()) return c.address.trim();
+  const parts = [[c.buildingNo, c.street].filter(Boolean).join(" "), c.city, c.governate].filter(Boolean);
+  return [...new Set(parts)].join(", ");
+}

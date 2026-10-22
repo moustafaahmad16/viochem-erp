@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { invoiceTotals } from "@/lib/costing";
 import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
-import { money, qty } from "@/lib/format";
+import { customerAddress, money, qty } from "@/lib/format";
 import { PrintButton } from "./print-button";
 
 export const metadata = { title: "Invoice" };
@@ -42,7 +42,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
           <div>
             <div className="text-xs uppercase text-slate-500">Bill to · العميل</div>
             <div className="mt-1 text-base font-semibold">{inv.customer.name}</div>
-            {inv.customer.address && <div className="whitespace-pre-line text-slate-600">{inv.customer.address}</div>}
+            {customerAddress(inv.customer) && <div className="whitespace-pre-line text-slate-600">{customerAddress(inv.customer)}</div>}
             {inv.customer.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {inv.customer.taxId}</div>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">
@@ -50,6 +50,12 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
             <dd className="font-semibold">{inv.number}</dd>
             <dt className="text-slate-500">Date · التاريخ</dt>
             <dd>{formatDate(inv.date)}</dd>
+            {inv.deliveryNoteNo && (
+              <>
+                <dt className="text-slate-500">Delivery note · رقم الإذن</dt>
+                <dd>{inv.deliveryNoteNo}</dd>
+              </>
+            )}
             {inv.dueDate && (
               <>
                 <dt className="text-slate-500">Due · تاريخ الاستحقاق</dt>

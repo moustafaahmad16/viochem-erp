@@ -10,7 +10,7 @@ import { invoiceTotals } from "@/lib/costing";
 import { creditCheck } from "@/lib/services/credit";
 import { UserError } from "@/lib/services/errors";
 import { cancelOnEta, refreshStatus } from "@/lib/services/einvoice";
-import { cancelInvoice as cancel, createInvoice as create, postInvoice as post } from "@/lib/services/inventory";
+import { cancelInvoice as cancel, createInvoice as create, postInvoice as post, uniqueInvoiceNumber } from "@/lib/services/inventory";
 
 async function draft(id: number) {
   const inv = await db.invoice.findUniqueOrThrow({ where: { id } });
@@ -22,7 +22,7 @@ export async function createInvoice(_: FormState, fd: FormData): Promise<FormSta
   await requireUser();
   let id: number;
   try {
-    id = (await create(int(fd, "customerId", "Customer"), date(fd, "date", "Invoice date"))).id;
+    id = (await create(int(fd, "customerId", "Customer"), date(fd, "date", "Invoice date"), { number: text(fd, "number"), deliveryNoteNo: text(fd, "deliveryNoteNo") })).id;
   } catch (e) {
     return fail(e);
   }
@@ -32,10 +32,14 @@ export async function createInvoice(_: FormState, fd: FormData): Promise<FormSta
 export async function updateInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   try {
-    await draft(id);
+    const inv = await draft(id);
+    const number = text(fd, "number") ?? inv.number;
+    await uniqueInvoiceNumber(db, number, id);
     await db.invoice.update({
       where: { id },
       data: {
+        number,
+        deliveryNoteNo: text(fd, "deliveryNoteNo"),
         customerId: int(fd, "customerId", "Customer"),
         date: date(fd, "date", "Invoice date"),
         vatRate: decimal(fd, "vatRate", "VAT rate", { allowZero: true }),

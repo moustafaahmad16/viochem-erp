@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
-import { money, qty } from "@/lib/format";
+import { customerAddress, money, qty } from "@/lib/format";
 import { creditTotals } from "@/lib/services/credits";
 import { PrintButton } from "../../invoices/[id]/print-button";
 
@@ -42,7 +42,7 @@ export default async function PrintCreditNotePage({ params }: PageProps<"/print/
           <div>
             <div className="text-xs uppercase text-slate-500">Customer · العميل</div>
             <div className="mt-1 text-base font-semibold">{cn.customer.name}</div>
-            {cn.customer.address && <div className="whitespace-pre-line text-slate-600">{cn.customer.address}</div>}
+            {customerAddress(cn.customer) && <div className="whitespace-pre-line text-slate-600">{customerAddress(cn.customer)}</div>}
             {cn.customer.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {cn.customer.taxId}</div>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">
