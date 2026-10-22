@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, optionalDate, required, text } from "@/lib/actions";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdmin, requireEditor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { recordTransfer } from "@/lib/services/banking";
 import { UserError } from "@/lib/services/errors";
@@ -48,7 +48,7 @@ export async function updateAccount(id: number, _: FormState, fd: FormData): Pro
 }
 
 export async function transfer(fromAccountId: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await recordTransfer({
       date: date(fd, "date", "Date"),

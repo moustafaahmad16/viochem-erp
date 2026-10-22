@@ -21,7 +21,7 @@ async function addUser(_: FormState, fd: FormData): Promise<FormState> {
       data: {
         name: required(fd, "name", "Name"),
         email: required(fd, "email", "Email").toLowerCase(),
-        role: fd.get("role") === "ADMIN" ? "ADMIN" : "STAFF",
+        role: fd.get("role") === "ADMIN" ? "ADMIN" : fd.get("role") === "VIEWER" ? "VIEWER" : "STAFF",
         passwordHash: await hashPassword(password),
       },
     });
@@ -54,7 +54,7 @@ export default async function UsersPage() {
               <tr key={u.id} className={u.active ? "" : "text-slate-400"}>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
-                <td>{u.role === "ADMIN" ? <Badge color="blue">{t("Admin")}</Badge> : t("Staff")}</td>
+                <td>{u.role === "ADMIN" ? <Badge color="blue">{t("Admin")}</Badge> : u.role === "VIEWER" ? t("View only") : t("Staff")}</td>
                 <td>{t.date(u.createdAt)}</td>
                 <td className="text-end">
                   {u.id !== me.id && (
@@ -72,7 +72,7 @@ export default async function UsersPage() {
             <Field label={t("Name")} name="name" required />
             <Field label={t("Email")} name="email" type="email" required />
             <Field label={t("Password")} name="password" type="text" required hint={t("At least 8 characters")} />
-            <Select label={t("Role")} name="role" options={[{ value: "STAFF", label: t("Staff") }, { value: "ADMIN", label: t("Admin (can manage users)") }]} />
+            <Select label={t("Role")} name="role" options={[{ value: "STAFF", label: t("Staff") }, { value: "VIEWER", label: t("View only (sees everything, changes nothing)") }, { value: "ADMIN", label: t("Admin (can manage users)") }]} />
             <Submit>{t("Add user")}</Submit>
           </ActionForm>
         </Card>

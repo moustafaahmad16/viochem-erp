@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, optionalDate, required, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { UserError } from "@/lib/services/errors";
 import * as orders from "@/lib/services/orders";
 
@@ -17,7 +17,7 @@ function refresh(id: number) {
 }
 
 export async function createOrder(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (
@@ -37,7 +37,7 @@ export async function createOrder(_: FormState, fd: FormData): Promise<FormState
 }
 
 export async function updateOrder(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await orders.updateOrder(id, {
       supplierId: int(fd, "supplierId", "Supplier"),
@@ -54,7 +54,7 @@ export async function updateOrder(id: number, _: FormState, fd: FormData): Promi
 }
 
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await orders.addOrderLine(id, {
       itemId: int(fd, "itemId", "Product"),
@@ -69,7 +69,7 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
 }
 
 export async function updateLine(id: number, lineId: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await orders.updateOrderLine(id, lineId, {
       qty: decimal(fd, "qty", "Quantity"),
@@ -83,13 +83,13 @@ export async function updateLine(id: number, lineId: number, _: FormState, fd: F
 }
 
 export async function removeLine(id: number, lineId: number) {
-  await requireUser();
+  await requireEditor();
   await orders.removeOrderLine(id, lineId);
   refresh(id);
 }
 
 export async function shipFromOrder(id: number, lineIds: number[], _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let shipmentId: number;
   try {
     const lines = lineIds.map((lineId) => {
@@ -121,7 +121,7 @@ export async function shipFromOrder(id: number, lineIds: number[], _: FormState,
 }
 
 async function run(id: number, fn: (id: number) => Promise<unknown>, ok: string): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await fn(id);
   } catch (e) {
@@ -144,7 +144,7 @@ export async function cancelOrder(id: number): Promise<FormState> {
 }
 
 export async function deleteOrder(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await orders.deleteOrder(id);
   } catch (e) {

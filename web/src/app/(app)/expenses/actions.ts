@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, required, text } from "@/lib/actions";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdmin, requireEditor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import { recordExpense } from "@/lib/services/banking";
 
 export async function addExpense(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let e;
   try {
     e = await recordExpense({

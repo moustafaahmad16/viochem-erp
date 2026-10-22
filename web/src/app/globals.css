@@ -25,6 +25,13 @@ input, select, textarea {
   font: inherit;
 }
 
+/* View-only users: the small buttons outside full forms (Remove, Post, Choose…) are hidden too.
+   Server-action forms render with method="POST", or a javascript: action once React draws them. */
+[data-view-only] main form:is([method="POST" i], [action^="javascript:"]) button,
+[data-view-only] main a[href$="/new"] {
+  display: none;
+}
+
 /* Numbers line up in columns. In a layer so utilities like text-start can override it. */
 @layer components {
   .num {

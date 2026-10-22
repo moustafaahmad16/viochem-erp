@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, required, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { addCreditLine, cancelCreditNote as cancel, createCreditNote as create, deleteCreditNote, postCreditNote as post, removeCreditLine } from "@/lib/services/credits";
 import { cancelCreditNoteOnEta, refreshCreditNoteStatus } from "@/lib/services/einvoice";
 
@@ -14,7 +14,7 @@ const refresh = (id: number) => {
 };
 
 export async function createCreditNote(invoiceId: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (await create(invoiceId, date(fd, "date", "Date"), required(fd, "reason", "Reason"))).id;
@@ -26,7 +26,7 @@ export async function createCreditNote(invoiceId: number, _: FormState, fd: Form
 }
 
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await addCreditLine(id, {
       invoiceLineId: int(fd, "invoiceLineId", "Product"),
@@ -42,13 +42,13 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
 }
 
 export async function removeLine(id: number, lineId: number) {
-  await requireUser();
+  await requireEditor();
   await removeCreditLine(id, lineId);
   refresh(id);
 }
 
 export async function postCreditNote(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await post(id);
   } catch (e) {
@@ -59,7 +59,7 @@ export async function postCreditNote(id: number): Promise<FormState> {
 }
 
 export async function cancelCreditNote(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await cancelCreditNoteOnEta(id, text(fd, "reason") ?? "Cancelled by the seller");
     await cancel(id);
@@ -71,13 +71,13 @@ export async function cancelCreditNote(id: number, _: FormState, fd: FormData): 
 }
 
 export async function deleteDraft(id: number) {
-  await requireUser();
+  await requireEditor();
   await deleteCreditNote(id);
   redirect("/credit-notes");
 }
 
 export async function checkEta(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await refreshCreditNoteStatus(id);
   } catch (e) {

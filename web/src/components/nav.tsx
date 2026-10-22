@@ -42,7 +42,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
   { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }] },
 ];
 
-export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin: boolean; desktop: boolean; logout: () => Promise<void> }) {
+export function Nav({ user, isAdmin, desktop, viewOnly = false, logout }: { user: string; isAdmin: boolean; desktop: boolean; viewOnly?: boolean; logout: () => Promise<void> }) {
   const path = usePathname();
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -94,7 +94,10 @@ export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin:
         </nav>
         <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-3 text-sm">
           <div className="flex items-center justify-between gap-2">
-            <div className="truncate text-slate-700">{user}</div>
+            <div className="min-w-0">
+              <div className="truncate text-slate-700">{user}</div>
+              {viewOnly && <div className="text-xs text-accent-700">{t("View only")}</div>}
+            </div>
             <LangSwitch />
           </div>
           <form action={logout}>

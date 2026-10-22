@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { invoiceTotals } from "@/lib/costing";
 import { creditCheck } from "@/lib/services/credit";
@@ -19,7 +19,7 @@ async function draft(id: number) {
 }
 
 export async function createInvoice(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (await create(int(fd, "customerId", "Customer"), date(fd, "date", "Invoice date"))).id;
@@ -30,7 +30,7 @@ export async function createInvoice(_: FormState, fd: FormData): Promise<FormSta
 }
 
 export async function updateInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await draft(id);
     await db.invoice.update({
@@ -50,7 +50,7 @@ export async function updateInvoice(id: number, _: FormState, fd: FormData): Pro
 }
 
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await draft(id);
     const itemId = int(fd, "itemId", "Product");
@@ -71,14 +71,14 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
 }
 
 export async function removeLine(id: number, lineId: number) {
-  await requireUser();
+  await requireEditor();
   await draft(id);
   await db.invoiceLine.delete({ where: { id: lineId, invoiceId: id } });
   revalidatePath(`/invoices/${id}`);
 }
 
 export async function postInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireEditor();
   try {
     const inv = await db.invoice.findUniqueOrThrow({ where: { id }, include: { lines: true } });
     const check = await creditCheck(inv.customerId, invoiceTotals(inv.lines, inv.vatRate.toString()).total);
@@ -94,7 +94,7 @@ export async function postInvoice(id: number, _: FormState, fd: FormData): Promi
 }
 
 export async function cancelInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await cancelOnEta(id, text(fd, "reason") ?? "Cancelled by the seller");
     await cancel(id);
@@ -106,14 +106,14 @@ export async function cancelInvoice(id: number, _: FormState, fd: FormData): Pro
 }
 
 export async function deleteDraft(id: number) {
-  await requireUser();
+  await requireEditor();
   await draft(id);
   await db.invoice.delete({ where: { id } });
   redirect("/invoices");
 }
 
 export async function checkEta(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await refreshStatus(id);
   } catch (e) {

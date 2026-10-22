@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, required, text } from "@/lib/actions";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdmin, requireEditor } from "@/lib/auth";
 import * as cheques from "@/lib/services/cheques";
 
 const optionalId = (fd: FormData, name: string) => {
@@ -22,7 +22,7 @@ const common = (fd: FormData) => ({
 });
 
 export async function receiveCheque(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (await cheques.receiveCheque({ ...common(fd), customerId: int(fd, "customerId", "Customer"), invoiceId: optionalId(fd, "invoiceId") })).id;
@@ -34,7 +34,7 @@ export async function receiveCheque(_: FormState, fd: FormData): Promise<FormSta
 }
 
 export async function issueCheque(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (
@@ -63,17 +63,17 @@ async function change(run: () => Promise<unknown>, ok: string): Promise<FormStat
 }
 
 export async function depositCheque(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   return change(() => cheques.depositCheque(id, optionalId(fd, "accountId"), date(fd, "date", "Date")), "Deposited.");
 }
 
 export async function clearCheque(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   return change(() => cheques.clearCheque(id, date(fd, "date", "Date")), "Cleared. The money has moved.");
 }
 
 export async function bounceCheque(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   return change(() => cheques.bounceCheque(id, date(fd, "date", "Date")), "Marked as bounced. The amount is owed again.");
 }
 
@@ -83,7 +83,7 @@ export async function reopenCheque(id: number): Promise<FormState> {
 }
 
 export async function deleteCheque(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await cheques.deleteCheque(id);
   } catch (e) {

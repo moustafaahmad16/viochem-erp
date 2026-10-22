@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, optionalDate, text } from "@/lib/actions";
 import { formatDate, today } from "@/lib/dates";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { readReply } from "@/lib/rfq/sheet";
 import { UserError } from "@/lib/services/errors";
 import * as rfqs from "@/lib/services/rfq";
@@ -19,7 +19,7 @@ function refresh(id: number) {
 }
 
 async function run(id: number, fn: () => Promise<unknown>, ok: string): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await fn();
   } catch (e) {
@@ -47,7 +47,7 @@ function productRows(fd: FormData) {
 
 /** Start a request with its products, dated today. */
 export async function createRfq(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     const lines = productRows(fd);
@@ -73,13 +73,13 @@ export async function updateRfq(id: number, _: FormState, fd: FormData): Promise
 
 
 export async function removeSupplier(id: number, supplierId: number) {
-  await requireUser();
+  await requireEditor();
   await rfqs.removeSupplier(id, supplierId);
   refresh(id);
 }
 
 export async function uploadReply(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose an Excel file first." };
   if (file.size > MAX_BYTES) return { error: "That file is over 5 MB. Split it into smaller files." };
@@ -104,7 +104,7 @@ export async function setRate(id: number, currency: string, _: FormState, fd: Fo
 }
 
 export async function chooseQuote(id: number, quoteId: number) {
-  await requireUser();
+  await requireEditor();
   await rfqs.chooseQuote(id, quoteId);
   refresh(id);
 }
@@ -114,7 +114,7 @@ export async function chooseQuote(id: number, quoteId: number) {
 
 /** Order the suggested offers, or the ones chosen by hand, one purchase order per supplier. */
 export async function orderSuggested(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await rfqs.orderSuggested(id);
   } catch (e) {
@@ -134,7 +134,7 @@ export async function reopenRfq(id: number): Promise<FormState> {
 }
 
 export async function deleteRfq(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await rfqs.deleteRfq(id);
   } catch (e) {
