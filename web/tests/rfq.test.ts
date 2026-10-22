@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { parseInputDate } from "@/lib/dates";
 import { buildSheet, readReply } from "@/lib/rfq/sheet";
 import { receiveShipment } from "@/lib/services/inventory";
-import { addRfqLine, analyseRfq, createRfq, inviteSupplier, loadReply, orderSuggested, saveLines, saveQuote, setRate } from "@/lib/services/rfq";
+import { addRfqLine, analyseRfq, createRfq, dayMonthSwapped, inviteSupplier, loadReply, orderSuggested, saveLines, saveQuote, setRate } from "@/lib/services/rfq";
 
 // Dates in 2037 keep these document numbers apart from the other test files.
 const d = (s: string) => parseInputDate(s)!;
@@ -63,14 +63,14 @@ describe("supplier sheet", () => {
     const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
 
     expect([reply.rfqId, reply.supplierId, reply.supplierName, reply.errors]).toEqual([rfqId, null, "rfq supplier ONE", []]);
-    expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Supplier One", priced: 2 });
+    expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Supplier One", priced: 2, swapped: [] });
     const q = await db.rfqQuote.findUniqueOrThrow({ where: { rfqLineId_supplierId: { rfqLineId: lineA, supplierId: s1 } } });
     expect([n(q.unitPrice), q.currency, q.leadTimeDays, q.paymentTermsDays, q.incoterm, q.validUntil?.toISOString().slice(0, 10)]).toEqual([10, "USD", 30, 60, "CIF", "2037-03-31"]);
   });
 
   it("adds a supplier it doesn't know yet, in the currency they quoted", async () => {
     const reply = { rfqId, supplierId: null, supplierName: "RFQ Brand New Trading", number: null, errors: [], rows: [{ row: 12, lineId: lineA, unitPrice: "99", currency: "GBP", moq: null, leadTimeDays: null, paymentTermsDays: null, validUntil: null, incoterm: null, notes: null }] };
-    expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Brand New Trading", priced: 1 });
+    expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Brand New Trading", priced: 1, swapped: [] });
     const created = await db.supplier.findUniqueOrThrow({ where: { name: "RFQ Brand New Trading" } });
     expect(created.currency).toBe("GBP");
     await expect(loadReply(rfqId, null, { ...reply, supplierName: null })).rejects.toThrow("The supplier's name isn't on the sheet. Choose who sent it.");
@@ -128,6 +128,30 @@ describe("comparison", () => {
     expect(a.singles[0]).toMatchObject({ supplierId: s1 });
     expect(n(a.singles[0].extra)).toBe(0);
     expect(a.singles.some((s) => s.supplierId === s3)).toBe(false); // its B price expired
+  });
+});
+
+describe("expired prices", () => {
+  it("still suggests the cheapest when every price has expired, flagged to confirm", async () => {
+    const rfq = await createRfq({ date: d("2037-03-01"), replyBy: null, neededBy: null, notes: null, lines: [{ itemId: itemB, qty: 10 }] });
+    const line = (await db.rfqLine.findFirstOrThrow({ where: { rfqId: rfq.id } })).id;
+    for (const s of [s1, s3]) await inviteSupplier(rfq.id, s);
+    await setRate(rfq.id, "USD", 50);
+    await saveQuote(rfq.id, { lineId: line, supplierId: s1, currency: "USD", unitPrice: 2, validUntil: d("2020-01-11") });
+    await saveQuote(rfq.id, { lineId: line, supplierId: s3, currency: "USD", unitPrice: 1, validUntil: d("2020-01-12") });
+    const b = (await analyseRfq(rfq.id)).lines[0];
+    expect(b.options.every((o) => !o.usable)).toBe(true);
+    expect(b.best?.supplierId).toBe(s3);
+    expect(b.best?.flags.map((f) => f.kind)).toContain("expired");
+  });
+
+  it("reads a date before the request with day and month swapped, when that makes sense", () => {
+    const rfqDate = d("2026-10-01");
+    expect(dayMonthSwapped(d("2026-01-11"), rfqDate)?.toISOString().slice(0, 10)).toBe("2026-11-01");
+    expect(dayMonthSwapped(d("2026-01-12"), rfqDate)?.toISOString().slice(0, 10)).toBe("2026-12-01");
+    expect(dayMonthSwapped(d("2026-12-01"), rfqDate)).toBeNull(); // already after the request
+    expect(dayMonthSwapped(d("2026-01-20"), rfqDate)).toBeNull(); // no 20th month
+    expect(dayMonthSwapped(d("2026-02-03"), rfqDate)).toBeNull(); // 2 March is still before
   });
 });
 

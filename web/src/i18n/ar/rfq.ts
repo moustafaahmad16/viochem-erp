@@ -41,6 +41,7 @@ export const rfq: Record<string, string> = {
   "Landed costs add {pct}": "تكاليف الوصول تضيف {pct}",
   "Download sheet": "تحميل الملف",
   "Downloaded {date}": "تم التحميل {date}",
+  "1 price": "سعر واحد",
   "{n} prices": "{n} أسعار",
   Waiting: "في الانتظار",
   "Ask another supplier": "اسأل موردًا آخر",
@@ -89,6 +90,9 @@ export const rfq: Record<string, string> = {
   Suggested: "مقترح",
   "Chosen: {qty}": "تم اختيار: {qty}",
   "Price expired {date}": "انتهت صلاحية السعر {date}",
+  "Price expired {date}, confirm it with them": "انتهت صلاحية السعر {date}، أكّده مع المورد",
+  'Read "valid until" as {dates}: the dates on the sheet were before this request, so day and month were swapped.':
+    "تمت قراءة تاريخ صلاحية السعر على أنه {dates}: التواريخ في الملف كانت قبل تاريخ الطلب، فتم تبديل اليوم والشهر.",
   "Enter the {currency} rate": "أدخل سعر {currency}",
   "Minimum {qty}": "الحد الأدنى {qty}",
   "Arrives about {date}, after it's needed": "يصل حوالي {date}، بعد الموعد المطلوب",
