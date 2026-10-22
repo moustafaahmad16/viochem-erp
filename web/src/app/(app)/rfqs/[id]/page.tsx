@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/rfqs/[id]">) {
 
 function flagText(f: Flag, t: T, unit: string) {
   switch (f.kind) {
-    case "expired": return { text: t("Price expired {date}", { date: t.date(f.date) }), color: "red" as const };
+    case "expired": return { text: t("Price expired {date}, confirm it with them", { date: t.date(f.date) }), color: "red" as const };
     case "noRate": return { text: t("Enter the {currency} rate", { currency: f.currency }), color: "red" as const };
     case "moq": return { text: t("Minimum {qty}", { qty: `${qty(f.moq)} ${unit}` }), color: "amber" as const };
     case "late": return { text: t("Arrives about {date}, after it's needed", { date: t.date(f.arrives) }), color: "red" as const };
@@ -165,7 +165,7 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
                             <li key={o.quoteId} className={`rounded-lg border px-3 py-2 text-xs ${o.quoteId === pick?.quoteId ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200"} ${o.usable ? "" : "text-slate-400"}`}>
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="font-medium text-slate-900">{o.supplierName}</span>
-                                {isOpen && o.usable && o.quoteId !== pick?.quoteId && (
+                                {isOpen && o.score !== null && o.quoteId !== pick?.quoteId && (
                                   <form action={chooseQuote.bind(null, id, o.quoteId)}><button className="font-medium text-brand-700 hover:underline">{t("Buy from them instead")}</button></form>
                                 )}
                               </div>

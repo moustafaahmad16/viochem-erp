@@ -202,7 +202,7 @@ export async function loadReply(id: number, supplierId: number | null, reply: Re
     throw new UserError(`Nothing was loaded. Fix these and upload again:\n${reply.errors.map((e) => `Row ${e.row}: ${e.message}`).join("\n")}`);
   }
   return db.$transaction(async (tx) => {
-    await openRfq(tx, id);
+    const rfq = await openRfq(tx, id);
     let supplier = supplierId ?? reply.supplierId ? await tx.supplier.findUnique({ where: { id: (supplierId ?? reply.supplierId)! } }) : null;
     const name = reply.supplierName?.trim();
     if (!supplier && name) {
@@ -215,7 +215,13 @@ export async function loadReply(id: number, supplierId: number | null, reply: Re
     const who = supplier.id;
     const lines = new Set((await tx.rfqLine.findMany({ where: { rfqId: id }, select: { id: true } })).map((l) => l.id));
     let priced = 0;
+    const swapped: Date[] = [];
     for (const r of reply.rows) {
+      const fixed = r.validUntil && dayMonthSwapped(r.validUntil, rfq.date);
+      if (fixed) {
+        swapped.push(fixed);
+        r.validUntil = fixed;
+      }
       if (!lines.has(r.lineId)) continue; // a product taken off the request since the sheet was sent
       if (!r.unitPrice || new Decimal(r.unitPrice).isZero()) {
         await tx.rfqQuote.deleteMany({ where: { rfqLineId: r.lineId, supplierId: who } });
@@ -229,8 +235,19 @@ export async function loadReply(id: number, supplierId: number | null, reply: Re
       priced++;
     }
     await tx.rfqSupplier.upsert({ where: { rfqId_supplierId: { rfqId: id, supplierId: who } }, create: { rfqId: id, supplierId: who, repliedAt: new Date() }, update: { repliedAt: new Date() } });
-    return { supplier: supplier.name, priced };
+    return { supplier: supplier.name, priced, swapped };
   });
+}
+
+/**
+ * A "valid until" date before the request was even sent is almost always a day and month swapped
+ * by Excel (1/11/2026 typed as 1 November, saved as 11 January). Read it the other way round when
+ * that gives a date on or after the request.
+ */
+export function dayMonthSwapped(d: Date, rfqDate: Date): Date | null {
+  if (d >= rfqDate || d.getUTCDate() > 12) return null;
+  const other = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCDate() - 1, d.getUTCMonth() + 1));
+  return other >= rfqDate ? other : null;
 }
 
 export async function setRate(id: number, currency: string, rate: Decimal.Value) {
@@ -533,8 +550,10 @@ export async function analyseRfq(id: number) {
       };
     });
     options.sort((a, b) => (a.usable !== b.usable ? (a.usable ? -1 : 1) : a.score && b.score ? a.score.comparedTo(b.score) : a.score ? -1 : b.score ? 1 : 0));
+    // When every price has expired, still suggest the cheapest: it is flagged, and worth confirming with the supplier.
     const usable = options.filter((o) => o.usable);
-    const best = usable[0] ?? null;
+    const ranked = usable.length ? usable : options.filter((o) => o.score !== null);
+    const best = ranked[0] ?? null;
     return {
       lineId: line.id,
       itemId: line.itemId,
@@ -546,7 +565,7 @@ export async function analyseRfq(id: number) {
       lastLanded,
       options,
       best,
-      marginOverNext: best && usable[1] ? usable[1].score!.minus(best.score!) : null,
+      marginOverNext: best && ranked[1] ? ranked[1].score!.minus(best.score!) : null,
       chosen: options.find((o) => o.awardQty !== null) ?? null,
     };
   });
