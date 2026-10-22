@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, sameName } from "@/lib/db";
 import { today } from "@/lib/dates";
 import { parseSheet, type Cell, type KindName, type RowError } from "@/lib/import/kinds";
 import { nextNumber } from "./numbering";
@@ -53,18 +53,20 @@ export async function importRows(kind: KindName, rows: Cell[][]): Promise<Import
           else created++;
         }
       } else if (kind === "suppliers") {
+        const known = await tx.supplier.findMany({ select: { id: true, name: true } });
         for (const r of records as ReturnType<typeof parseSheet<"suppliers">>["records"]) {
-          const exists = await tx.supplier.findFirst({ where: { name: { equals: r.name, mode: "insensitive" } } });
+          const exists = known.find((s) => sameName(s.name, r.name));
           if (exists) await tx.supplier.update({ where: { id: exists.id }, data: r });
-          else await tx.supplier.create({ data: r });
+          else known.push(await tx.supplier.create({ data: r, select: { id: true, name: true } }));
           if (exists) updated++;
           else created++;
         }
       } else {
+        const known = await tx.customer.findMany({ select: { id: true, name: true } });
         for (const r of records as ReturnType<typeof parseSheet<"customers">>["records"]) {
-          const exists = await tx.customer.findFirst({ where: { name: { equals: r.name, mode: "insensitive" } } });
+          const exists = known.find((c) => sameName(c.name, r.name));
           if (exists) await tx.customer.update({ where: { id: exists.id }, data: r });
-          else await tx.customer.create({ data: r });
+          else known.push(await tx.customer.create({ data: r, select: { id: true, name: true } }));
           if (exists) updated++;
           else created++;
         }

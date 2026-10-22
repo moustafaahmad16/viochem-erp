@@ -1,0 +1,47 @@
+name: Windows app
+# Builds the VIOCHEM installer for Windows (web/desktop). Every run keeps the installer as a
+# download on the run's page. Pushing a tag like desktop-v1.0.0 also publishes it as a release.
+on:
+  pull_request:
+    paths: ["web/**", ".github/workflows/desktop.yml"]
+  push:
+    branches: [main]
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            web/desktop/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: web/desktop
+      - run: npm run dist
+        working-directory: web/desktop
+        env:
+          # Not code-signed yet, so Windows shows "More info, Run anyway" the first time.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VIOCHEM-Windows-installer
+          path: web/desktop/dist/*.exe
+          if-no-files-found: error
+      - if: startsWith(github.ref, 'refs/tags/desktop-v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" desktop/dist/*.exe --title "VIOCHEM for Windows ${GITHUB_REF_NAME#desktop-v}" --notes "Download VIOCHEM-Setup and run it on the computer that will hold the data."

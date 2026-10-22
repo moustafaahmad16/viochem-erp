@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import { db, type Tx } from "@/lib/db";
+import { db, sameName, type Tx } from "@/lib/db";
 import { addDays, today } from "@/lib/dates";
 import type { Reply } from "@/lib/rfq/sheet";
 import { UserError } from "./errors";
@@ -208,7 +208,7 @@ export async function loadReply(id: number, supplierId: number | null, reply: Re
     if (!supplier && name) {
       const firstCurrency = reply.rows.find((r) => r.unitPrice && r.currency)?.currency;
       supplier =
-        (await tx.supplier.findFirst({ where: { name: { equals: name, mode: "insensitive" } } })) ??
+        (await tx.supplier.findMany()).find((s) => sameName(s.name, name)) ??
         (await tx.supplier.create({ data: { name, currency: firstCurrency && /^[A-Z]{3}$/.test(firstCurrency) ? firstCurrency : "USD" } }));
     }
     if (!supplier) throw new UserError("The supplier's name isn't on the sheet. Choose who sent it.");

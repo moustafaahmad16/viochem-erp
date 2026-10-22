@@ -5,6 +5,7 @@ import { fail, text } from "@/lib/actions";
 import { getT } from "@/i18n/server";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isDesktop, readConfig, writeConfig } from "@/lib/desktop/config";
 import { accessToken, etaConfig, signingMode } from "@/lib/eta/client";
 import { etaSettings } from "@/lib/services/einvoice";
 import { UserError } from "@/lib/services/errors";
@@ -43,6 +44,24 @@ async function save(_: FormState, fd: FormData): Promise<FormState> {
   return { ok: "Saved." };
 }
 
+/** The Windows app keeps the connection here, since there is no Vercel to put it in. */
+async function saveConnection(_: FormState, fd: FormData): Promise<FormState> {
+  "use server";
+  await requireAdmin();
+  if (!isDesktop()) return { error: "Something went wrong. Please try again." };
+  const before = readConfig().eta;
+  writeConfig({
+    eta: {
+      environment: text(fd, "environment") === "production" ? "production" : "preprod",
+      clientId: text(fd, "clientId") ?? "",
+      // Left empty, the secret already saved stays.
+      clientSecret: text(fd, "clientSecret") ?? before.clientSecret,
+    },
+  });
+  revalidatePath("/settings/eta");
+  return { ok: "Saved." };
+}
+
 async function testLogin(): Promise<FormState> {
   "use server";
   await requireAdmin();
@@ -65,6 +84,7 @@ export default async function EtaSettingsPage() {
   const c = etaConfig();
   const t = await getT();
   const mode = signingMode(s.documentVersion);
+  const desktop = isDesktop();
   return (
     <>
       <PageHeader title={t("E-invoice settings")} subtitle={t("How VIOCHEM is registered with the Egyptian Tax Authority")} />
@@ -95,18 +115,43 @@ export default async function EtaSettingsPage() {
           <dl className="space-y-3">
             <Detail label={t("Environment")}>{t(c.environment === "production" ? "Production (real invoices)" : "Pre-production (testing)")}</Detail>
             <Detail label={t("Client ID and secret")}><Yes on={Boolean(c.clientId && c.clientSecret)} /></Detail>
-            <Detail label={t("Signing")}>{t(mode === "none" ? "Not needed for version 0.9" : mode === "server" ? "Signing service (ETA_SIGNER_URL)" : "E-seal on the computer that sends")}</Detail>
+            <Detail label={t("Signing")}>
+              {t(mode === "none" ? "Not needed for version 0.9" : desktop ? "E-seal on the computer VIOCHEM is installed on" : mode === "server" ? "Signing service (ETA_SIGNER_URL)" : "E-seal on the computer that sends")}
+            </Detail>
           </dl>
-          <p className="mt-4 text-xs text-slate-500">
-            {t("These are kept in Vercel, not here: ETA_ENVIRONMENT, ETA_CLIENT_ID and ETA_CLIENT_SECRET. After changing them, redeploy.")}
-          </p>
+          {desktop ? (
+            <ActionForm action={saveConnection} className="mt-4 space-y-3">
+              <Select
+                label={t("Environment")}
+                name="environment"
+                defaultValue={c.environment}
+                options={[{ value: "preprod", label: t("Pre-production (testing)") }, { value: "production", label: t("Production (real invoices)") }]}
+              />
+              <Field label={t("Client ID")} name="clientId" defaultValue={c.clientId} dir="ltr" autoComplete="off" />
+              <Field label={t("Client secret")} name="clientSecret" type="password" dir="ltr" autoComplete="new-password" placeholder={c.clientSecret ? "••••••••" : ""} hint={c.clientSecret ? t("Leave empty to keep the saved one") : t("From the ETA portal, under ERP system registration")} />
+              <Submit>{t("Save connection")}</Submit>
+            </ActionForm>
+          ) : (
+            <p className="mt-4 text-xs text-slate-500">
+              {t("These are kept in Vercel, not here: ETA_ENVIRONMENT, ETA_CLIENT_ID and ETA_CLIENT_SECRET. After changing them, redeploy.")}
+            </p>
+          )}
           <div className="mt-4">
             <ActionForm action={testLogin}>
               <Submit variant="secondary">{t("Test the login")}</Submit>
             </ActionForm>
           </div>
         </Card>
-        {mode === "browser" && (
+        {desktop && mode !== "none" && (
+          <Card title={t("E-seal signer")} className="lg:col-span-3">
+            <ol className="list-decimal space-y-2 ps-5 text-sm text-slate-700">
+              <li>{t("Plug the e-seal USB token into this computer, and install its driver from its supplier (Egypt Trust or MCDR) if it isn't already.")}</li>
+              <li>{t("In the app's E-invoice menu, choose Start e-seal signer, and enter the token's PIN when Windows asks.")}</li>
+              <li>{t("Invoices sent from any device on the network are then signed here. The app starts the signer again each time it opens.")}</li>
+            </ol>
+          </Card>
+        )}
+        {mode === "browser" && !desktop && (
           <Card title={t("E-seal signer")} className="lg:col-span-3">
             <div className="grid gap-6 lg:grid-cols-2">
               <ol className="list-decimal space-y-2 ps-5 text-sm text-slate-700">

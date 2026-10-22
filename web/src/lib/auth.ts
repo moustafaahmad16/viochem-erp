@@ -28,7 +28,8 @@ export async function signIn(email: string, password: string): Promise<boolean> 
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // The Windows app is opened over plain http on the office network, where a secure cookie would never be sent.
+    secure: process.env.NODE_ENV === "production" && !process.env.VIOCHEM_DATA_DIR,
     maxAge: WEEK,
     path: "/",
   });

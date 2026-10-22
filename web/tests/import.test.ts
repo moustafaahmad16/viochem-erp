@@ -81,7 +81,7 @@ describe("importRows", () => {
     await importRows("customers", [["Name", "Phone"], ["Import Test Co", "1"]]);
     const r = await importRows("customers", [["Name", "Phone"], ["IMPORT TEST CO", "2"]]);
     expect(r.updated).toBe(1);
-    expect(await db.customer.count({ where: { name: { equals: "import test co", mode: "insensitive" } } })).toBe(1);
+    expect((await db.customer.findMany()).filter((c) => c.name.toLowerCase() === "import test co")).toHaveLength(1);
   });
 
   it("saves nothing when a stock row names an unknown product", async () => {

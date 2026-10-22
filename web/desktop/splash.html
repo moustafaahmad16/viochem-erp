@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>VIOCHEM</title>
+    <style>
+      body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: "Segoe UI", system-ui, sans-serif; background: linear-gradient(135deg, #eef2ff, #fff, #fff7ed); color: #475569; }
+      .box { text-align: center; }
+      img { width: 96px; height: 96px; }
+      .bar { width: 160px; height: 4px; margin: 18px auto 0; border-radius: 2px; background: #e2e8f0; overflow: hidden; }
+      .bar::after { content: ""; display: block; width: 40%; height: 100%; background: #1e3a8a; animation: slide 1.2s ease-in-out infinite; }
+      @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <img src="build/icon.png" alt="" />
+      <div>Starting VIOCHEM… · جارٍ تشغيل VIOCHEM…</div>
+      <div class="bar"></div>
+    </div>
+  </body>
+</html>
