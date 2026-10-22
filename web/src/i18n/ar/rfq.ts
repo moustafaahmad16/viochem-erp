@@ -41,6 +41,7 @@ export const rfq: Record<string, string> = {
   "Landed costs add {pct}": "تكاليف الوصول تضيف {pct}",
   "Download sheet": "تحميل الملف",
   "Downloaded {date}": "تم التحميل {date}",
+  "1 price": "سعر واحد",
   "{n} prices": "{n} أسعار",
   Waiting: "في الانتظار",
   "Ask another supplier": "اسأل موردًا آخر",

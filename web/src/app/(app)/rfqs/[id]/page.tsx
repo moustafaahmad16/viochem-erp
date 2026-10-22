@@ -114,7 +114,7 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
             {replies.length === 0 && <li className="py-3 text-slate-500">{t("No replies yet.")}</li>}
             {replies.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
-                <span><span className="font-medium">{s.supplier.name}</span> <span className="text-slate-500">· {t("{n} prices", { n: priced.get(s.supplierId) ?? 0 })}</span></span>
+                <span><span className="font-medium">{s.supplier.name}</span> <span className="text-slate-500">· {priced.get(s.supplierId) === 1 ? t("1 price") : t("{n} prices", { n: priced.get(s.supplierId) ?? 0 })}</span></span>
                 {isOpen && (
                   <form action={removeSupplier.bind(null, id, s.supplierId)}>
                     <button className="text-xs text-slate-400 hover:text-red-600">{t("Remove")}</button>
