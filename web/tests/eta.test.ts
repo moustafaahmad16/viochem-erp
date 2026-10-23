@@ -25,6 +25,13 @@ describe("ETA documents", () => {
     expect("branchID" in doc.receiver.address).toBe(false);
   });
 
+  it("takes 1% withholding tax off the total, as ETA's T4 supplies tax", () => {
+    const doc = buildDocument({ issuer, receiver, internalId: "INV-2026-0002", dateTimeIssued: "2026-10-08T10:00:00Z", activityCode: "4669", version: "1.0", lines: [{ ...line(100, 1000), whtRate: 1 }] });
+    expect(doc.invoiceLines[0]).toMatchObject({ netTotal: 100000, total: 113000, taxableItems: [{ taxType: "T1", amount: 14000 }, { taxType: "T4", amount: 1000, subType: "W002", rate: 1 }] });
+    expect(doc.taxTotals).toEqual([{ taxType: "T1", amount: 14000 }, { taxType: "T4", amount: 1000 }]);
+    expect(doc.totalAmount).toBe(113000);
+  });
+
   it("never dates a document in the future", () => {
     const now = new Date("2026-10-08T06:00:00Z"); // 09:00 in Cairo
     expect(issuedAt(new Date("2026-10-07T00:00:00Z"), null, now)).toBe("2026-10-07T08:00:00Z");

@@ -43,7 +43,7 @@ async function shipmentWithCharges() {
 describe("import to sale", () => {
   it("receives a shipment with landed cost, sells it and reports the margin", async () => {
     const s = await shipmentWithCharges();
-    expect(s.ref).toBe("SHP-2026-0001");
+    expect(s.ref).toMatch(/^SHP-2026-\d{4}$/); // Numbered in sequence; other test files may have taken earlier numbers.
 
     await expect(receiveShipment(s.id, d("2026-01-01"))).rejects.toThrow(/before the departure/);
     await receiveShipment(s.id, d("2026-02-03"));
@@ -51,7 +51,7 @@ describe("import to sale", () => {
 
     const lot = await db.lot.findFirstOrThrow({ where: { itemId: linalool } });
     expect(num(lot.unitCostEgp)).toBe(550); // 500 + 5,000 freight / 100 kg
-    expect(lot.lotNo).toBe("LOT-2026-0001");
+    expect(lot.lotNo).toMatch(/^LOT-2026-\d{4}$/);
 
     // Can't sell before the goods arrived.
     const early = await createInvoice(customer, d("2026-02-01"));

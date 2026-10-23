@@ -38,6 +38,7 @@ async function buildFor(d: {
   date: Date;
   postedAt: Date | null;
   vatRate: { toString(): string };
+  whtRate: { toString(): string };
   lines: EtaSourceLine[];
   documentType?: "I" | "C";
   references?: string[];
@@ -62,6 +63,7 @@ async function buildFor(d: {
     qty: l.qty.toString(),
     unitPrice: l.unitPrice.toString(),
     vatRate: d.vatRate.toString(),
+    whtRate: d.whtRate.toString(),
   }));
   const total = invoiceTotals(lines, d.vatRate.toString()).total;
   const document = buildDocument({

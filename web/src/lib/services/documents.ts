@@ -2,17 +2,20 @@ import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
 
 /** The standard import documents. The migration adds them; this keeps them there if they were removed. */
-export const BUILT_IN_TYPES = ["Proforma Invoice", "Commercial Invoice", "Certificate of Origin (COO)", "Packing List"];
+export const BUILT_IN_TYPES = ["Proforma Invoice", "Commercial Invoice", "Certificate of Origin (COO)", "Packing List", "Bill of Lading"];
 
 export const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
 
 /** Every document type, the built-in ones first in their usual order, then people's own by name. */
 export async function documentTypes() {
   let types = await db.documentType.findMany({ select: { id: true, name: true, builtIn: true } });
-  const missing = BUILT_IN_TYPES.filter((name) => !types.some((t) => t.name === name));
+  const missing = BUILT_IN_TYPES.filter((name) => !types.some((t) => t.name === name && t.builtIn));
   if (missing.length) {
+    // One someone already added by hand becomes the built-in one, keeping its files.
+    await db.documentType.updateMany({ where: { name: { in: missing } }, data: { builtIn: true } });
     // SQLite can't skip duplicates, so a second user adding them at the same moment is simply ignored.
-    await db.documentType.createMany({ data: missing.map((name) => ({ name, builtIn: true })) }).catch(() => undefined);
+    const added = missing.filter((name) => !types.some((t) => t.name === name));
+    await db.documentType.createMany({ data: added.map((name) => ({ name, builtIn: true })) }).catch(() => undefined);
     types = await db.documentType.findMany({ select: { id: true, name: true, builtIn: true } });
   }
   const rank = (t: { name: string; builtIn: boolean }) => (t.builtIn ? BUILT_IN_TYPES.indexOf(t.name) : BUILT_IN_TYPES.length);

@@ -1,6 +1,9 @@
 import type { RfqStatus } from "@prisma/client";
 import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { MonthFilter } from "@/components/month-filter";
 import { db } from "@/lib/db";
+import { monthRange, monthsSince } from "@/lib/dates";
+import { listHref } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import { RfqStatusBadge } from "./status";
 
@@ -17,8 +20,12 @@ const FILTERS = [
 
 export default async function RfqsPage({ searchParams }: PageProps<"/rfqs">) {
   const t = await getT();
-  const status = String((await searchParams).status ?? "");
-  const where = status === "all" ? {} : { status: (status === "ORDERED" || status === "CANCELLED" ? status : "OPEN") as RfqStatus };
+  const params = await searchParams;
+  const status = String(params.status ?? "");
+  const month = String(params.month ?? "");
+  const range = monthRange(month);
+  const where = { ...(status === "all" ? {} : { status: (status === "ORDERED" || status === "CANCELLED" ? status : "OPEN") as RfqStatus }), ...(range ? { date: range } : {}) };
+  const first = await db.rfq.aggregate({ _min: { date: true } });
   const rfqs = await db.rfq.findMany({
     where,
     include: { lines: { include: { item: true } }, suppliers: true },
@@ -37,12 +44,13 @@ export default async function RfqsPage({ searchParams }: PageProps<"/rfqs">) {
           </>
         }
       />
-      <div className="mb-3 flex gap-1">
+      <div className="mb-3 flex flex-wrap items-center gap-1">
         {FILTERS.map((f) => (
-          <a key={f.key} href={f.key ? `/rfqs?status=${f.key}` : "/rfqs"} className={`rounded-full px-3 py-1 text-sm ${status === f.key ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`}>
+          <a key={f.key} href={listHref("/rfqs", { status: f.key, month: range ? month : undefined })} className={`rounded-full px-3 py-1 text-sm ${status === f.key ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`}>
             {t(f.label)}
           </a>
         ))}
+        <div className="ms-auto"><MonthFilter months={monthsSince(first._min.date)} /></div>
       </div>
       <Card padded={false}>
         <Table

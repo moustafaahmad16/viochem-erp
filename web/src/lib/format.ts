@@ -22,3 +22,9 @@ export function customerAddress(c: { address: string | null; buildingNo: string 
   const parts = [[c.buildingNo, c.street].filter(Boolean).join(" "), c.city, c.governate].filter(Boolean);
   return [...new Set(parts)].join(", ");
 }
+
+/** A list's address with these filters, leaving out empty ones. */
+export function listHref(path: string, filters: Record<string, string | undefined>) {
+  const q = new URLSearchParams(Object.entries(filters).filter((e): e is [string, string] => !!e[1])).toString();
+  return q ? `${path}?${q}` : path;
+}

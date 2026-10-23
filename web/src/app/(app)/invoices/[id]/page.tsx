@@ -29,7 +29,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   });
   if (!inv) notFound();
   const isDraft = inv.status === "DRAFT";
-  const totals = invoiceTotals(inv.lines, inv.vatRate.toString());
+  const totals = invoiceTotals(inv.lines, inv.vatRate.toString(), inv.whtRate.toString());
 
   const [items, lots, customers] = isDraft
     ? await Promise.all([
@@ -45,8 +45,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const margin = totals.net.minus(cost);
   const bill = inv.status === "POSTED" ? (await customerAccounts({ id: inv.customerId }))[0].bills.find((b) => b.key === `inv:${inv.id}`) : undefined;
   const late = bill && bill.outstanding.gt(0) ? daysLate(bill.dueDate, today()) : 0;
-  const credited = bill ? (await db.creditNote.findMany({ where: { invoiceId: inv.id, status: "POSTED" }, include: { lines: true } })).reduce((s, n) => s.plus(creditTotals(n).total), new Decimal(0)) : new Decimal(0);
-  const [credit, user] = await Promise.all([isDraft ? creditCheck(inv.customerId, totals.total) : null, currentUser()]);
+  const credited = bill ? (await db.creditNote.findMany({ where: { invoiceId: inv.id, status: "POSTED" }, include: { lines: true } })).reduce((s, n) => s.plus(creditTotals(n).due), new Decimal(0)) : new Decimal(0);
+  const [credit, user] = await Promise.all([isDraft ? creditCheck(inv.customerId, totals.due) : null, currentUser()]);
   const isAdmin = user?.role === "ADMIN";
   const etaMissing = inv.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(inv.etaStatus) ? (await prepare(inv.id)).problems : [];
 
@@ -71,6 +71,12 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                     <tr className="font-normal"><td colSpan={3}>{t("Subtotal")}</td><td className="num">{money(totals.net)}</td>{!isDraft && <td />}<td /></tr>
                     <tr className="font-normal"><td colSpan={3}>{t("VAT {rate}%", { rate: inv.vatRate.toString() })}</td><td className="num">{money(totals.vat)}</td>{!isDraft && <td />}<td /></tr>
                     <tr><td colSpan={3}>{t("Total (EGP)")}</td><td className="num">{money(totals.total)}</td>{!isDraft && <td />}<td /></tr>
+                    {totals.wht.gt(0) && (
+                      <>
+                        <tr className="font-normal"><td colSpan={3}>{t("Withholding tax {rate}% (deducted by the customer)", { rate: inv.whtRate.toString() })}</td><td className="num">-{money(totals.wht)}</td>{!isDraft && <td />}<td /></tr>
+                        <tr><td colSpan={3}>{t("Due from the customer (EGP)")}</td><td className="num">{money(totals.due)}</td>{!isDraft && <td />}<td /></tr>
+                      </>
+                    )}
                   </>
                 )
               }
@@ -151,6 +157,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                   <Field label={t("Invoice number")} name="number" defaultValue={inv.number} dir="ltr" required />
                   <Field label={t("Delivery note no.")} name="deliveryNoteNo" defaultValue={inv.deliveryNoteNo ?? ""} dir="ltr" />
                   <Field label={t("VAT %")} name="vatRate" defaultValue={inv.vatRate.toString()} inputMode="decimal" required />
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="wht" defaultChecked={inv.whtRate.gt(0)} /> {t("Customer deducts 1% withholding tax (WHT, خصم الضريبة)")}</label>
                   <TextArea label={t("Notes (printed on the invoice)")} name="notes" defaultValue={inv.notes ?? ""} />
                   <Submit variant="secondary">{t("Save")}</Submit>
                 </ActionForm>

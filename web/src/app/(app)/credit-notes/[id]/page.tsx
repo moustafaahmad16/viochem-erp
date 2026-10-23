@@ -62,6 +62,12 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
                     <tr className="font-normal"><td colSpan={3}>{t("Subtotal")}</td><td className="num">{money(totals.net)}</td><td colSpan={2} /></tr>
                     <tr className="font-normal"><td colSpan={3}>{t("VAT {rate}%", { rate: cn.vatRate.toString() })}</td><td className="num">{money(totals.vat)}</td><td colSpan={2} /></tr>
                     <tr><td colSpan={3}>{t("Total (EGP)")}</td><td className="num">{money(totals.total)}</td><td colSpan={2} /></tr>
+                    {totals.wht.gt(0) && (
+                      <>
+                        <tr className="font-normal"><td colSpan={3}>{t("Withholding tax {rate}% (deducted by the customer)", { rate: cn.whtRate.toString() })}</td><td className="num">-{money(totals.wht)}</td><td colSpan={2} /></tr>
+                        <tr><td colSpan={3}>{t("Credited to the customer (EGP)")}</td><td className="num">{money(totals.due)}</td><td colSpan={2} /></tr>
+                      </>
+                    )}
                   </>
                 )
               }

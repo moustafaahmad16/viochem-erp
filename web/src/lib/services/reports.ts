@@ -1,6 +1,7 @@
 import Decimal from "decimal.js";
 import { db } from "@/lib/db";
 import { addDays, today } from "@/lib/dates";
+import { invoiceTotals } from "@/lib/costing";
 
 const dec = (v: { toString(): string } | null | undefined) => new Decimal(v == null ? 0 : v.toString());
 
@@ -70,6 +71,33 @@ export async function marginReport(from: Date, to: Date, groupBy: MarginGroup): 
   const rows = [...groups.values()].map(finish).sort((a, b) => b.revenue.comparedTo(a.revenue));
   const total = finish(rows.reduce((t, r) => ({ ...t, qty: t.qty.plus(r.qty), revenue: t.revenue.plus(r.revenue), cost: t.cost.plus(r.cost) }), blank("total", "Total")));
   return { rows, total };
+}
+
+export type WithholdingRow = { customerId: number; name: string; taxId: string | null; documents: string[]; net: Decimal; wht: Decimal };
+
+/**
+ * Withholding tax customers deducted on posted invoices dated in the period, less what credit notes
+ * gave back, per customer. VIOCHEM counts it against its own income tax.
+ */
+export async function withholdingReport(from: Date, to: Date): Promise<{ rows: WithholdingRow[]; total: { net: Decimal; wht: Decimal } }> {
+  const where = { status: "POSTED" as const, whtRate: { gt: 0 }, date: { gte: from, lte: to } };
+  const [invoices, notes] = await Promise.all([
+    db.invoice.findMany({ where, include: { customer: true, lines: true }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
+    db.creditNote.findMany({ where, include: { customer: true, lines: true }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
+  ]);
+  const rows = new Map<number, WithholdingRow>();
+  const add = (doc: (typeof invoices)[number] | (typeof notes)[number], sign: 1 | -1) => {
+    const t = invoiceTotals(doc.lines, doc.vatRate.toString(), doc.whtRate.toString());
+    const row = rows.get(doc.customerId) ?? { customerId: doc.customerId, name: doc.customer.name, taxId: doc.customer.taxId, documents: [], net: new Decimal(0), wht: new Decimal(0) };
+    row.documents.push(doc.number);
+    row.net = row.net.plus(t.net.times(sign));
+    row.wht = row.wht.plus(t.wht.times(sign));
+    rows.set(doc.customerId, row);
+  };
+  for (const inv of invoices) add(inv, 1);
+  for (const cn of notes) add(cn, -1);
+  const list = [...rows.values()].sort((a, b) => b.wht.comparedTo(a.wht) || a.name.localeCompare(b.name));
+  return { rows: list, total: { net: list.reduce((s, r) => s.plus(r.net), new Decimal(0)), wht: list.reduce((s, r) => s.plus(r.wht), new Decimal(0)) } };
 }
 
 export async function stockSummary() {

@@ -280,4 +280,8 @@ export const sales: Record<string, string> = {
   "← Back": "→ رجوع",
   "Address in parts (optional)": "العنوان بالتفصيل (اختياري)",
   "As printed on invoices, and sent on e-invoices": "كما يُطبع على الفواتير ويُرسل في الفاتورة الإلكترونية",
+  "Customer deducts 1% withholding tax (WHT, خصم الضريبة)": "العميل يخصم ضريبة الخصم والإضافة 1%",
+  "Withholding tax {rate}% (deducted by the customer)": "ضريبة الخصم {rate}% (يخصمها العميل)",
+  "Due from the customer (EGP)": "المستحق من العميل (جنيه)",
+  "Credited to the customer (EGP)": "المردود للعميل (جنيه)",
 };

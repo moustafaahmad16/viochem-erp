@@ -70,4 +70,11 @@ export const reports: Record<string, string> = {
     "المشتريات بالجنيه بسعر صرف كل شحنة. إجمالي المستحق والمتأخر بسعر صرف آخر شحنة. الالتزام بالمواعيد هو نسبة الشحنات التي وصلت في موعدها المتوقع.",
   "Customer or supplier": "العميل أو المورد",
   "Nothing to show.": "لا توجد بيانات.",
+  "Withholding tax": "ضريبة الخصم",
+  "Tax customers deducted from their payments (خصم الضريبة) and paid to the tax authority for VIOCHEM": "الضريبة التي خصمها العملاء من مدفوعاتهم وسددوها لمصلحة الضرائب لحساب VIOCHEM",
+  Quarter: "الربع",
+  "Q{q} {year}": "الربع {q} {year}",
+  "Invoices and credit notes": "الفواتير والإشعارات الدائنة",
+  Withheld: "المخصوم",
+  "No invoices with withholding tax in this quarter.": "لا توجد فواتير بها ضريبة خصم في هذا الربع.",
 };

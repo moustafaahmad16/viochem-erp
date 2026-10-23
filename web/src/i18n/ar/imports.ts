@@ -294,6 +294,7 @@ export const imports: Record<string, string> = {
   "Commercial Invoice": "الفاتورة التجارية",
   "Certificate of Origin (COO)": "شهادة المنشأ",
   "Packing List": "قائمة التعبئة",
+  "Bill of Lading": "بوليصة الشحن",
   "Not uploaded yet": "لم يُرفع بعد",
   "{n} of the standard documents missing": "ناقص {n} من المستندات الأساسية",
   "All standard documents uploaded": "تم رفع كل المستندات الأساسية",

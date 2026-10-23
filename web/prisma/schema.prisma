@@ -269,6 +269,8 @@ model Invoice {
   etaSentAt         DateTime?
   status            InvoiceStatus     @default(DRAFT)
   vatRate           Decimal           @default(14) @db.Decimal(5, 2)
+  // Withholding tax (WHT, خصم الضريبة) the customer deducts from what they pay, in %: 1 for supplies, 0 for none.
+  whtRate           Decimal           @default(0) @db.Decimal(5, 2)
   // The warehouse delivery note (رقم الإذن) the goods left on.
   deliveryNoteNo    String?
   notes             String?
@@ -550,6 +552,8 @@ model CreditNote {
   status            CreditNoteStatus @default(DRAFT)
   // The invoice's VAT rate, so the credit reverses exactly what was charged.
   vatRate           Decimal          @db.Decimal(5, 2)
+  // The invoice's withholding tax rate, so the credit gives back what the customer actually paid.
+  whtRate           Decimal          @default(0) @db.Decimal(5, 2)
   etaStatus         EtaStatus        @default(NOT_SENT)
   etaUuid           String?          @unique
   etaLongId         String?

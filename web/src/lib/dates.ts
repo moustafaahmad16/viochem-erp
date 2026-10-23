@@ -44,3 +44,23 @@ export function shipmentDateProblem(etd: Date | null, eta: Date | null, arrival:
   if (etd && arrival && arrival < etd) return "Arrival can't be before the departure date.";
   return null;
 }
+
+/** The days of a month picked as "2026-10", for filtering by date; null when no month is picked. */
+export function monthRange(month: string | null | undefined): { gte: Date; lt: Date } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(month ?? "");
+  if (!m || Number(m[2]) < 1 || Number(m[2]) > 12) return null;
+  const y = Number(m[1]), i = Number(m[2]) - 1;
+  return { gte: new Date(Date.UTC(y, i, 1)), lt: new Date(Date.UTC(y, i + 1, 1)) };
+}
+
+/** Every month from the first date up to this month, newest first, as { key: "2026-10", label: "Oct 2026" }. */
+export function monthsSince(first: Date | null | undefined, now = today()): { key: string; label: string }[] {
+  const end = now.getUTCFullYear() * 12 + now.getUTCMonth();
+  const start = first ? Math.min(end, first.getUTCFullYear() * 12 + first.getUTCMonth()) : end;
+  const months = [];
+  for (let n = end; n >= start; n--) {
+    const y = Math.floor(n / 12), i = n % 12;
+    months.push({ key: `${y}-${String(i + 1).padStart(2, "0")}`, label: `${MONTHS[i]} ${y}` });
+  }
+  return months;
+}
