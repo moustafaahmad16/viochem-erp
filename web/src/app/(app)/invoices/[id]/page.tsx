@@ -54,7 +54,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
     <>
       <PageHeader
         title={<span className="flex items-center gap-3">{inv.number} <InvoiceStatusBadge status={inv.status} /></span>}
-        subtitle={<><RowLink href={`/customers/${inv.customerId}`}>{inv.customer.name}</RowLink> · {t.date(inv.date)}{inv.quote && <> · {t("From quotation")} <RowLink href={`/quotes/${inv.quote.id}`}>{inv.quote.number}</RowLink></>}</>}
+        subtitle={<><RowLink href={`/customers/${inv.customerId}`}>{inv.customer.name}</RowLink> · {t.date(inv.date)}{inv.deliveryNoteNo && <> · {t("Delivery note {no}", { no: inv.deliveryNoteNo })}</>}{inv.quote && <> · {t("From quotation")} <RowLink href={`/quotes/${inv.quote.id}`}>{inv.quote.number}</RowLink></>}</>}
         back={{ href: "/invoices", label: t("Invoices") }}
         actions={!isDraft && <ButtonLink href={`/print/invoices/${inv.id}`} variant="secondary">{t("Print")}</ButtonLink>}
       />
@@ -113,7 +113,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               <div className="border-t border-slate-100 p-4">
                 <LineForm
                   action={addLine.bind(null, inv.id)}
-                  items={items.map((i) => ({ id: i.id, label: `${i.name} (${i.code})`, unit: i.unit }))}
+                  items={items.map((i) => ({ id: i.id, code: i.code, name: i.name, unit: i.unit }))}
                   lots={lots.map((l) => ({
                     id: l.id,
                     itemId: l.itemId,
@@ -148,6 +148,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                 <ActionForm action={updateInvoice.bind(null, inv.id)}>
                   <Select label={t("Customer")} name="customerId" defaultValue={inv.customerId} options={customers.map((c) => ({ value: c.id, label: c.name }))} />
                   <Field label={t("Invoice date")} name="date" type="date" defaultValue={toInputDate(inv.date)} required />
+                  <Field label={t("Invoice number")} name="number" defaultValue={inv.number} dir="ltr" required />
+                  <Field label={t("Delivery note no.")} name="deliveryNoteNo" defaultValue={inv.deliveryNoteNo ?? ""} dir="ltr" />
                   <Field label={t("VAT %")} name="vatRate" defaultValue={inv.vatRate.toString()} inputMode="decimal" required />
                   <TextArea label={t("Notes (printed on the invoice)")} name="notes" defaultValue={inv.notes ?? ""} />
                   <Submit variant="secondary">{t("Save")}</Submit>

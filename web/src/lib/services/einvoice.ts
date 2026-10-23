@@ -16,7 +16,19 @@ export function describeError(error: unknown): string {
   return [head, ...details].filter(Boolean).join("\n") || JSON.stringify(error);
 }
 
-type EtaCustomer = { name: string; etaType: string | null; taxId: string | null; country: string | null; governate: string | null; city: string | null; street: string | null; buildingNo: string | null };
+type EtaCustomer = { name: string; etaType: string | null; taxId: string | null; country: string | null; address: string | null; governate: string | null; city: string | null; street: string | null; buildingNo: string | null };
+
+/**
+ * The address parts ETA asks for. Most customers only have their address as one line, as other
+ * systems keep it; that line fills whatever parts weren't entered separately.
+ */
+export function receiverAddress(c: Pick<EtaCustomer, "address" | "governate" | "city" | "street" | "buildingNo">) {
+  const line = (c.address ?? "").replace(/\s*\n\s*/g, ", ").trim();
+  const governate = c.governate?.trim() || c.city?.trim() || line;
+  const city = c.city?.trim() || c.governate?.trim() || line;
+  const street = c.street?.trim() || line;
+  return { governate, city, street, buildingNo: c.buildingNo?.trim() || (street ? "0" : "") };
+}
 type EtaSourceLine = { qty: { toString(): string }; unitPrice: { toString(): string }; item: { name: string; etaItemType: string; etaItemCode: string | null; unit: string; code: string } };
 
 /** An ETA document for an invoice or credit note, and anything that would stop it being accepted. */
@@ -38,10 +50,7 @@ async function buildFor(d: {
     id: c.taxId ?? "",
     name: c.name,
     country: c.country || "EG",
-    governate: c.governate ?? "",
-    city: c.city ?? "",
-    street: c.street ?? "",
-    buildingNo: c.buildingNo ?? "",
+    ...receiverAddress(c),
   };
   const lines = d.lines.map((l) => ({
     description: l.item.name,

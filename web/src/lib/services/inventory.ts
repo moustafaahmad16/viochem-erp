@@ -172,10 +172,19 @@ export async function cancelInvoice(invoiceId: number) {
   });
 }
 
-export async function createInvoice(customerId: number, date: Date) {
-  return db.$transaction(async (tx) =>
-    tx.invoice.create({ data: { number: await nextNumber(tx, "INV", date), customerId, date } }),
-  );
+/** A draft invoice. Its number is the next one in sequence unless one is typed in. */
+export async function createInvoice(customerId: number, date: Date, extra: { number?: string | null; deliveryNoteNo?: string | null } = {}) {
+  return db.$transaction(async (tx) => {
+    const number = extra.number?.trim() || (await nextNumber(tx, "INV", date));
+    await uniqueInvoiceNumber(tx, number);
+    return tx.invoice.create({ data: { number, customerId, date, deliveryNoteNo: extra.deliveryNoteNo?.trim() || null } });
+  });
+}
+
+/** Invoice numbers are unique, typed in or not. */
+export async function uniqueInvoiceNumber(tx: Tx, number: string, except?: number) {
+  const taken = await tx.invoice.findUnique({ where: { number } });
+  if (taken && taken.id !== except) throw new UserError(`Invoice number ${number} is already used.`);
 }
 
 export async function createShipment(data: {

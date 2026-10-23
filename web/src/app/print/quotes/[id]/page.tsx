@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { invoiceTotals } from "@/lib/costing";
 import { formatDate } from "@/lib/dates";
 import { db } from "@/lib/db";
-import { money, qty } from "@/lib/format";
+import { customerAddress, money, qty } from "@/lib/format";
 import { PrintButton } from "../../invoices/[id]/print-button";
 
 export const metadata = { title: "Quotation" };
@@ -43,7 +43,7 @@ export default async function PrintQuotePage({ params }: PageProps<"/print/quote
           <div>
             <div className="text-xs uppercase text-slate-500">Prepared for · مقدم إلى</div>
             <div className="mt-1 text-base font-semibold">{q.customer.name}</div>
-            {q.customer.address && <div className="whitespace-pre-line text-slate-600">{q.customer.address}</div>}
+            {customerAddress(q.customer) && <div className="whitespace-pre-line text-slate-600">{customerAddress(q.customer)}</div>}
             {q.customer.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {q.customer.taxId}</div>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">

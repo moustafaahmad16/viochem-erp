@@ -14,12 +14,15 @@ const PendingContext = createContext(false);
  * A form that runs a server action and shows its error message, if any.
  * What was typed stays in the fields when the action fails, so nobody has to fill a form twice.
  */
-export function ActionForm({ action, children, className = "space-y-4", resetOnSuccess = false }: { action: Action; children: ReactNode; className?: string; resetOnSuccess?: boolean }) {
+export function ActionForm({ action, children, className = "space-y-4", resetOnSuccess = false, onSuccess }: { action: Action; children: ReactNode; className?: string; resetOnSuccess?: boolean; onSuccess?: () => void }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const t = useT();
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (resetOnSuccess && state?.ok) ref.current?.reset();
+    if (state?.ok) onSuccess?.();
+    // Only when a new result comes back, not when the caller re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, resetOnSuccess]);
 
   return (

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { formatDate, today } from "@/lib/dates";
-import { money } from "@/lib/format";
+import { customerAddress, money } from "@/lib/format";
 import { AGE_BUCKETS } from "@/lib/ledger";
 import { customerAccounts } from "@/lib/services/accounts";
 import { PrintButton } from "../../invoices/[id]/print-button";
@@ -36,7 +36,7 @@ export default async function PrintStatementPage({ params }: PageProps<"/print/s
           <div>
             <div className="text-xs uppercase text-slate-500">Customer · العميل</div>
             <div className="mt-1 text-base font-semibold">{c.name}</div>
-            {c.address && <div className="whitespace-pre-line text-slate-600">{c.address}</div>}
+            {customerAddress(c) && <div className="whitespace-pre-line text-slate-600">{customerAddress(c)}</div>}
             {c.taxId && <div className="text-slate-600">Tax no. · رقم التسجيل الضريبي: {c.taxId}</div>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 self-start text-right">
