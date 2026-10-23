@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
 import { decimal, fail, optionalDate, required, text } from "@/lib/actions";
 import { UserError } from "@/lib/services/errors";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 const data = (fd: FormData) => ({
@@ -33,7 +33,7 @@ function terms(fd: FormData) {
 }
 
 export async function createCustomer(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await db.customer.create({ data: data(fd) });
   } catch (e) {
@@ -44,7 +44,7 @@ export async function createCustomer(_: FormState, fd: FormData): Promise<FormSt
 }
 
 export async function updateCustomer(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await db.customer.update({ where: { id }, data: data(fd) });
   } catch (e) {

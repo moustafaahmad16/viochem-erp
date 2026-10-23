@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, optionalDate, required, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { shipmentDateProblem } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { activeAccount } from "@/lib/services/banking";
@@ -27,7 +27,7 @@ function checkDates(etd: Date | null, eta: Date | null, arrival: Date | null) {
 }
 
 export async function createShipment(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     const etd = optionalDate(fd, "etd");
@@ -61,7 +61,7 @@ async function editable(id: number) {
 }
 
 export async function updateShipment(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     const s = await db.shipment.findUniqueOrThrow({ where: { id } });
     const etd = optionalDate(fd, "etd");
@@ -92,7 +92,7 @@ export async function updateShipment(id: number, _: FormState, fd: FormData): Pr
 }
 
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await editable(id);
     await db.shipmentLine.create({
@@ -113,7 +113,7 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
 }
 
 export async function removeLine(id: number, lineId: number) {
-  await requireUser();
+  await requireEditor();
   await editable(id);
   await db.shipmentLine.delete({ where: { id: lineId, shipmentId: id } });
   revalidatePath(`/shipments/${id}`);
@@ -121,7 +121,7 @@ export async function removeLine(id: number, lineId: number) {
 
 // Charges can change after receiving: the lots and past sales are re-costed straight away.
 export async function addCharge(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     const data = {
       shipmentId: id,
@@ -144,7 +144,7 @@ export async function addCharge(id: number, _: FormState, fd: FormData): Promise
 }
 
 export async function removeCharge(id: number, chargeId: number) {
-  await requireUser();
+  await requireEditor();
   await db.$transaction(async (tx) => {
     await tx.shipmentCharge.delete({ where: { id: chargeId, shipmentId: id } });
     await recostShipment(tx, id);
@@ -153,7 +153,7 @@ export async function removeCharge(id: number, chargeId: number) {
 }
 
 export async function receiveShipment(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await receive(id, date(fd, "arrivalDate", "Arrival date"));
   } catch (e) {
@@ -166,7 +166,7 @@ export async function receiveShipment(id: number, _: FormState, fd: FormData): P
 
 // Documents can be added and removed at any time, even after the shipment is received.
 export async function uploadDocument(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     const choice = required(fd, "typeId", "Document type");
     const typeId = choice === "new" ? (await documentType(text(fd, "newType") ?? "")).id : Number(choice);
@@ -182,7 +182,7 @@ export async function uploadDocument(id: number, _: FormState, fd: FormData): Pr
 }
 
 export async function removeDocument(id: number, documentId: number) {
-  await requireUser();
+  await requireEditor();
   await removeShipmentDocument(id, documentId);
   revalidatePath(`/shipments/${id}`);
 }

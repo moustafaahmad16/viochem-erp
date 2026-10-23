@@ -9,6 +9,12 @@ export type FormState = { error?: string; ok?: string } | undefined;
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
 const PendingContext = createContext(false);
+const ViewOnlyContext = createContext(false);
+
+/** Wraps the app for view-only users: every form shows its values but can't be changed or sent. */
+export function ViewOnly({ on, children }: { on: boolean; children: ReactNode }) {
+  return <ViewOnlyContext.Provider value={on}>{children}</ViewOnlyContext.Provider>;
+}
 
 /**
  * A form that runs a server action and shows its error message, if any.
@@ -16,6 +22,7 @@ const PendingContext = createContext(false);
  */
 export function ActionForm({ action, children, className = "space-y-4", resetOnSuccess = false, onSuccess }: { action: Action; children: ReactNode; className?: string; resetOnSuccess?: boolean; onSuccess?: () => void }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const viewOnly = useContext(ViewOnlyContext);
   const t = useT();
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -38,9 +45,9 @@ export function ActionForm({ action, children, className = "space-y-4", resetOnS
     >
       {state?.error && <div role="alert" className="mb-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{t.message(state.error)}</div>}
       {state?.ok && <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{t.message(state.ok)}</div>}
-      <div className={className}>
+      <fieldset disabled={viewOnly} className={`min-w-0 ${className}`}>
         <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>
-      </div>
+      </fieldset>
     </form>
   );
 }
@@ -50,6 +57,7 @@ export function Submit({ children, variant = "primary", confirm }: { children: R
   const actionPending = useContext(PendingContext);
   const pending = formPending || actionPending;
   const t = useT();
+  if (useContext(ViewOnlyContext)) return null;
   return (
     <button
       type="submit"

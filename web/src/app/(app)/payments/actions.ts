@@ -4,7 +4,7 @@ import type { PaymentMethod } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, required, text } from "@/lib/actions";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdmin, requireEditor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import { recordCustomerPayment, recordSupplierPayment } from "@/lib/services/payments";
@@ -24,7 +24,7 @@ const common = (fd: FormData) => ({
 });
 
 export async function receivePayment(customerId: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let p;
   try {
     p = await recordCustomerPayment(customerId, { ...common(fd), invoiceId: optionalId(fd, "invoiceId") });
@@ -36,7 +36,7 @@ export async function receivePayment(customerId: number, _: FormState, fd: FormD
 }
 
 export async function paySupplier(supplierId: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let p;
   try {
     const currency = required(fd, "currency", "Currency");

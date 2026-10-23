@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { FormState } from "@/components/forms";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { readRows } from "@/lib/import/excel";
 import { KINDS, type KindName } from "@/lib/import/kinds";
 import { importRows } from "@/lib/services/importer";
@@ -10,7 +10,7 @@ import { importRows } from "@/lib/services/importer";
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function importFile(kind: KindName, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   if (!(kind in KINDS)) return { error: "Unknown import." };
   const file = fd.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose an Excel file first." };

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { UserError } from "@/lib/services/errors";
 
 export const SESSION_COOKIE = "viochem_session";
 const WEEK = 60 * 60 * 24 * 7;
@@ -56,6 +57,13 @@ export const currentUser = cache(async () => {
 export async function requireUser() {
   const user = await currentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** The signed-in user, if they may change data. Every server action that changes something calls this. */
+export async function requireEditor() {
+  const user = await requireUser();
+  if (user.role === "VIEWER") throw new UserError("You have view-only access, so you can't change anything.");
   return user;
 }
 

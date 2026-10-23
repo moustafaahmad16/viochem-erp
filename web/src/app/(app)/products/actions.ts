@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { decimal, fail, required, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import { isValidCas } from "@/lib/chemistry";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
@@ -26,7 +26,7 @@ function itemData(fd: FormData) {
 }
 
 export async function createItem(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (await db.item.create({ data: itemData(fd) })).id;
@@ -38,7 +38,7 @@ export async function createItem(_: FormState, fd: FormData): Promise<FormState>
 }
 
 export async function updateItem(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await db.item.update({ where: { id }, data: { ...itemData(fd), active: fd.get("active") === "on" } });
   } catch (e) {

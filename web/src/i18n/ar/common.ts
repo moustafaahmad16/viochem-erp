@@ -93,4 +93,9 @@ export const common: Record<string, string> = {
   Cash: "نقدي",
   Cheque: "شيك",
   Bank: "بنك",
+
+  // View-only users
+  "View only": "عرض فقط",
+  "View only (sees everything, changes nothing)": "عرض فقط (يرى كل شيء ولا يغيّر شيئًا)",
+  "You have view-only access, so you can't change anything.": "صلاحيتك للعرض فقط، لذلك لا يمكنك تغيير أي شيء.",
 };

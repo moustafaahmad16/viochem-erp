@@ -4,11 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, optionalDate, text } from "@/lib/actions";
-import { requireUser } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 import * as svc from "@/lib/services/quotes";
 
 export async function createQuote(_: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let id: number;
   try {
     id = (await svc.createQuote(int(fd, "customerId", "Customer"), date(fd, "date", "Quotation date"), optionalDate(fd, "validUntil"))).id;
@@ -19,7 +19,7 @@ export async function createQuote(_: FormState, fd: FormData): Promise<FormState
 }
 
 export async function updateQuote(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await svc.updateQuote(id, {
       customerId: int(fd, "customerId", "Customer"),
@@ -36,7 +36,7 @@ export async function updateQuote(id: number, _: FormState, fd: FormData): Promi
 }
 
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await svc.addQuoteLine(id, {
       itemId: int(fd, "itemId", "Product"),
@@ -51,13 +51,13 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
 }
 
 export async function removeLine(id: number, lineId: number) {
-  await requireUser();
+  await requireEditor();
   await svc.removeQuoteLine(id, lineId);
   revalidatePath(`/quotes/${id}`);
 }
 
 export async function declineQuote(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await svc.declineQuote(id);
   } catch (e) {
@@ -68,7 +68,7 @@ export async function declineQuote(id: number): Promise<FormState> {
 }
 
 export async function reopenQuote(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await svc.reopenQuote(id);
   } catch (e) {
@@ -79,7 +79,7 @@ export async function reopenQuote(id: number): Promise<FormState> {
 }
 
 export async function deleteQuote(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   try {
     await svc.deleteQuote(id);
   } catch (e) {
@@ -89,7 +89,7 @@ export async function deleteQuote(id: number): Promise<FormState> {
 }
 
 export async function toInvoice(id: number): Promise<FormState> {
-  await requireUser();
+  await requireEditor();
   let invoiceId: number;
   try {
     invoiceId = (await svc.quoteToInvoice(id)).id;
