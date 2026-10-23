@@ -6,7 +6,7 @@ import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { invoiceTotals } from "@/lib/costing";
+import { invoiceTotals, WHT_RATE } from "@/lib/costing";
 import { creditCheck } from "@/lib/services/credit";
 import { UserError } from "@/lib/services/errors";
 import { cancelOnEta, refreshStatus } from "@/lib/services/einvoice";
@@ -22,7 +22,7 @@ export async function createInvoice(_: FormState, fd: FormData): Promise<FormSta
   await requireUser();
   let id: number;
   try {
-    id = (await create(int(fd, "customerId", "Customer"), date(fd, "date", "Invoice date"), { number: text(fd, "number"), deliveryNoteNo: text(fd, "deliveryNoteNo") })).id;
+    id = (await create(int(fd, "customerId", "Customer"), date(fd, "date", "Invoice date"), { number: text(fd, "number"), deliveryNoteNo: text(fd, "deliveryNoteNo"), whtRate: fd.get("wht") ? WHT_RATE : 0 })).id;
   } catch (e) {
     return fail(e);
   }
@@ -43,6 +43,7 @@ export async function updateInvoice(id: number, _: FormState, fd: FormData): Pro
         customerId: int(fd, "customerId", "Customer"),
         date: date(fd, "date", "Invoice date"),
         vatRate: decimal(fd, "vatRate", "VAT rate", { allowZero: true }),
+        whtRate: fd.get("wht") ? WHT_RATE : 0,
         notes: text(fd, "notes"),
       },
     });
@@ -85,7 +86,7 @@ export async function postInvoice(id: number, _: FormState, fd: FormData): Promi
   const user = await requireUser();
   try {
     const inv = await db.invoice.findUniqueOrThrow({ where: { id }, include: { lines: true } });
-    const check = await creditCheck(inv.customerId, invoiceTotals(inv.lines, inv.vatRate.toString()).total);
+    const check = await creditCheck(inv.customerId, invoiceTotals(inv.lines, inv.vatRate.toString(), inv.whtRate.toString()).due);
     if (check.overLimit && !(user.role === "ADMIN" && fd.get("overLimit") === "on")) {
       throw new UserError(`${check.warnings[0]} ${user.role === "ADMIN" ? "Tick \"Post anyway\" to post it." : "Ask an admin to post it."}`);
     }

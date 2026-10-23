@@ -13,9 +13,9 @@ import { nextNumber } from "./numbering";
 const dec = (v: { toString(): string }) => new Decimal(v.toString());
 const ZERO = new Decimal(0);
 
-/** Net, VAT and total of a credit note, worked out exactly like an invoice's. */
-export const creditTotals = (note: { lines: { qty: Decimal.Value; unitPrice: Decimal.Value }[]; vatRate: { toString(): string } }) =>
-  invoiceTotals(note.lines, note.vatRate.toString());
+/** Net, VAT, total and withholding tax of a credit note, worked out exactly like an invoice's. */
+export const creditTotals = (note: { lines: { qty: Decimal.Value; unitPrice: Decimal.Value }[]; vatRate: { toString(): string }; whtRate: { toString(): string } }) =>
+  invoiceTotals(note.lines, note.vatRate.toString(), note.whtRate.toString());
 
 async function draft(tx: Tx, id: number) {
   const note = await tx.creditNote.findUniqueOrThrow({ where: { id } });
@@ -55,7 +55,7 @@ export async function createCreditNote(invoiceId: number, date: Date, reason: st
     if (inv.status !== "POSTED") throw new UserError(`${inv.number} isn't posted, so it can't be credited.`);
     if (date < inv.date) throw new UserError("A credit note can't be dated before its invoice.");
     return tx.creditNote.create({
-      data: { number: await nextNumber(tx, "CRN", date), invoiceId, customerId: inv.customerId, date, reason: reason.trim(), vatRate: inv.vatRate },
+      data: { number: await nextNumber(tx, "CRN", date), invoiceId, customerId: inv.customerId, date, reason: reason.trim(), vatRate: inv.vatRate, whtRate: inv.whtRate },
     });
   });
 }

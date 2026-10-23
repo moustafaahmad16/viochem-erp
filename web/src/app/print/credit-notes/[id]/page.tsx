@@ -88,6 +88,12 @@ export default async function PrintCreditNotePage({ params }: PageProps<"/print/
           <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
           <div className="flex justify-between"><span className="text-slate-500">VAT {cn.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
           <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-base font-bold"><span>Total credited EGP · إجمالي الإشعار</span><span className="num">{money(totals.total)}</span></div>
+          {totals.wht.gt(0) && (
+            <>
+              <div className="flex justify-between"><span className="text-slate-500">WHT {cn.whtRate.toString()}% · خصم الضريبة</span><span className="num">-{money(totals.wht)}</span></div>
+              <div className="flex justify-between font-semibold"><span>Net credited EGP · صافي الإشعار</span><span className="num">{money(totals.due)}</span></div>
+            </>
+          )}
         </div>
       </article>
     </div>

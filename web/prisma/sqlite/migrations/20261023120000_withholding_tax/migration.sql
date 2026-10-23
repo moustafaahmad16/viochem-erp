@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "CreditNote" ADD COLUMN "whtRate" DECIMAL NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "Invoice" ADD COLUMN "whtRate" DECIMAL NOT NULL DEFAULT 0;

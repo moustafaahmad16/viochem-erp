@@ -30,6 +30,7 @@ export default async function NewInvoicePage({ searchParams }: PageProps<"/invoi
               <Field label={t("Invoice number")} name="number" dir="ltr" hint={t("Leave empty for the next number")} />
               <Field label={t("Delivery note no.")} name="deliveryNoteNo" dir="ltr" />
             </div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="wht" /> {t("Customer deducts 1% withholding tax (WHT, خصم الضريبة)")}</label>
             <Submit>{t("Continue")}</Submit>
           </ActionForm>
         )}

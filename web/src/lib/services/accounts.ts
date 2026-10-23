@@ -96,14 +96,14 @@ export async function customerAccounts(where: { id?: number } = {}) {
     if (!opening.isZero()) entries.push({ date: openingDate, order: 0, label: "Opening balance", charge: Decimal.max(opening, 0), payment: Decimal.max(opening.neg(), 0) });
 
     for (const inv of c.invoices) {
-      const amount = invoiceTotals(inv.lines, inv.vatRate.toString()).total;
+      const amount = invoiceTotals(inv.lines, inv.vatRate.toString(), inv.whtRate.toString()).due;
       const key = `inv:${inv.id}`;
       bills.push({ key, date: inv.date, dueDate: inv.dueDate ?? inv.date, amount, label: inv.number, href: `/invoices/${inv.id}` });
       entries.push({ date: inv.date, order: inv.id, label: inv.number, href: `/invoices/${inv.id}`, charge: amount, payment: new Decimal(0) });
     }
     // A credit note always reduces its own invoice first.
     for (const cn of c.creditNotes) {
-      const amount = invoiceTotals(cn.lines, cn.vatRate.toString()).total;
+      const amount = invoiceTotals(cn.lines, cn.vatRate.toString(), cn.whtRate.toString()).due;
       credits.push({ amount, billKey: `inv:${cn.invoiceId}` });
       entries.push({ date: cn.date, order: 5e8 + cn.id, label: cn.number, href: `/credit-notes/${cn.id}`, detail: `Credit for ${cn.invoice.number}`, charge: new Decimal(0), payment: amount });
     }

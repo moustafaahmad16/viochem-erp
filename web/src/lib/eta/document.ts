@@ -6,13 +6,15 @@ import Decimal from "decimal.js";
  * References (ETA SDK):
  * - Invoice v1.0 structure: https://sdk.invoicing.eta.gov.eg/documents/invoice-v1-0/
  * - Serialization for signing: https://sdk.invoicing.eta.gov.eg/document-serialization-approach/
- * - Tax types (T1 = VAT, V009 = general item sales): https://sdk.invoicing.eta.gov.eg/codes/tax-types/
+ * - Tax types (T1 = VAT, V009 = general item sales; T4 = withholding tax, W002 = supplies): https://sdk.invoicing.eta.gov.eg/codes/tax-types/
  * - Unit types: https://sdk.invoicing.eta.gov.eg/codes/unit-types/
  */
 
 const DECIMALS = 5;
 const VAT = "T1";
 const VAT_GENERAL = "V009";
+const WHT = "T4";
+const WHT_SUPPLIES = "W002";
 
 /** ETA unit codes for the units products are kept in. */
 export const UNIT_TYPES: Record<string, string> = { kg: "KGM", L: "LTR", g: "GRM", pcs: "EA" };
@@ -52,7 +54,7 @@ export type Party = {
   branchId?: string; // issuer only
 };
 
-export type Line = { description: string; itemType: string; itemCode: string; unitType: string; internalCode: string; qty: Decimal.Value; unitPrice: Decimal.Value; vatRate: Decimal.Value };
+export type Line = { description: string; itemType: string; itemCode: string; unitType: string; internalCode: string; qty: Decimal.Value; unitPrice: Decimal.Value; vatRate: Decimal.Value; whtRate?: Decimal.Value };
 
 export type Document = {
   issuer: Party;
@@ -78,6 +80,10 @@ function party(p: Party) {
 function line(l: Line) {
   const salesTotal = round(new Decimal(l.qty).times(l.unitPrice));
   const vat = round(new Decimal(salesTotal).times(l.vatRate).div(100));
+  // Withholding tax is on the amount before VAT, and taken off the line total rather than added.
+  const wht = round(new Decimal(salesTotal).times(l.whtRate ?? 0).div(100));
+  const taxableItems = [{ taxType: VAT, amount: vat, subType: VAT_GENERAL, rate: round(l.vatRate) }];
+  if (wht > 0) taxableItems.push({ taxType: WHT, amount: wht, subType: WHT_SUPPLIES, rate: round(l.whtRate!) });
   return {
     description: l.description,
     itemType: l.itemType,
@@ -86,14 +92,14 @@ function line(l: Line) {
     quantity: round(l.qty),
     internalCode: l.internalCode,
     salesTotal,
-    total: round(new Decimal(salesTotal).plus(vat)),
+    total: round(new Decimal(salesTotal).plus(vat).minus(wht)),
     valueDifference: 0,
     totalTaxableFees: 0,
     netTotal: salesTotal,
     itemsDiscount: 0,
     unitValue: { currencySold: "EGP", amountEGP: round(l.unitPrice) },
     discount: { rate: 0, amount: 0 },
-    taxableItems: [{ taxType: VAT, amount: vat, subType: VAT_GENERAL, rate: round(l.vatRate) }],
+    taxableItems,
   };
 }
 
@@ -102,7 +108,9 @@ export function buildDocument(d: Document) {
   const lines = d.lines.map(line);
   const sum = (f: (l: (typeof lines)[number]) => number) => round(lines.reduce((s, l) => s.plus(f(l)), new Decimal(0)));
   const net = sum((l) => l.netTotal);
-  const vat = sum((l) => l.taxableItems[0].amount);
+  const tax = (type: string) => sum((l) => l.taxableItems.find((t) => t.taxType === type)?.amount ?? 0);
+  const vat = tax(VAT);
+  const wht = tax(WHT);
   return {
     issuer: party(d.issuer),
     receiver: party(d.receiver),
@@ -116,8 +124,8 @@ export function buildDocument(d: Document) {
     totalDiscountAmount: 0,
     totalSalesAmount: sum((l) => l.salesTotal),
     netAmount: net,
-    taxTotals: [{ taxType: VAT, amount: vat }],
-    totalAmount: round(new Decimal(net).plus(vat)),
+    taxTotals: wht > 0 ? [{ taxType: VAT, amount: vat }, { taxType: WHT, amount: wht }] : [{ taxType: VAT, amount: vat }],
+    totalAmount: round(new Decimal(net).plus(vat).minus(wht)),
     extraDiscountAmount: 0,
     totalItemsDiscountAmount: 0,
   };

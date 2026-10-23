@@ -58,8 +58,15 @@ export function pickLots(lots: AvailableLot[], qty: Decimal.Value): { lotId: num
   return remaining.gt(0) ? null : picks;
 }
 
-export function invoiceTotals(lines: { qty: Decimal.Value; unitPrice: Decimal.Value }[], vatRate: Decimal.Value) {
+/** Withholding tax (WHT, خصم الضريبة) a customer deducts on supplies, in %, when an invoice is ticked for it. */
+export const WHT_RATE = 1;
+
+export function invoiceTotals(lines: { qty: Decimal.Value; unitPrice: Decimal.Value }[], vatRate: Decimal.Value, whtRate: Decimal.Value = 0) {
   const net = lines.reduce((sum, l) => sum.plus(new Decimal(l.qty).times(l.unitPrice)), new Decimal(0)).toDecimalPlaces(2);
   const vat = net.times(vatRate).div(100).toDecimalPlaces(2);
-  return { net, vat, total: net.plus(vat) };
+  const total = net.plus(vat);
+  // Withholding tax is worked out on the amount before VAT. The customer pays it to the tax
+  // authority for VIOCHEM, so what they owe VIOCHEM is the total less it.
+  const wht = net.times(whtRate).div(100).toDecimalPlaces(2);
+  return { net, vat, total, wht, due: total.minus(wht) };
 }

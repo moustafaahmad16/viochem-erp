@@ -173,11 +173,11 @@ export async function cancelInvoice(invoiceId: number) {
 }
 
 /** A draft invoice. Its number is the next one in sequence unless one is typed in. */
-export async function createInvoice(customerId: number, date: Date, extra: { number?: string | null; deliveryNoteNo?: string | null } = {}) {
+export async function createInvoice(customerId: number, date: Date, extra: { number?: string | null; deliveryNoteNo?: string | null; whtRate?: number } = {}) {
   return db.$transaction(async (tx) => {
     const number = extra.number?.trim() || (await nextNumber(tx, "INV", date));
     await uniqueInvoiceNumber(tx, number);
-    return tx.invoice.create({ data: { number, customerId, date, deliveryNoteNo: extra.deliveryNoteNo?.trim() || null } });
+    return tx.invoice.create({ data: { number, customerId, date, deliveryNoteNo: extra.deliveryNoteNo?.trim() || null, whtRate: extra.whtRate ?? 0 } });
   });
 }
 

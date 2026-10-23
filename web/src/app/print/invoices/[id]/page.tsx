@@ -18,7 +18,7 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
     include: { customer: true, lines: { include: { item: true }, orderBy: { id: "asc" } } },
   });
   if (!inv || inv.status === "DRAFT") notFound();
-  const totals = invoiceTotals(inv.lines, inv.vatRate.toString());
+  const totals = invoiceTotals(inv.lines, inv.vatRate.toString(), inv.whtRate.toString());
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 print:bg-white print:py-0">
@@ -93,6 +93,12 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
           <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
           <div className="flex justify-between"><span className="text-slate-500">VAT {inv.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
           <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-base font-bold"><span>Total EGP · الإجمالي</span><span className="num">{money(totals.total)}</span></div>
+          {totals.wht.gt(0) && (
+            <>
+              <div className="flex justify-between"><span className="text-slate-500">WHT {inv.whtRate.toString()}% · خصم الضريبة</span><span className="num">-{money(totals.wht)}</span></div>
+              <div className="flex justify-between font-semibold"><span>Net due EGP · الصافي المستحق</span><span className="num">{money(totals.due)}</span></div>
+            </>
+          )}
         </div>
 
         {inv.notes && <p className="mt-10 whitespace-pre-line text-slate-600">{inv.notes}</p>}

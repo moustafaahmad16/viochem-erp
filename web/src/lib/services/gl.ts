@@ -25,6 +25,7 @@ export const CODES = {
   stock: "1310",
   transit: "1320",
   vatIn: "1410",
+  whtByCustomers: "1430",
   suppliers: "2110",
   chequesOut: "2120",
   vatOut: "2210",
@@ -252,14 +253,14 @@ export async function generalLedger() {
   // Sales, with the cost of the exact lots sold.
   for (const inv of invoices) {
     add(inv.date, 4, inv.id, () => {
-      const t = invoiceTotals(inv.lines, inv.vatRate.toString());
+      const t = invoiceTotals(inv.lines, inv.vatRate.toString(), inv.whtRate.toString());
       const cost = inv.lines.flatMap((l) => l.moves).reduce((s, m) => s.plus(dec(m.qty).neg().times(dec(m.unitCostEgp))), ZERO).toDecimalPlaces(2);
       return {
         date: inv.date,
         ref: inv.number,
         href: `/invoices/${inv.id}`,
         memo: inv.customer.name,
-        lines: [line(CODES.customers, t.total), line(CODES.sales, t.net.neg()), line(CODES.vatOut, t.vat.neg()), line(CODES.cogs, cost), line(CODES.stock, cost.neg())].filter(
+        lines: [line(CODES.customers, t.due), line(CODES.whtByCustomers, t.wht), line(CODES.sales, t.net.neg()), line(CODES.vatOut, t.vat.neg()), line(CODES.cogs, cost), line(CODES.stock, cost.neg())].filter(
           (l) => !l.debit.isZero() || !l.credit.isZero(),
         ),
       };
@@ -269,14 +270,14 @@ export async function generalLedger() {
   // Credit notes: sales given back, and returned goods back into stock at the cost they left at.
   for (const cn of creditNotes) {
     add(cn.date, 4, 1e9 + cn.id, () => {
-      const t = invoiceTotals(cn.lines, cn.vatRate.toString());
+      const t = invoiceTotals(cn.lines, cn.vatRate.toString(), cn.whtRate.toString());
       const cost = cn.lines.flatMap((l) => l.moves).reduce((s, m) => s.plus(dec(m.qty).times(dec(m.unitCostEgp))), ZERO).toDecimalPlaces(2);
       return {
         date: cn.date,
         ref: cn.number,
         href: `/credit-notes/${cn.id}`,
         memo: `${cn.customer.name} · ${cn.invoice.number}`,
-        lines: [line(CODES.returns, t.net), line(CODES.vatOut, t.vat), line(CODES.customers, t.total.neg()), line(CODES.stock, cost), line(CODES.cogs, cost.neg())].filter(
+        lines: [line(CODES.returns, t.net), line(CODES.vatOut, t.vat), line(CODES.customers, t.due.neg()), line(CODES.whtByCustomers, t.wht.neg()), line(CODES.stock, cost), line(CODES.cogs, cost.neg())].filter(
           (l) => !l.debit.isZero() || !l.credit.isZero(),
         ),
       };

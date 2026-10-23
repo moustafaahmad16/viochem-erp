@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
@@ -39,7 +39,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
       { href: "/ledger", label: "Chart of accounts", icon: BookOpen },
     ],
   },
-  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }] },
+  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }, { href: "/reports/wht", label: "Withholding tax", icon: Percent }] },
 ];
 
 export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin: boolean; desktop: boolean; logout: () => Promise<void> }) {
