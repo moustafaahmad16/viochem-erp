@@ -1,7 +1,9 @@
 import type { PurchaseOrderStatus } from "@prisma/client";
 import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { MonthFilter } from "@/components/month-filter";
 import { db } from "@/lib/db";
-import { money, pct } from "@/lib/format";
+import { monthRange, monthsSince } from "@/lib/dates";
+import { listHref, money, pct } from "@/lib/format";
 import { orderProgress } from "@/lib/services/orders";
 import { getT } from "@/i18n/server";
 import { OrderStatusBadge } from "./status";
@@ -19,8 +21,12 @@ const FILTERS = [
 
 export default async function PurchaseOrdersPage({ searchParams }: PageProps<"/purchase-orders">) {
   const t = await getT();
-  const status = String((await searchParams).status ?? "");
-  const where = status === "all" ? {} : { status: (status === "CLOSED" || status === "CANCELLED" ? status : "OPEN") as PurchaseOrderStatus };
+  const params = await searchParams;
+  const status = String(params.status ?? "");
+  const month = String(params.month ?? "");
+  const range = monthRange(month);
+  const where = { ...(status === "all" ? {} : { status: (status === "CLOSED" || status === "CANCELLED" ? status : "OPEN") as PurchaseOrderStatus }), ...(range ? { date: range } : {}) };
+  const first = await db.purchaseOrder.aggregate({ _min: { date: true } });
   const orders = await db.purchaseOrder.findMany({
     where,
     include: { supplier: true, lines: { include: { shipmentLines: true } } },
@@ -35,16 +41,17 @@ export default async function PurchaseOrdersPage({ searchParams }: PageProps<"/p
         subtitle={t("What you've ordered from suppliers. Nothing is owed until the goods are put on a shipment.")}
         actions={<ButtonLink href="/purchase-orders/new">{t("New purchase order")}</ButtonLink>}
       />
-      <div className="mb-3 flex gap-1">
+      <div className="mb-3 flex flex-wrap items-center gap-1">
         {FILTERS.map((f) => (
           <a
             key={f.key}
-            href={f.key ? `/purchase-orders?status=${f.key}` : "/purchase-orders"}
+            href={listHref("/purchase-orders", { status: f.key, month: range ? month : undefined })}
             className={`rounded-full px-3 py-1 text-sm ${status === f.key ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`}
           >
             {t(f.label)}
           </a>
         ))}
+        <div className="ms-auto"><MonthFilter months={monthsSince(first._min.date)} /></div>
       </div>
       <Card padded={false}>
         <Table

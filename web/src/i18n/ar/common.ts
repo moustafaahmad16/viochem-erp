@@ -93,4 +93,6 @@ export const common: Record<string, string> = {
   Cash: "نقدي",
   Cheque: "شيك",
   Bank: "بنك",
+  Month: "الشهر",
+  "All months": "كل الشهور",
 };

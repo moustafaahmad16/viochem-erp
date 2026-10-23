@@ -2,7 +2,7 @@ import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import { invoiceTotals, landedUnitCosts, pickLots } from "@/lib/costing";
 import { isValidCas } from "@/lib/chemistry";
-import { formatDate, parseInputDate, shipmentDateProblem } from "@/lib/dates";
+import { formatDate, monthRange, monthsSince, parseInputDate, shipmentDateProblem } from "@/lib/dates";
 
 describe("landed cost", () => {
   it("spreads charges by goods value", () => {
@@ -87,6 +87,18 @@ describe("dates", () => {
     const d = (s: string) => parseInputDate(s);
     expect(shipmentDateProblem(d("2026-05-10"), d("2026-05-01"), null)).toMatch(/before/);
     expect(shipmentDateProblem(d("2026-05-01"), d("2026-05-20"), d("2026-05-22"))).toBeNull();
+  });
+});
+
+describe("month filters", () => {
+  it("covers every day of the month picked, and nothing for a bad one", () => {
+    expect(monthRange("2026-12")).toEqual({ gte: parseInputDate("2026-12-01"), lt: parseInputDate("2027-01-01") });
+    expect([monthRange(""), monthRange("2026-13"), monthRange(null)]).toEqual([null, null, null]);
+  });
+
+  it("lists the months from the first record to now, newest first", () => {
+    expect(monthsSince(parseInputDate("2025-11-20"), parseInputDate("2026-02-03")!).map((m) => m.key)).toEqual(["2026-02", "2026-01", "2025-12", "2025-11"]);
+    expect(monthsSince(null, parseInputDate("2026-02-03")!)).toEqual([{ key: "2026-02", label: "Feb 2026" }]);
   });
 });
 

@@ -22,10 +22,10 @@ describe("shipment documents", () => {
     expect((await db.shipment.findUniqueOrThrow({ where: { id: shipment } })).acidNumber).toBe("4123456789012345678");
   });
 
-  it("lists the four standard types first, in order", async () => {
+  it("lists the standard types first, in order", async () => {
     const types = await documentTypes();
-    expect(types.slice(0, 4).map((t) => t.name)).toEqual(BUILT_IN_TYPES);
-    expect(types.slice(0, 4).every((t) => t.builtIn)).toBe(true);
+    expect(types.slice(0, BUILT_IN_TYPES.length).map((t) => t.name)).toEqual(BUILT_IN_TYPES);
+    expect(types.slice(0, BUILT_IN_TYPES.length).every((t) => t.builtIn)).toBe(true);
   });
 
   it("stores the file and gives it back unchanged", async () => {
@@ -46,9 +46,9 @@ describe("shipment documents", () => {
   });
 
   it("lets people name their own types, reusing one that differs only in case or spaces", async () => {
-    const bl = await documentType("  Bill of  Lading ");
-    expect(bl).toMatchObject({ name: "Bill of Lading", builtIn: false });
-    expect((await documentType("bill of lading")).id).toBe(bl.id);
+    const bl = await documentType("  Phyto  Certificate ");
+    expect(bl).toMatchObject({ name: "Phyto Certificate", builtIn: false });
+    expect((await documentType("phyto certificate")).id).toBe(bl.id);
     expect((await documentType("packing list")).name).toBe("Packing List");
     await expect(documentType("   ")).rejects.toThrow("Type a name");
   });

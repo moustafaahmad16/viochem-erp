@@ -1,6 +1,8 @@
 import Decimal from "decimal.js";
 import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { MonthFilter } from "@/components/month-filter";
 import { db } from "@/lib/db";
+import { monthRange, monthsSince } from "@/lib/dates";
 import { getT } from "@/i18n/server";
 import { money } from "@/lib/format";
 import { StatusBadge } from "./status";
@@ -9,17 +11,21 @@ export async function generateMetadata() {
   return { title: (await getT())("Shipments") };
 }
 
-export default async function ShipmentsPage() {
+export default async function ShipmentsPage({ searchParams }: PageProps<"/shipments">) {
+  const range = monthRange(String((await searchParams).month ?? ""));
+  const first = await db.shipment.aggregate({ _min: { orderDate: true } });
   const shipments = await db.shipment.findMany({
+    where: range ? { orderDate: range } : {},
     include: { supplier: true, lines: true, charges: true },
     orderBy: [{ orderDate: "desc" }, { id: "desc" }],
   });
   const t = await getT();
-  const open = shipments.filter((s) => s.status !== "RECEIVED").length;
+  const open = await db.shipment.count({ where: { status: { not: "RECEIVED" } } });
 
   return (
     <>
       <PageHeader title={t("Import shipments")} subtitle={t("{n} on the way", { n: open })} actions={<ButtonLink href="/shipments/new">{t("New shipment")}</ButtonLink>} />
+      <div className="mb-3 flex justify-end"><MonthFilter months={monthsSince(first._min.orderDate)} /></div>
       <Card padded={false}>
         <Table
           head={<tr><th>{t("Shipment")}</th><th>{t("Supplier")}</th><th>{t("Ordered")}</th><th>{t("Expected")}</th><th>{t("Status")}</th><th className="num">{t("Landed cost (EGP)")}</th></tr>}
