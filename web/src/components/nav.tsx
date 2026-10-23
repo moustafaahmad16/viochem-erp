@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
@@ -48,6 +48,7 @@ export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin:
   const [open, setOpen] = useState(false);
   const settings = [{ href: "/users", label: "Users", icon: Settings }, { href: "/settings/eta", label: "E-invoice", icon: FileCheck }];
   if (desktop) settings.push({ href: "/settings/desktop", label: "Sharing and backups", icon: HardDrive });
+  settings.push({ href: "/settings/data", label: "Clear all data", icon: Trash2 });
   const sections = isAdmin ? [...SECTIONS, { title: "Settings", links: settings }] : SECTIONS;
   // The closest match wins, so /ledger/journal lights up Journal and not Chart of accounts.
   const current = sections

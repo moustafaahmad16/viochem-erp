@@ -17,6 +17,9 @@ function secret() {
 
 export const hashPassword = (password: string) => bcrypt.hash(password, 10);
 
+/** True when the password is this user's own. */
+export const checkPassword = (user: { passwordHash: string }, password: string) => bcrypt.compare(password, user.passwordHash);
+
 export async function signIn(email: string, password: string): Promise<boolean> {
   const user = await db.user.findUnique({ where: { email: email.trim().toLowerCase() } });
   if (!user || !user.active || !(await bcrypt.compare(password, user.passwordHash))) return false;
