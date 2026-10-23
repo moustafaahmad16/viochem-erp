@@ -41,4 +41,17 @@ export const desktop: Record<string, string> = {
   "The e-seal signer isn't running. Plug in the USB token, then choose Start e-seal signer in the app's E-invoice menu.":
     "برنامج التوقيع غير مشغّل. ركّب فلاشة الختم ثم اختر Start e-seal signer من قائمة E-invoice في البرنامج.",
   "Couldn't reach the signing service at ETA_SIGNER_URL.": "تعذّر الاتصال بخدمة التوقيع على ETA_SIGNER_URL.",
+  "Clear all data": "مسح كل البيانات",
+  "Start again with an empty system": "ابدأ من جديد بنظام فارغ",
+  "This deletes every product, customer, supplier, invoice, quotation, credit note, shipment, purchase order, payment, cheque, expense, bank and cash account, and all stock. Numbering starts again from 1.":
+    "سيتم حذف كل الأصناف والعملاء والموردين والفواتير وعروض الأسعار والإشعارات الدائنة والشحنات وأوامر الشراء والمدفوعات والشيكات والمصروفات وحسابات البنوك والخزائن وكل المخزون. ويبدأ الترقيم من 1 من جديد.",
+  "Users, e-invoice settings and the chart of accounts are kept.": "يتم الاحتفاظ بالمستخدمين وإعدادات الفاتورة الإلكترونية ودليل الحسابات.",
+  "Now: {items} products, {customers} customers, {suppliers} suppliers, {invoices} invoices, {shipments} shipments.":
+    "حاليًا: {items} صنف، {customers} عميل، {suppliers} مورد، {invoices} فاتورة، {shipments} شحنة.",
+  "A backup is saved first, so it can be undone with Restore from backup in the File menu.": "تُحفظ نسخة احتياطية أولًا، ويمكن التراجع باختيار Restore from backup من قائمة File.",
+  "This can't be undone.": "لا يمكن التراجع عن ذلك.",
+  "Your password": "كلمة المرور الخاصة بك",
+  "That password isn't right.": "كلمة المرور غير صحيحة.",
+  "All data is cleared.": "تم مسح كل البيانات.",
+  "Delete all data? This removes every product, customer, invoice and record.": "حذف كل البيانات؟ سيتم حذف كل الأصناف والعملاء والفواتير وكل السجلات.",
 };
