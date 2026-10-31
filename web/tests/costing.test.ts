@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import { invoiceTotals, landedUnitCosts, pickLots } from "@/lib/costing";
-import { isValidCas } from "@/lib/chemistry";
+import { isValidCas, isValidHsCode } from "@/lib/chemistry";
 import { formatDate, monthRange, monthsSince, parseInputDate, shipmentDateProblem } from "@/lib/dates";
 
 describe("landed cost", () => {
@@ -108,5 +108,12 @@ describe("CAS numbers", () => {
     expect(isValidCas("121-33-5")).toBe(true); // vanillin
     expect(isValidCas("78-70-5")).toBe(false);
     expect(isValidCas("hello")).toBe(false);
+  });
+});
+
+describe("HS codes", () => {
+  it("takes 4 to 12 digits, with or without dots", () => {
+    expect(["2905.22", "2905.22.00", "2905220000", " 3302 10 "].map(isValidHsCode)).toEqual([true, true, true, true]);
+    expect(["290", "2905.22.0000.000", "29O5.22", ".2905", "hello"].map(isValidHsCode)).toEqual([false, false, false, false, false]);
   });
 });

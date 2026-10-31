@@ -52,7 +52,7 @@ export async function createRfq(_: FormState, fd: FormData): Promise<FormState> 
   try {
     const lines = productRows(fd);
     if (!lines.length) throw new UserError("Add at least one product.");
-    id = (await rfqs.createRfq({ date: today(), replyBy: null, neededBy: optionalDate(fd, "neededBy"), notes: text(fd, "notes"), lines })).id;
+    id = (await rfqs.createRfq({ date: today(), replyBy: null, neededBy: optionalDate(fd, "neededBy"), currency: text(fd, "currency"), incoterm: text(fd, "incoterm"), notes: text(fd, "notes"), lines })).id;
   } catch (e) {
     return fail(e);
   }
@@ -65,7 +65,7 @@ export async function saveLines(id: number, _: FormState, fd: FormData): Promise
 }
 
 export async function updateRfq(id: number, _: FormState, fd: FormData): Promise<FormState> {
-  return run(id, () => rfqs.updateRfq(id, { date: date(fd, "date", "Date"), replyBy: null, neededBy: optionalDate(fd, "neededBy"), notes: text(fd, "notes") }), "Saved.");
+  return run(id, () => rfqs.updateRfq(id, { date: date(fd, "date", "Date"), replyBy: null, neededBy: optionalDate(fd, "neededBy"), currency: text(fd, "currency"), incoterm: text(fd, "incoterm"), notes: text(fd, "notes") }), "Saved.");
 }
 
 

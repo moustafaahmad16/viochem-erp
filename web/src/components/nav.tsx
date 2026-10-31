@@ -42,6 +42,9 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
   { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }, { href: "/reports/wht", label: "Withholding tax", icon: Percent }] },
 ];
 
+/** Hidden while the wide-screen bar is slim, shown once it slides open. */
+const REVEAL = "lg:opacity-0 lg:transition-opacity lg:group-hover/nav:opacity-100 lg:group-focus-within/nav:opacity-100";
+
 export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin: boolean; desktop: boolean; logout: () => Promise<void> }) {
   const path = usePathname();
   const t = useT();
@@ -66,34 +69,36 @@ export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin:
           ☰
         </button>
       </div>
+      {/* On wide screens: a slim bar of icons that slides open over the page while the mouse is on it (or a link has keyboard focus). */}
       <aside
-        className={`${open ? "flex" : "hidden"} fixed inset-y-0 start-0 z-30 w-60 flex-col border-e border-slate-200 bg-white lg:flex`}
+        className={`${open ? "flex" : "hidden"} group/nav fixed inset-y-0 start-0 z-30 w-60 flex-col overflow-hidden border-e border-slate-200 bg-white lg:flex lg:w-16 lg:transition-[width,box-shadow] lg:duration-200 lg:hover:w-60 lg:hover:shadow-xl lg:hover:delay-100 lg:focus-within:w-60 lg:focus-within:shadow-xl`}
         onClick={() => setOpen(false)}
       >
-        <div className="shrink-0 px-5 py-5">
-          <Link href="/" className="block">
+        <div className="shrink-0 px-5 py-5 lg:px-3">
+          <Link href="/" className="block overflow-hidden" dir="ltr">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Viochem" className="h-14 w-auto" />
+            <img src="/logo.png" alt="Viochem" className="h-14 w-auto max-w-none lg:mt-3 lg:h-auto lg:w-10 lg:group-hover/nav:mt-0 lg:group-hover/nav:h-14 lg:group-hover/nav:w-auto lg:group-focus-within/nav:mt-0 lg:group-focus-within/nav:h-14 lg:group-focus-within/nav:w-auto" />
           </Link>
         </div>
-        <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
+        <nav className="flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3 pb-4">
           {sections.map((s) => (
             <div key={s.title}>
-              {s.title && <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-brand-900/50">{t(s.title)}</div>}
+              {s.title && <div className={`whitespace-nowrap px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-brand-900/50 ${REVEAL}`}>{t(s.title)}</div>}
               {s.links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
+                  aria-label={t(l.label)}
                   className={`flex items-center gap-2.5 rounded-lg border-s-[3px] px-2 py-1.5 text-sm ${active(l.href) ? "border-accent-500 bg-brand-50 font-medium text-brand-700" : "border-transparent text-slate-700 hover:bg-slate-50"}`}
                 >
-                  <l.icon className={`h-4 w-4 ${active(l.href) ? "text-accent-600" : "text-slate-400"}`} strokeWidth={1.75} />
-                  {t(l.label)}
+                  <l.icon className={`h-4 w-4 shrink-0 ${active(l.href) ? "text-accent-600" : "text-slate-400"}`} strokeWidth={1.75} />
+                  <span className={`whitespace-nowrap ${REVEAL}`}>{t(l.label)}</span>
                 </Link>
               ))}
             </div>
           ))}
         </nav>
-        <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-3 text-sm">
+        <div className={`shrink-0 border-t border-slate-100 bg-white px-5 py-3 text-sm lg:w-60 ${REVEAL}`}>
           <div className="flex items-center justify-between gap-2">
             <div className="truncate text-slate-700">{user}</div>
             <LangSwitch />

@@ -43,29 +43,75 @@ beforeAll(async () => {
 
 describe("supplier sheet", () => {
   it("goes out the same to everyone and comes back with prices, matched by the name written on it", async () => {
+    await db.rfq.update({ where: { id: rfqId }, data: { incoterm: "CIF Alexandria" } });
     const rfq = await db.rfq.findUniqueOrThrow({ where: { id: rfqId }, include: { lines: { include: { item: true }, orderBy: { id: "asc" } } } });
     const file = await buildSheet({ rfq, lines: rfq.lines });
 
-    // The supplier fills in the yellow columns.
+    // Only #, CAS Number, Product name, Qty and Price per unit in the table; the rest is above it.
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(file as unknown as ArrayBuffer);
     const sheet = book.getWorksheet("Quotation")!;
     let head = 0;
+    const above = new Map<string, ExcelJS.Row>();
     sheet.eachRow((row, i) => {
-      if (row.getCell(1).value === "Ref") head = i;
-      if (row.getCell(1).value === "Supplier") row.getCell(3).value = " rfq supplier ONE ";
+      if (row.getCell(1).value === "#") head = i;
+      else if (!head) above.set(String(row.getCell(1).value), row);
     });
+    expect([1, 2, 3, 4, 5, 6].map((c) => sheet.getRow(head).getCell(c).value)).toEqual(["#", "CAS Number", "Product name", "Qty", "Price per unit", null]);
+    expect([above.get("Incoterms")!.getCell(3).value, above.get("Currency")!.getCell(3).value]).toEqual(["CIF Alexandria", ""]);
     const a = sheet.getRow(head + 1);
     const b = sheet.getRow(head + 2);
-    expect([a.getCell(1).value, a.getCell(3).value, a.getCell(5).value]).toEqual([lineA, "RFQ Linalool", 100]);
-    a.getCell(7).value = 10; a.getCell(8).value = "usd"; a.getCell(10).value = 30; a.getCell(11).value = "60 days"; a.getCell(12).value = "2037-03-31"; a.getCell(13).value = "cif";
-    b.getCell(7).value = "5"; b.getCell(9).value = 80;
+    expect([a.getCell(1).value, a.getCell(3).value, a.getCell(4).value, a.getCell(4).numFmt, b.getCell(1).value]).toEqual([1, "RFQ Linalool", 100, '#,##0.###" kg"', 2]);
+
+    // The supplier fills in the yellow cells.
+    above.get("Supplier")!.getCell(3).value = " rfq supplier ONE ";
+    above.get("Currency")!.getCell(3).value = "usd";
+    above.get("Lead time (days)")!.getCell(3).value = "30 days";
+    a.getCell(5).value = 10;
+    b.getCell(5).value = "5";
     const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
 
     expect([reply.rfqId, reply.supplierId, reply.supplierName, reply.errors]).toEqual([rfqId, null, "rfq supplier ONE", []]);
+    expect(reply.rows.map((r) => [r.lineId, r.unitPrice, r.currency, r.leadTimeDays, r.incoterm])).toEqual([
+      [lineA, "10", "USD", 30, "CIF ALEXANDRIA"],
+      [lineB, "5", "USD", 30, "CIF ALEXANDRIA"],
+    ]);
     expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Supplier One", priced: 2, swapped: [] });
     const q = await db.rfqQuote.findUniqueOrThrow({ where: { rfqLineId_supplierId: { rfqLineId: lineA, supplierId: s1 } } });
-    expect([n(q.unitPrice), q.currency, q.leadTimeDays, q.paymentTermsDays, q.incoterm, q.validUntil?.toISOString().slice(0, 10)]).toEqual([10, "USD", 30, 60, "CIF", "2037-03-31"]);
+    expect([n(q.unitPrice), q.currency, q.leadTimeDays, q.incoterm]).toEqual([10, "USD", 30, "CIF ALEXANDRIA"]);
+    // Terms the new sheet no longer asks for are typed in by hand.
+    await saveQuote(rfqId, { lineId: lineA, supplierId: s1, currency: "USD", unitPrice: 10, leadTimeDays: 30, paymentTermsDays: 60, validUntil: d("2037-03-31"), incoterm: "CIF" });
+    await saveQuote(rfqId, { lineId: lineB, supplierId: s1, currency: "USD", unitPrice: 5, moq: 80 });
+  });
+
+  it("still reads a reply on a sheet sent before the table was simplified", async () => {
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Quotation");
+    sheet.addRow(["Supplier", "", "Old Format Trading"]);
+    sheet.addRow(["Ref", "Code", "Product", "CAS", "Quantity", "Unit", "Your price per unit", "Currency", "Minimum order qty", "Lead time (days)"]);
+    sheet.addRow([lineA, "RFQ-A", "RFQ Linalool", "", 100, "kg", 12, "eur", 50, 45]);
+    book.addWorksheet("viochem", { state: "veryHidden" }).addRow(["rfq", rfqId]);
+    const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
+    expect([reply.supplierName, reply.errors]).toEqual(["Old Format Trading", []]);
+    expect(reply.rows.map((r) => [r.lineId, r.unitPrice, r.currency, r.moq, r.leadTimeDays])).toEqual([[lineA, "12", "EUR", "50", 45]]);
+  });
+
+  it("points out a # that isn't on the request and a lead time that isn't days", async () => {
+    const rfq = await db.rfq.findUniqueOrThrow({ where: { id: rfqId }, include: { lines: { include: { item: true }, orderBy: { id: "asc" } } } });
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load((await buildSheet({ rfq, lines: rfq.lines })) as unknown as ArrayBuffer);
+    const sheet = book.getWorksheet("Quotation")!;
+    let lead = 0;
+    sheet.eachRow((row, i) => {
+      if (row.getCell(1).value === "Lead time (days)") lead = i;
+    });
+    sheet.getRow(lead).getCell(3).value = "soon";
+    sheet.addRow([9, "", "Something else", 1, 3]);
+    const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(reply.errors).toEqual([
+      { row: lead, message: 'Lead time "soon" should be whole days' },
+      { row: sheet.rowCount, message: "There is no product #9 on this request" },
+    ]);
   });
 
   it("adds a supplier it doesn't know yet, in the currency they quoted", async () => {

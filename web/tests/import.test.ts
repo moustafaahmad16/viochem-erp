@@ -35,6 +35,16 @@ describe("parseSheet", () => {
       { row: 6, message: "Name is missing" },
     ]);
   });
+  it("reads the HS code, and the EGS code under its old title too", () => {
+    const { records, errors } = parseSheet("products", [
+      ["Code", "Name", "HS code", "ETA item code"],
+      ["LIN-001", "Linalool", "2905.22.00", "EG-100324932-LIN001"],
+      ["VAN-001", "Vanillin", "12", ""],
+    ]);
+    expect(records.map((r) => [r.hsCode, r.etaItemCode])).toEqual([["2905.22.00", "EG-100324932-LIN001"]]);
+    expect(errors).toEqual([{ row: 3, message: "HS code 12 isn't valid" }]);
+  });
+
   it("returns clean records", () => {
     const { records, errors } = parseSheet("products", [["code", "name"], ["lin-001", "Linalool"]]);
     expect(errors).toEqual([]);

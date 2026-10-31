@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import { isValidCas } from "@/lib/chemistry";
+import { isValidCas, isValidHsCode } from "@/lib/chemistry";
 
 /**
  * What each Excel import expects. Every sheet has one header row with these column titles,
@@ -9,7 +9,8 @@ import { isValidCas } from "@/lib/chemistry";
 
 export type Cell = string | number | boolean | Date | null;
 
-export type Column = { key: string; title: string; required?: boolean; example: string | number; note?: string };
+// Aliases are older titles still read, so a template downloaded before a rename keeps working.
+export type Column = { key: string; title: string; aliases?: string[]; required?: boolean; example: string | number; note?: string };
 
 export type KindName = "products" | "suppliers" | "customers" | "stock";
 
@@ -21,9 +22,10 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
       { key: "code", title: "Code", required: true, example: "LIN-001" },
       { key: "name", title: "Name", required: true, example: "Linalool" },
       { key: "casNumber", title: "CAS number", example: "78-70-6" },
+      { key: "hsCode", title: "HS code", example: "2905.22.00" },
       { key: "unit", title: "Unit", example: "kg", note: "kg, L, g or pcs. Empty means kg." },
       { key: "hazardClass", title: "Hazard class", example: "Flammable liquid, Class 3" },
-      { key: "etaItemCode", title: "ETA item code", example: "EG-100324932-LIN001", note: "As registered on the ETA portal, for e-invoices" },
+      { key: "etaItemCode", title: "EGS code", aliases: ["ETA item code"], example: "EG-100324932-LIN001", note: "As registered on the ETA portal, for e-invoices" },
       { key: "notes", title: "Notes", example: "" },
     ],
   },
@@ -142,7 +144,7 @@ function number(v: Cell, label: string, { allowZero = false } = {}): string {
   return d.toString();
 }
 
-export type ProductRow = { code: string; name: string; casNumber: string | null; unit: string; hazardClass: string | null; notes: string | null; etaItemCode: string | null };
+export type ProductRow = { code: string; name: string; casNumber: string | null; hsCode: string | null; unit: string; hazardClass: string | null; notes: string | null; etaItemCode: string | null };
 // Left out when the cell is empty, so importing a file without them never wipes what is already saved.
 type Terms = { paymentTermsDays?: number; openingBalance?: string; openingBalanceDate?: Date };
 export type SupplierRow = { name: string; country: string | null; currency: string; email: string | null; phone: string | null; notes: string | null; openingFxRate?: string } & Terms;
@@ -182,10 +184,12 @@ const PARSERS = {
   products: (r: Record<string, Cell>): ProductRow => {
     const cas = text(r.casNumber);
     if (cas && !isValidCas(cas)) throw new Error(`CAS number ${cas} isn't valid`);
+    const hs = text(r.hsCode);
+    if (hs && !isValidHsCode(hs)) throw new Error(`HS code ${hs} isn't valid`);
     const unit = text(r.unit) ?? "kg";
     const known = UNITS.find((u) => u.toLowerCase() === unit.toLowerCase());
     if (!known) throw new Error(`Unit "${unit}" should be one of ${UNITS.join(", ")}`);
-    return { code: text(r.code)!.toUpperCase(), name: text(r.name)!, casNumber: cas, unit: known, hazardClass: text(r.hazardClass), notes: text(r.notes), etaItemCode: text(r.etaItemCode) };
+    return { code: text(r.code)!.toUpperCase(), name: text(r.name)!, casNumber: cas, hsCode: hs, unit: known, hazardClass: text(r.hazardClass), notes: text(r.notes), etaItemCode: text(r.etaItemCode) };
   },
   suppliers: (r: Record<string, Cell>): SupplierRow => {
     const currency = (text(r.currency) ?? "USD").toUpperCase();
@@ -229,7 +233,7 @@ export function parseSheet<K extends KindName>(kind: K, rows: Cell[][]): { recor
   const header = (rows[0] ?? []).map((h) => text(h)?.toLowerCase().replace(/\s+/g, " ") ?? "");
   const index: Record<string, number> = {};
   for (const col of columns) {
-    const i = header.indexOf(col.title.toLowerCase());
+    const i = header.findIndex((h) => [col.title, ...(col.aliases ?? [])].some((title) => title.toLowerCase() === h));
     if (i >= 0) index[col.key] = i;
     else if (col.required) errors.push({ row: 1, message: `The column "${col.title}" is missing. Use the template.` });
   }
