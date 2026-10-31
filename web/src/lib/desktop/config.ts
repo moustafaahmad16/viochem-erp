@@ -14,10 +14,12 @@ export type DesktopConfig = {
   backupDir: string;
   /** How many backups to keep; the oldest go first. */
   keepBackups: number;
+  /** A Google Drive or OneDrive folder each daily backup is also copied to. Empty means off. */
+  offsiteDir: string;
   eta: { environment: "preprod" | "production"; clientId: string; clientSecret: string };
 };
 
-const DEFAULTS: DesktopConfig = { backupDir: "", keepBackups: 30, eta: { environment: "preprod", clientId: "", clientSecret: "" } };
+const DEFAULTS: DesktopConfig = { backupDir: "", keepBackups: 30, offsiteDir: "", eta: { environment: "preprod", clientId: "", clientSecret: "" } };
 
 const file = () => path.join(process.env.VIOCHEM_DATA_DIR ?? "", "desktop.json");
 

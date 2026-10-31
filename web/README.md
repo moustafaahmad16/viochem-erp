@@ -65,6 +65,11 @@ an Electron window, with the data in a SQLite file instead of PostgreSQL.
 - **Backups**: a full copy once a day and before every update, to `Documents\VIOCHEM Backups`
   or a folder chosen in the app; the newest 30 are kept. File → Restore from backup puts one back,
   saving the current data first.
+- **Off-site copy**: under Settings → Sharing and backups, pick a Google Drive or OneDrive folder on the
+  computer (the app lists the ones it finds). Each daily backup is then also copied there, and the Drive
+  or OneDrive app uploads it. The last 14 days and one backup a month for a year are kept. The dashboard
+  shows when the last copy was made, and turns red if there has been none for 2 days or the folder is gone.
+  To restore on a new computer, install VIOCHEM, sign in to the same Drive, and use File → Restore from backup.
 - **E-invoicing**: the client ID and secret are entered under Settings → E-invoice. The app runs the
   e-seal signer itself (E-invoice → Start e-seal signer), so invoices sent from any device are signed
   with the token plugged into the main computer.

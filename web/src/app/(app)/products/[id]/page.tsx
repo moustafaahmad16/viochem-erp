@@ -9,7 +9,6 @@ import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/core";
 import { updateItem } from "../actions";
 import { ItemFields } from "../item-form";
-import { PriceChart } from "./price-chart";
 import { batchName } from "@/lib/services/batches";
 import { availability, NOTHING, reservationsFor } from "@/lib/services/reservations";
 
@@ -181,8 +180,6 @@ async function Analysis({ itemId, unit, t }: { itemId: number; unit: string; t: 
           </Table>
         </Card>
       </div>
-
-      <PriceChart itemId={itemId} unit={unit} t={t} />
 
       <Card title={t("Buying prices")} padded={false}>
         <Table

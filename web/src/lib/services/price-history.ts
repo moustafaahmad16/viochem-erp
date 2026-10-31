@@ -15,15 +15,15 @@ export type PriceHint = {
 };
 
 /** What a salesperson should see before typing a price: past prices to this customer, and what it cost. */
-export async function priceHints(itemIds: number[], customerId: number): Promise<Map<number, PriceHint>> {
-  const since = addMonths(today(), -6);
+export async function priceHints(itemIds: number[], customerId: number, asOf: Date = today()): Promise<Map<number, PriceHint>> {
+  const since = addMonths(asOf, -6);
   const [toCustomer, recent, lots] = await Promise.all([
     db.invoiceLine.findMany({
       where: { itemId: { in: itemIds }, invoice: { customerId, status: "POSTED" } },
       include: { invoice: true },
       orderBy: [{ invoice: { date: "desc" } }, { id: "desc" }],
     }),
-    db.invoiceLine.findMany({ where: { itemId: { in: itemIds }, invoice: { status: "POSTED", date: { gte: since } } } }),
+    db.invoiceLine.findMany({ where: { itemId: { in: itemIds }, invoice: { status: "POSTED", date: { gte: since, lte: asOf } } } }),
     db.lot.findMany({
       where: { itemId: { in: itemIds }, shipmentLineId: { not: null } },
       include: { shipmentLine: { include: { shipment: true } } },
@@ -49,21 +49,4 @@ export async function priceHints(itemIds: number[], customerId: number): Promise
     });
   }
   return out;
-}
-
-export type PricePoint = { date: Date; price: Decimal };
-
-/** Every sale price and every batch's landed cost over the last 12 months, for the product's price chart. */
-export async function priceSeries(itemId: number) {
-  const from = addMonths(today(), -12);
-  const [sales, lots] = await Promise.all([
-    db.invoiceLine.findMany({ where: { itemId, invoice: { status: "POSTED", date: { gte: from } } }, include: { invoice: true } }),
-    db.lot.findMany({ where: { itemId }, orderBy: { receivedDate: "asc" } }),
-  ]);
-  return {
-    from,
-    to: today(),
-    sales: sales.map((l) => ({ date: l.invoice.date, price: new Decimal(l.unitPrice.toString()) })).sort((a, b) => a.date.getTime() - b.date.getTime()),
-    costs: lots.map((l) => ({ date: l.receivedDate, price: new Decimal(l.unitCostEgp.toString()) })),
-  };
 }

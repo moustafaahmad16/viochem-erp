@@ -15,8 +15,8 @@ export const desktop: Record<string, string> = {
   Backups: "النسخ الاحتياطية",
   "Back up now": "نسخ احتياطي الآن",
   "Backed up.": "تم النسخ الاحتياطي.",
-  "A full copy is saved once a day, and before every update. Keep the backup folder on a USB drive or a synced folder like OneDrive, so a copy survives if this computer doesn't.":
-    "تُحفظ نسخة كاملة مرة يوميًا وقبل كل تحديث. اجعل مجلد النسخ على فلاشة أو مجلد متزامن مثل OneDrive حتى تبقى نسخة لو تعطل هذا الجهاز.",
+  "A full copy is saved on this computer once a day, and before every update. Turn on the off-site copy below so a copy also survives if this computer doesn't.":
+    "تُحفظ نسخة كاملة على هذا الجهاز مرة يوميًا وقبل كل تحديث. فعّل النسخة خارج الجهاز بالأسفل حتى تبقى نسخة لو تعطل هذا الجهاز.",
   "Backup folder": "مجلد النسخ الاحتياطي",
   "Backups to keep": "عدد النسخ المحفوظة",
   "Keep between 1 and 365 backups.": "احتفظ بعدد بين 1 و 365 نسخة.",
@@ -54,4 +54,30 @@ export const desktop: Record<string, string> = {
   "That password isn't right.": "كلمة المرور غير صحيحة.",
   "All data is cleared.": "تم مسح كل البيانات.",
   "Delete all data? This removes every product, customer, invoice and record.": "حذف كل البيانات؟ سيتم حذف كل الأصناف والعملاء والفواتير وكل السجلات.",
+  // Off-site copy to Google Drive or OneDrive
+  "Off-site copy": "نسخة خارج الجهاز",
+  "Copy now": "انسخ الآن",
+  "Each daily backup is also copied into a Google Drive or OneDrive folder on this computer. The Drive or OneDrive app uploads it, so a copy is safe even if this computer is lost, stolen or broken. The last 14 days and one backup a month for a year are kept there.":
+    "تُنسخ كل نسخة احتياطية يومية أيضًا إلى مجلد Google Drive أو OneDrive على هذا الجهاز. برنامج Drive أو OneDrive يرفعها على الإنترنت، فتبقى نسخة آمنة حتى لو ضاع هذا الجهاز أو سُرق أو تعطل. يُحتفظ هناك بآخر ١٤ يومًا ونسخة واحدة لكل شهر لمدة سنة.",
+  "Off. All backups are only on this computer.": "متوقفة. كل النسخ الاحتياطية موجودة على هذا الجهاز فقط.",
+  "Last off-site copy: {when}": "آخر نسخة خارج الجهاز: {when}",
+  "No off-site copy made yet.": "لم تُعمل نسخة خارج الجهاز بعد.",
+  "The last try failed: {error}": "فشلت آخر محاولة: {error}",
+  "Off-site folder": "مجلد النسخة الخارجية",
+  "Found on this computer: {folders}": "موجود على هذا الجهاز: {folders}",
+  "No Google Drive or OneDrive found on this computer. Install one and sign in, then come back here.": "لم يُعثر على Google Drive أو OneDrive على هذا الجهاز. ثبّت أحدهما وسجّل الدخول ثم ارجع هنا.",
+  "Turn on": "تشغيل",
+  "To turn it off, empty the folder box and save. To restore on a new computer, install VIOCHEM, sign in to the same Google Drive or OneDrive, and use Restore from backup in the File menu.":
+    "لإيقافها، امسح خانة المجلد واحفظ. للاسترجاع على جهاز جديد: ثبّت VIOCHEM، وسجّل الدخول لنفس حساب Google Drive أو OneDrive، ثم استخدم \"استرجاع من نسخة احتياطية\" من قائمة File.",
+  "Off-site copies are off.": "تم إيقاف النسخ خارج الجهاز.",
+  "Copied the newest backup to the off-site folder.": "تم نسخ أحدث نسخة احتياطية إلى المجلد الخارجي.",
+  "The folder {folder} can't be found. Check that Google Drive or OneDrive is running and signed in.": "المجلد {folder} غير موجود. تأكد أن Google Drive أو OneDrive يعمل ومسجّل الدخول.",
+  "Couldn't copy the backup into {folder} ({code}).": "تعذّر نسخ النسخة الاحتياطية إلى {folder} ({code}).",
+  "The copy came out a different size from the backup.": "النسخة خرجت بحجم مختلف عن النسخة الاحتياطية.",
+  "Last off-site backup: {when}": "آخر نسخة احتياطية خارج الجهاز: {when}",
+  "Backups are only on this computer": "النسخ الاحتياطية موجودة على هذا الجهاز فقط",
+  "No off-site backup since {when}": "لا توجد نسخة خارج الجهاز منذ {when}",
+  "No off-site backup made yet": "لم تُعمل نسخة خارج الجهاز بعد",
+  "If this computer is lost or broken, the data goes with it. Set up a Google Drive or OneDrive copy.": "لو ضاع هذا الجهاز أو تعطل تضيع البيانات معه. فعّل نسخة على Google Drive أو OneDrive.",
+  "Fix it": "إصلاح",
 };
