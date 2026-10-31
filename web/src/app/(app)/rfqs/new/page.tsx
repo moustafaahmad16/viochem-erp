@@ -36,6 +36,10 @@ export default async function NewRfqPage({ searchParams }: PageProps<"/rfqs/new"
             initial={start.filter((r) => r.short.gt(0)).map((r) => ({ itemId: r.itemId, qty: r.short.toString() }))}
           />
         </Card>
+        <div className="grid max-w-xl gap-3 sm:grid-cols-2">
+          <Field label={t("Currency")} name="currency" placeholder="USD" maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
+          <Field label={t("Incoterms")} name="incoterm" placeholder="CIF Alexandria" dir="ltr" />
+        </div>
         <details className="text-sm">
           <summary className="cursor-pointer text-slate-600">{t("More options")}</summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">

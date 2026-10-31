@@ -33,6 +33,8 @@ model Item {
   code          String              @unique
   name          String
   casNumber     String?
+  // Harmonized System customs code, e.g. 2905.22.
+  hsCode        String?
   unit          String              @default("kg")
   hazardClass   String?
   notes         String?
@@ -684,6 +686,9 @@ model Rfq {
   // When suppliers should reply by, and when the goods are needed in Egypt.
   replyBy   DateTime?     @db.Date
   neededBy  DateTime?     @db.Date
+  // Asked of every supplier, printed above the sheet's table.
+  currency  String?
+  incoterm  String?
   status    RfqStatus     @default(OPEN)
   notes     String?
   createdAt DateTime      @default(now())

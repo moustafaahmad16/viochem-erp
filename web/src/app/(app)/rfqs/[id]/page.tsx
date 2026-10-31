@@ -59,7 +59,7 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
     <>
       <PageHeader
         title={<span className="flex items-center gap-3">{rfq.number} <RfqStatusBadge status={rfq.status} /></span>}
-        subtitle={<>{t.date(rfq.date)}{rfq.neededBy && ` · ${t("needed by {date}", { date: t.date(rfq.neededBy) })}`}</>}
+        subtitle={<>{t.date(rfq.date)}{rfq.neededBy && ` · ${t("needed by {date}", { date: t.date(rfq.neededBy) })}`}{rfq.currency && ` · ${rfq.currency}`}{rfq.incoterm && ` · ${rfq.incoterm}`}</>}
         back={{ href: "/rfqs", label: t("Requests for quotation") }}
         actions={rfq.lines.length > 0 && <ButtonLink href={`/rfqs/${id}/sheet`}>{t("Download sheet for suppliers")}</ButtonLink>}
       />
@@ -251,6 +251,10 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
             <Card>
               <ActionForm action={updateRfq.bind(null, id)}>
                 <input type="hidden" name="date" value={toInputDate(rfq.date)} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label={t("Currency")} name="currency" defaultValue={rfq.currency ?? ""} placeholder="USD" maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
+                  <Field label={t("Incoterms")} name="incoterm" defaultValue={rfq.incoterm ?? ""} placeholder="CIF Alexandria" dir="ltr" />
+                </div>
                 <Field label={t("Needed in Egypt by")} name="neededBy" type="date" defaultValue={toInputDate(rfq.neededBy)} hint={t("Offers that would arrive later count as more expensive.")} />
                 <TextArea label={t("Notes for suppliers")} name="notes" defaultValue={rfq.notes ?? ""} />
                 <Submit variant="secondary">{t("Save")}</Submit>

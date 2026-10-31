@@ -33,13 +33,23 @@ async function openRfq(tx: Tx, id: number) {
   return rfq;
 }
 
+type Terms = { currency?: string | null; incoterm?: string | null };
+
+/** The currency and incoterms asked of every supplier, both optional. */
+function terms(input: Terms) {
+  const currency = input.currency?.trim().toUpperCase() || null;
+  if (currency && !/^[A-Z]{3}$/.test(currency)) throw new UserError(`Currency "${input.currency}" should be three letters, like USD.`);
+  return { currency, incoterm: input.incoterm?.trim() || null };
+}
+
 function checkDates(date: Date, replyBy: Date | null, neededBy: Date | null) {
   if (replyBy && replyBy < date) throw new UserError("The reply date can't be before the request date.");
   if (neededBy && neededBy < date) throw new UserError("The date needed can't be before the request date.");
 }
 
-export async function createRfq(input: { date: Date; replyBy: Date | null; neededBy: Date | null; notes: string | null; lines?: { itemId: number; qty: Decimal.Value }[] }) {
+export async function createRfq(input: { date: Date; replyBy: Date | null; neededBy: Date | null; notes: string | null; lines?: { itemId: number; qty: Decimal.Value }[] } & Terms) {
   checkDates(input.date, input.replyBy, input.neededBy);
+  const asked = terms(input);
   return db.$transaction(async (tx) =>
     tx.rfq.create({
       data: {
@@ -48,17 +58,19 @@ export async function createRfq(input: { date: Date; replyBy: Date | null; neede
         replyBy: input.replyBy,
         neededBy: input.neededBy,
         notes: input.notes,
+        ...asked,
         lines: { create: (input.lines ?? []).filter((l) => new Decimal(l.qty).gt(0)).map((l) => ({ itemId: l.itemId, qty: l.qty.toString() })) },
       },
     }),
   );
 }
 
-export async function updateRfq(id: number, input: { date: Date; replyBy: Date | null; neededBy: Date | null; notes: string | null }) {
+export async function updateRfq(id: number, input: { date: Date; replyBy: Date | null; neededBy: Date | null; notes: string | null } & Terms) {
   checkDates(input.date, input.replyBy, input.neededBy);
+  const data = { date: input.date, replyBy: input.replyBy, neededBy: input.neededBy, notes: input.notes, ...terms(input) };
   return db.$transaction(async (tx) => {
     await openRfq(tx, id);
-    return tx.rfq.update({ where: { id }, data: input });
+    return tx.rfq.update({ where: { id }, data });
   });
 }
 

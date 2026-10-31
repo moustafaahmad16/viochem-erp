@@ -41,7 +41,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     <>
       <PageHeader
         title={item.name}
-        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${unit}` })}</>}
+        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>}{item.hsCode && <> · HS {item.hsCode}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${unit}` })}</>}
         back={{ href: "/products", label: t("Products") }}
         actions={
           <>
