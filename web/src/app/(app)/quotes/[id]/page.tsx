@@ -15,6 +15,7 @@ import { LineInput, LineSave } from "@/components/line-edit";
 import { InvoiceNumber } from "../../invoices/status";
 import { QuoteStatusBadge } from "../status";
 import { QuoteLineForm } from "./line-form";
+import { priceHints } from "@/lib/services/price-history";
 
 export async function generateMetadata({ params }: PageProps<"/quotes/[id]">) {
   const q = await db.quote.findUnique({ where: { id: Number((await params).id) || 0 } });
@@ -46,6 +47,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
     currentUser(),
   ]);
   const isAdmin = user?.role === "ADMIN";
+  const hints = isOpen ? await priceHints(items.map((i) => i.id), q.customerId) : new Map();
 
   return (
     <>
@@ -122,9 +124,9 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
             </Table>
             {isOpen && (
               <div className="border-t border-slate-100 p-4">
-                <QuoteLineForm action={addLine.bind(null, q.id)} items={items.map((i) => {
+                <QuoteLineForm action={addLine.bind(null, q.id)} customer={q.customer.name} items={items.map((i) => {
                     const a = free.get(i.id) ?? NOTHING;
-                    return { id: i.id, label: `${i.name} (${i.code}) · ${t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) })} · ${cost(a)}`, unit: i.unit };
+                    return { id: i.id, label: `${i.name} (${i.code}) · ${t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) })} · ${cost(a)}`, unit: i.unit, avgCost: a.avgCost ? a.avgCost.toString() : null, hint: hints.get(i.id) };
                   })} />
               </div>
             )}

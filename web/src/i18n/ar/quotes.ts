@@ -103,4 +103,17 @@ export const quotes: Record<string, string> = {
   "avg cost EGP {cost}": "متوسط التكلفة {cost} ج.م",
   "no cost yet": "لا توجد تكلفة بعد",
   "margin {pct}": "هامش {pct}",
+  // Price history when quoting
+  "Last bought {date}": "آخر شراء {date}",
+  "Last sold to {customer}": "آخر أسعار بيع لـ {customer}",
+  "Last sold to this customer": "آخر أسعار بيع لهذا العميل",
+  "Never sold to this customer": "لم يُبع لهذا العميل من قبل",
+  "Average to all customers, last 6 months: EGP {price}": "المتوسط لكل العملاء آخر ٦ أشهر: EGP {price}",
+  "What it cost": "التكلفة",
+  "At the price you're typing": "بالسعر الذي تكتبه",
+  "Type a price to see the margin.": "اكتب السعر لترى الهامش.",
+  "margin over landed cost · EGP {amount} per {unit}": "هامش فوق التكلفة الواصلة · EGP {amount} لكل {unit}",
+  "margin over this batch's cost · EGP {amount} per {unit}": "هامش فوق تكلفة هذه الدفعة · EGP {amount} لكل {unit}",
+  "Below cost: you would lose EGP {amount} per {unit}.": "أقل من التكلفة: ستخسر EGP {amount} لكل {unit}.",
+  "{pct} under the usual price of EGP {price}.": "أقل بـ {pct} من السعر المعتاد EGP {price}.",
 };

@@ -2,6 +2,7 @@ import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 import { db } from "@/lib/db";
 import { backupDir, readConfig } from "./config";
+import { copyOffsite, offsiteDoneToday } from "./offsite";
 
 export type Backup = { name: string; path: string; at: Date; size: number };
 
@@ -41,16 +42,29 @@ export async function backupNow(): Promise<Backup> {
   return listBackups().find((b) => b.name === name)!;
 }
 
-/** Backs up once a day while the app is open: at start if the last backup is a day old, then every hour checks again. */
+/**
+ * Backs up once a day while the app is open: at start if the last backup is a day old, then every hour checks again.
+ * The newest backup is then copied off-site, if that is set up and not yet done today; a failed copy is tried again each hour.
+ */
 export function scheduleBackups() {
   const due = async () => {
     const last = listBackups()[0];
-    if (last && Date.now() - last.at.getTime() < 23 * 60 * 60 * 1000) return;
-    try {
-      const b = await backupNow();
-      console.log(`Backed up to ${b.path}`);
-    } catch (e) {
-      console.error("Backup failed", e);
+    if (!last || Date.now() - last.at.getTime() >= 23 * 60 * 60 * 1000) {
+      try {
+        const b = await backupNow();
+        console.log(`Backed up to ${b.path}`);
+      } catch (e) {
+        console.error("Backup failed", e);
+        return;
+      }
+    }
+    const newest = listBackups()[0];
+    if (newest && readConfig().offsiteDir && !offsiteDoneToday()) {
+      try {
+        console.log(`Copied off-site to ${copyOffsite(newest.path)}`);
+      } catch (e) {
+        console.error("Off-site copy failed", e);
+      }
     }
   };
   void due();

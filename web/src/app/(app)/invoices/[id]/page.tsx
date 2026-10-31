@@ -18,6 +18,7 @@ import { shareUrl, signingMode } from "@/lib/eta/client";
 import { getT } from "@/i18n/server";
 import { batchName, expiresSoon, isExpired } from "@/lib/services/batches";
 import { LineForm } from "./line-form";
+import { priceHints } from "@/lib/services/price-history";
 import { InvoiceCreditNotes } from "../../credit-notes/invoice-card";
 import { creditTotals } from "@/lib/services/credits";
 import { isDraftNumber } from "@/lib/services/invoice-numbers";
@@ -47,6 +48,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
         shortages(inv.lines, { invoiceId: inv.id }, inv.date),
       ])
     : [[], [], [], new Map(), []];
+  const hints = isDraft ? await priceHints(items.map((i) => i.id), inv.customerId) : new Map();
 
   // Cost of what was sold, from the exact lots used.
   const lineCost = (l: (typeof inv.lines)[number]) => l.moves.reduce((s, m) => s.plus(new Decimal(m.qty.toString()).neg().times(m.unitCostEgp.toString())), new Decimal(0));
@@ -142,13 +144,15 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               <div className="border-t border-slate-100 p-4">
                 <LineForm
                   action={addLine.bind(null, inv.id)}
+                  customer={inv.customer.name}
                   items={items.map((i) => {
                     const a = free.get(i.id) ?? NOTHING;
-                    return { id: i.id, code: i.code, name: i.name, unit: i.unit, stock: t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) }) };
+                    return { id: i.id, code: i.code, name: i.name, unit: i.unit, stock: t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) }), avgCost: a.avgCost ? a.avgCost.toString() : null, hint: hints.get(i.id) };
                   })}
                   lots={lots.map((l) => ({
                     id: l.id,
                     itemId: l.itemId,
+                    cost: l.unitCostEgp.toString(),
                     label: `${batchName(l)} · ${qty(l.qtyOnHand)} ${l.item.unit}${l.expiryDate ? ` · ${t("exp {date}", { date: t.date(l.expiryDate) })}` : ""}${expiresSoon(l, inv.date) ? ` · ${t("expires soon")}` : ""}`,
                   }))}
                 />

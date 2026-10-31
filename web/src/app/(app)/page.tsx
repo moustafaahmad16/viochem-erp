@@ -13,6 +13,8 @@ import { chequesDue } from "@/lib/services/cheques";
 import { dailyBudget } from "@/lib/services/rankings";
 import { ExportButtons } from "@/components/export-buttons";
 import { batchName } from "@/lib/services/batches";
+import { isDesktop } from "@/lib/desktop/config";
+import { offsiteStatus } from "@/lib/desktop/offsite";
 
 export default async function Dashboard() {
   const t = await getT();
@@ -26,6 +28,7 @@ export default async function Dashboard() {
   const weOwe = totalsByCurrency(suppliers.flatMap((x) => x.accounts).filter((a) => a.balance.gt(0)));
   const now = today();
   const month = t(now.toLocaleString("en-US", { month: "long", timeZone: "UTC" }));
+  const offsite = isDesktop() ? offsiteStatus() : null;
 
   return (
     <>
@@ -40,6 +43,8 @@ export default async function Dashboard() {
           </>
         }
       />
+
+      {offsite && <OffsiteLine status={offsite} t={t} />}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {budget.periods.map((p) => (
@@ -204,5 +209,33 @@ export default async function Dashboard() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** The Windows app's off-site backup: a quiet line when it is fine, a red alert when it isn't. */
+function OffsiteLine({ status, t }: { status: ReturnType<typeof offsiteStatus>; t: Awaited<ReturnType<typeof getT>> }) {
+  const time = (d: Date) => `${t.date(d)} ${d.toTimeString().slice(0, 5)}`;
+  if (status.state === "ok" && status.lastCopyAt) {
+    return (
+      <p className="-mt-2 mb-4 text-sm text-slate-500">
+        <span className="me-1.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+        {t("Last off-site backup: {when}", { when: time(status.lastCopyAt) })}
+      </p>
+    );
+  }
+  return (
+    <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <div>
+        <p className="font-semibold">
+          {status.state === "off"
+            ? t("Backups are only on this computer")
+            : status.lastCopyAt
+              ? t("No off-site backup since {when}", { when: time(status.lastCopyAt) })
+              : t("No off-site backup made yet")}
+        </p>
+        <p>{status.state === "stale" && status.error ? t.message(status.error) : t("If this computer is lost or broken, the data goes with it. Set up a Google Drive or OneDrive copy.")}</p>
+      </div>
+      <ButtonLink href="/settings/desktop" variant="secondary">{t("Fix it")}</ButtonLink>
+    </div>
   );
 }
