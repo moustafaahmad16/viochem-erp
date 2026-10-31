@@ -7,12 +7,15 @@ import { date, decimal, fail, int, optionalDate, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
 import { UserError } from "@/lib/services/errors";
 import * as svc from "@/lib/services/quotes";
+import type { InvoiceKind } from "@prisma/client";
+
+const kindOf = (fd: FormData): InvoiceKind => (fd.get("kind") === "NON_TAXED" ? "NON_TAXED" : "TAXED");
 
 export async function createQuote(_: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   let id: number;
   try {
-    id = (await svc.createQuote(int(fd, "customerId", "Customer"), date(fd, "date", "Quotation date"), optionalDate(fd, "validUntil"))).id;
+    id = (await svc.createQuote(int(fd, "customerId", "Customer"), date(fd, "date", "Quotation date"), optionalDate(fd, "validUntil"), kindOf(fd))).id;
   } catch (e) {
     return fail(e);
   }
@@ -26,7 +29,8 @@ export async function updateQuote(id: number, _: FormState, fd: FormData): Promi
       customerId: int(fd, "customerId", "Customer"),
       date: date(fd, "date", "Quotation date"),
       validUntil: optionalDate(fd, "validUntil"),
-      vatRate: decimal(fd, "vatRate", "VAT rate", { allowZero: true }),
+      kind: kindOf(fd),
+      vatRate: fd.has("vatRate") ? decimal(fd, "vatRate", "VAT rate", { allowZero: true }) : null,
       notes: text(fd, "notes"),
     });
   } catch (e) {
@@ -131,7 +135,7 @@ export async function toInvoice(id: number, _: FormState, fd: FormData): Promise
   await requireUser();
   let invoiceId: number;
   try {
-    invoiceId = (await svc.quoteToInvoice(id, fd.get("kind") === "NON_TAXED" ? "NON_TAXED" : "TAXED")).id;
+    invoiceId = (await svc.quoteToInvoice(id, kindOf(fd))).id;
   } catch (e) {
     return fail(e);
   }

@@ -30,6 +30,8 @@ describe("reserving stock", () => {
     const q = await createQuote(customer, d("2026-02-01"), FAR);
     await addQuoteLine(q.id, { itemId: item, qty: "30", unitPrice: "80" });
     expect(await stock()).toEqual([100, 0, 100]);
+    // The average landed cost of what is on hand is shown when choosing products.
+    expect((await availability([item])).get(item)!.avgCost?.toString()).toBe("50");
 
     await confirmQuote(q.id);
     expect(await stock()).toEqual([100, 30, 70]);

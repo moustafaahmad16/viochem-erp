@@ -1,11 +1,11 @@
 import Decimal from "decimal.js";
 import { notFound } from "next/navigation";
 import { ActionForm, Field, Select, Submit, TextArea } from "@/components/forms";
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { Badge, ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
 import { toInputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
-import { money, qty } from "@/lib/format";
+import { money, pct, qty } from "@/lib/format";
 import { isExpired } from "@/lib/services/quotes";
 import { getT } from "@/i18n/server";
 import { addLine, confirmQuote, declineQuote, deleteQuote, editQuote, removeLine, reopenQuote, toInvoice, updateLine, updateQuote } from "../actions";
@@ -32,6 +32,8 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
   if (!q) notFound();
   const isOpen = q.status === "OPEN";
   const isConfirmed = q.status === "CONFIRMED";
+  const taxed = q.kind === "TAXED";
+  const cost = (a: { avgCost: Decimal | null }) => (a.avgCost ? t("avg cost EGP {cost}", { cost: money(a.avgCost) }) : t("no cost yet"));
   const live = isOpen || isConfirmed;
   const expired = isExpired(q);
   const totals = invoiceTotals(q.lines, q.vatRate.toString());
@@ -48,7 +50,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
   return (
     <>
       <PageHeader
-        title={<span className="flex items-center gap-3">{q.number} <QuoteStatusBadge status={q.status} validUntil={q.validUntil} /></span>}
+        title={<span className="flex items-center gap-3">{q.number} <QuoteStatusBadge status={q.status} validUntil={q.validUntil} />{!taxed && <Badge color="gray">{t("Non-taxed")}</Badge>}</span>}
         subtitle={
           <>
             <RowLink href={`/customers/${q.customerId}`}>{q.customer.name}</RowLink> · {t.date(q.date)}
@@ -69,7 +71,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                 q.lines.length > 0 && (
                   <>
                     <tr className="font-normal"><td colSpan={3}>{t("Subtotal")}</td><td className="num">{money(totals.net)}</td><td /></tr>
-                    <tr className="font-normal"><td colSpan={3}>{t("VAT {rate}%", { rate: q.vatRate.toString() })}</td><td className="num">{money(totals.vat)}</td><td /></tr>
+                    {taxed && <tr className="font-normal"><td colSpan={3}>{t("VAT {rate}%", { rate: q.vatRate.toString() })}</td><td className="num">{money(totals.vat)}</td><td /></tr>}
                     <tr><td colSpan={3}>{t("Total (EGP)")}</td><td className="num">{money(totals.total)}</td><td /></tr>
                   </>
                 )
@@ -82,6 +84,15 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                     <td>
                       {l.item.name}
                       {isOpen && <div className="text-xs text-slate-500">{t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(l.item.unit) })}</div>}
+                      {isOpen && (
+                        <div className="text-xs text-slate-500">
+                          {cost(a)}
+                          {a.avgCost && !new Decimal(l.unitPrice.toString()).isZero() && (() => {
+                            const m = new Decimal(l.unitPrice.toString()).minus(a.avgCost).div(l.unitPrice.toString()).times(100);
+                            return <span className={m.lt(0) ? "font-medium text-red-700" : ""}> · {t("margin {pct}", { pct: pct(m) })}</span>;
+                          })()}
+                        </div>
+                      )}
                     </td>
                     {isOpen ? (
                       <>
@@ -113,7 +124,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
               <div className="border-t border-slate-100 p-4">
                 <QuoteLineForm action={addLine.bind(null, q.id)} items={items.map((i) => {
                     const a = free.get(i.id) ?? NOTHING;
-                    return { id: i.id, label: `${i.name} (${i.code}) · ${t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) })}`, unit: i.unit };
+                    return { id: i.id, label: `${i.name} (${i.code}) · ${t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(i.unit) })} · ${cost(a)}`, unit: i.unit };
                   })} />
               </div>
             )}
@@ -158,7 +169,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
             <Card title={t("Turn into invoice")}>
               <ActionForm action={toInvoice.bind(null, q.id)}>
                 <p className="text-sm text-slate-600">{t("Makes a draft invoice dated today with these products and prices. You can still change the quantities and prices before posting it.")}</p>
-                <Select label={t("Invoice type")} name="kind" defaultValue={q.vatRate.isZero() ? "NON_TAXED" : "TAXED"} options={[{ value: "TAXED", label: t("Taxed (with VAT, sent to ETA)") }, { value: "NON_TAXED", label: t("Non-taxed (NT, no VAT)") }]} />
+                <Select label={t("Invoice type")} name="kind" defaultValue={q.kind} options={[{ value: "TAXED", label: t("Taxed (with VAT, sent to ETA)") }, { value: "NON_TAXED", label: t("Non-taxed (NT, no VAT)") }]} />
                 {expired && <p className="text-sm text-amber-800">{t("This quotation has expired. Check the prices are still right.")}</p>}
                 <Submit confirm={t("Turn {number} into an invoice?", { number: q.number })}>{t("Turn into invoice")}</Submit>
               </ActionForm>
@@ -171,7 +182,8 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                   <Select label={t("Customer")} name="customerId" defaultValue={q.customerId} options={customers.map((c) => ({ value: c.id, label: c.name }))} />
                   <Field label={t("Quotation date")} name="date" type="date" defaultValue={toInputDate(q.date)} required />
                   <Field label={t("Valid until")} name="validUntil" type="date" defaultValue={toInputDate(q.validUntil)} />
-                  <Field label={t("VAT %")} name="vatRate" defaultValue={q.vatRate.toString()} inputMode="decimal" required />
+                  <Select label={t("Quotation type")} name="kind" defaultValue={q.kind} options={[{ value: "TAXED", label: t("Taxed (adds 14% VAT)") }, { value: "NON_TAXED", label: t("Non-taxed (no VAT)") }]} />
+                  {taxed && <Field label={t("VAT %")} name="vatRate" defaultValue={q.vatRate.toString()} inputMode="decimal" required />}
                   <TextArea label={t("Notes (printed on the quotation)")} name="notes" defaultValue={q.notes ?? ""} />
                   <Submit variant="secondary">{t("Save")}</Submit>
                 </ActionForm>

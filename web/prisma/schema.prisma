@@ -532,6 +532,8 @@ model Quote {
   validUntil  DateTime?   @db.Date
   status      QuoteStatus @default(OPEN)
   confirmedAt DateTime?
+  // Taxed quotations add 14% VAT; non-taxed ones none, and turn into non-taxed invoices.
+  kind        InvoiceKind @default(TAXED)
   vatRate     Decimal     @default(14) @db.Decimal(5, 2)
   notes       String?
   invoiceId   Int?        @unique

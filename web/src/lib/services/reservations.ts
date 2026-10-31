@@ -11,7 +11,8 @@ import { today } from "@/lib/dates";
 const dec = (v: { toString(): string } | null | undefined) => new Decimal(v?.toString() ?? 0);
 const ZERO = new Decimal(0);
 
-export type Availability = { onHand: Decimal; reserved: Decimal; free: Decimal };
+/** avgCost is the landed cost per unit of what is on hand, weighted by quantity; null when there is none. */
+export type Availability = { onHand: Decimal; reserved: Decimal; free: Decimal; avgCost: Decimal | null };
 
 type Except = { quoteId?: number; invoiceId?: number };
 
@@ -26,21 +27,23 @@ export const reservingQuote = (on: Date = today(), quoteId?: number) => ({
 export async function availability(itemIds?: number[], except: Except = {}, on: Date = today()): Promise<Map<number, Availability>> {
   const itemId = itemIds ? { in: itemIds } : undefined;
   const [stock, quoted, drafts] = await Promise.all([
-    db.lot.groupBy({ by: ["itemId"], where: { itemId, qtyOnHand: { gt: 0 }, OR: [{ expiryDate: null }, { expiryDate: { gte: on } }] }, _sum: { qtyOnHand: true } }),
+    db.lot.findMany({ where: { itemId, qtyOnHand: { gt: 0 }, OR: [{ expiryDate: null }, { expiryDate: { gte: on } }] }, select: { itemId: true, qtyOnHand: true, unitCostEgp: true } }),
     db.quoteLine.groupBy({ by: ["itemId"], where: { itemId, quote: reservingQuote(on, except.quoteId) }, _sum: { qty: true } }),
     db.invoiceLine.groupBy({ by: ["itemId"], where: { itemId, invoice: { status: "DRAFT", ...(except.invoiceId ? { id: { not: except.invoiceId } } : {}) } }, _sum: { qty: true } }),
   ]);
   const ids = new Set([...(itemIds ?? []), ...stock.map((s) => s.itemId), ...quoted.map((q) => q.itemId), ...drafts.map((d) => d.itemId)]);
   const result = new Map<number, Availability>();
   for (const id of ids) {
-    const onHand = dec(stock.find((s) => s.itemId === id)?._sum.qtyOnHand);
+    const lots = stock.filter((s) => s.itemId === id);
+    const onHand = lots.reduce((s, l) => s.plus(dec(l.qtyOnHand)), ZERO);
+    const value = lots.reduce((s, l) => s.plus(dec(l.qtyOnHand).times(dec(l.unitCostEgp))), ZERO);
     const reserved = dec(quoted.find((q) => q.itemId === id)?._sum.qty).plus(dec(drafts.find((d) => d.itemId === id)?._sum.qty));
-    result.set(id, { onHand, reserved, free: onHand.minus(reserved) });
+    result.set(id, { onHand, reserved, free: onHand.minus(reserved), avgCost: onHand.gt(0) ? value.div(onHand) : null });
   }
   return result;
 }
 
-export const NOTHING: Availability = { onHand: ZERO, reserved: ZERO, free: ZERO };
+export const NOTHING: Availability = { onHand: ZERO, reserved: ZERO, free: ZERO, avgCost: null };
 
 /**
  * Products on a quotation or invoice asking for more than is free, as messages. Lines of the same

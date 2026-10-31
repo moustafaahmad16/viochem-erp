@@ -27,21 +27,25 @@ function checkValidity(date: Date, validUntil: Date) {
   if (validUntil < date) throw new UserError("Valid until can't be before the quotation date.");
 }
 
-export async function createQuote(customerId: number, date: Date, validUntil: Date | null = null) {
+/** A taxed quotation adds 14% VAT; a non-taxed one adds none. */
+export async function createQuote(customerId: number, date: Date, validUntil: Date | null = null, kind: InvoiceKind = "TAXED") {
   const until = validUntil ?? addDays(date, DEFAULT_VALID_DAYS);
   checkValidity(date, until);
   return db.$transaction(async (tx) =>
-    tx.quote.create({ data: { number: await nextNumber(tx, "QUO", date), customerId, date, validUntil: until } }),
+    tx.quote.create({ data: { number: await nextNumber(tx, "QUO", date), customerId, date, validUntil: until, kind, vatRate: kind === "NON_TAXED" ? 0 : 14 } }),
   );
 }
 
 export async function updateQuote(
   id: number,
-  data: { customerId: number; date: Date; validUntil: Date | null; vatRate: string; notes: string | null },
+  data: { customerId: number; date: Date; validUntil: Date | null; kind?: InvoiceKind; vatRate?: string | null; notes: string | null },
 ) {
   await open(id);
   if (data.validUntil) checkValidity(data.date, data.validUntil);
-  return db.quote.update({ where: { id }, data });
+  const kind = data.kind ?? "TAXED";
+  // Non-taxed carries no VAT; switching back to taxed brings back the usual 14%.
+  const vatRate = kind === "NON_TAXED" ? "0" : (data.vatRate ?? "14");
+  return db.quote.update({ where: { id }, data: { ...data, kind, vatRate } });
 }
 
 export async function addQuoteLine(id: number, line: { itemId: number; qty: string; unitPrice: string }) {
@@ -109,11 +113,12 @@ export async function deleteQuote(id: number) {
  * Make a draft invoice, taxed or not, with the quotation's products and prices, and mark the
  * quotation accepted. The draft now holds the reservation, and its quantities and prices can still change.
  */
-export async function quoteToInvoice(quoteId: number, kind: InvoiceKind = "TAXED") {
+export async function quoteToInvoice(quoteId: number, as?: InvoiceKind) {
   return db.$transaction(async (tx) => {
     const q = await tx.quote.findUniqueOrThrow({ where: { id: quoteId }, include: { lines: { orderBy: { id: "asc" } } } });
     if (q.status !== "OPEN" && q.status !== "CONFIRMED") throw new UserError("Only open quotations can be turned into an invoice.");
     if (!q.lines.length) throw new UserError("Add products to the quotation before turning it into an invoice.");
+    const kind = as ?? q.kind;
     const date = today();
     const created = await tx.invoice.create({
       data: {

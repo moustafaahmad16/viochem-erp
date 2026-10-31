@@ -97,4 +97,10 @@ export const quotes: Record<string, string> = {
   "Credit notes on non-taxed invoices aren't sent to the tax authority.": "الإشعارات الدائنة على الفواتير غير الخاضعة للضريبة لا تُرسل لمصلحة الضرائب.",
   "Invoice numbers can't start with DRAFT-. Leave it empty to number the invoice when it is posted.": "لا يمكن أن يبدأ رقم الفاتورة بـ DRAFT-. اتركه فارغًا لترقيمها عند الترحيل.",
   "Sales (non-taxed)": "مبيعات غير خاضعة للضريبة",
+  "Quotation type": "نوع العرض",
+  "Taxed (adds 14% VAT)": "خاضع للضريبة (يضيف 14% ضريبة قيمة مضافة)",
+  "Non-taxed (no VAT)": "غير خاضع للضريبة (بدون ضريبة)",
+  "avg cost EGP {cost}": "متوسط التكلفة {cost} ج.م",
+  "no cost yet": "لا توجد تكلفة بعد",
+  "margin {pct}": "هامش {pct}",
 };
