@@ -15,7 +15,7 @@ export const COLUMNS = [
   { key: "cas", title: "CAS Number", width: 14 },
   { key: "name", title: "Product name", width: 40 },
   { key: "qty", title: "Qty", width: 14 },
-  { key: "unitPrice", title: "Price", width: 14, input: true },
+  { key: "unitPrice", title: "Price per unit", width: 14, input: true },
 ] as const;
 
 /** The columns of sheets sent before the table was simplified, still read when a supplier replies on one. */
@@ -81,7 +81,7 @@ export async function buildSheet({ rfq, supplier, lines, quotes }: SheetInput): 
     }
   }
   sheet.addRow([]);
-  const help = sheet.addRow(["Fill in the yellow cells: your company name, the lead time and a price for each product you can supply. Leave the price empty for any you can't, and send this file back."]);
+  const help = sheet.addRow(["Fill in the yellow cells: your company name, the lead time and a price per unit for each product you can supply. Leave the price empty for any you can't, and send this file back."]);
   help.font = HINT_FONT;
   help.height = 30;
   help.getCell(1).alignment = { wrapText: true, vertical: "top" };

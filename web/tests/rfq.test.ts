@@ -47,7 +47,7 @@ describe("supplier sheet", () => {
     const rfq = await db.rfq.findUniqueOrThrow({ where: { id: rfqId }, include: { lines: { include: { item: true }, orderBy: { id: "asc" } } } });
     const file = await buildSheet({ rfq, lines: rfq.lines });
 
-    // Only #, CAS Number, Product name, Qty and Price in the table; the rest is above it.
+    // Only #, CAS Number, Product name, Qty and Price per unit in the table; the rest is above it.
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(file as unknown as ArrayBuffer);
     const sheet = book.getWorksheet("Quotation")!;
@@ -57,7 +57,7 @@ describe("supplier sheet", () => {
       if (row.getCell(1).value === "#") head = i;
       else if (!head) above.set(String(row.getCell(1).value), row);
     });
-    expect([1, 2, 3, 4, 5, 6].map((c) => sheet.getRow(head).getCell(c).value)).toEqual(["#", "CAS Number", "Product name", "Qty", "Price", null]);
+    expect([1, 2, 3, 4, 5, 6].map((c) => sheet.getRow(head).getCell(c).value)).toEqual(["#", "CAS Number", "Product name", "Qty", "Price per unit", null]);
     expect([above.get("Incoterms")!.getCell(3).value, above.get("Currency")!.getCell(3).value]).toEqual(["CIF Alexandria", ""]);
     const a = sheet.getRow(head + 1);
     const b = sheet.getRow(head + 2);
