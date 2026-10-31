@@ -119,28 +119,28 @@ enum AllocationMethod {
 }
 
 model Shipment {
-  id                Int               @id @default(autoincrement())
-  ref               String            @unique
+  id                Int                @id @default(autoincrement())
+  ref               String             @unique
   supplierId        Int
-  supplier          Supplier          @relation(fields: [supplierId], references: [id])
+  supplier          Supplier           @relation(fields: [supplierId], references: [id])
   supplierInvoiceNo String?
   // Egypt's Advance Cargo Information number from Nafeza, required before goods ship.
   acidNumber        String?
   currency          String
-  fxRate            Decimal           @db.Decimal(14, 6)
-  allocation        AllocationMethod  @default(VALUE)
-  orderDate         DateTime          @db.Date
-  etd               DateTime?         @db.Date
-  eta               DateTime?         @db.Date
-  arrivalDate       DateTime?         @db.Date
+  fxRate            Decimal            @db.Decimal(14, 6)
+  allocation        AllocationMethod   @default(VALUE)
+  orderDate         DateTime           @db.Date
+  etd               DateTime?          @db.Date
+  eta               DateTime?          @db.Date
+  arrivalDate       DateTime?          @db.Date
   // When the supplier must be paid; empty means the order date plus the supplier's payment terms.
-  dueDate           DateTime?         @db.Date
-  status            ShipmentStatus    @default(ORDERED)
+  dueDate           DateTime?          @db.Date
+  status            ShipmentStatus     @default(ORDERED)
   notes             String?
   // The purchase order this shipment delivers, when there is one.
   purchaseOrderId   Int?
-  purchaseOrder     PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id])
-  createdAt         DateTime          @default(now())
+  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
+  createdAt         DateTime           @default(now())
   lines             ShipmentLine[]
   charges           ShipmentCharge[]
   payments          SupplierPayment[]
@@ -159,18 +159,22 @@ model DocumentType {
 
 // A file attached to a shipment. Stored in the database so every backup carries it.
 model ShipmentDocument {
-  id         Int          @id @default(autoincrement())
-  shipmentId Int
-  shipment   Shipment     @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  typeId     Int
-  type       DocumentType @relation(fields: [typeId], references: [id])
-  fileName   String
-  mimeType   String
-  size       Int
-  content    Bytes
-  uploadedAt DateTime     @default(now())
+  id             Int           @id @default(autoincrement())
+  shipmentId     Int
+  shipment       Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  typeId         Int
+  type           DocumentType  @relation(fields: [typeId], references: [id])
+  fileName       String
+  mimeType       String
+  size           Int
+  content        Bytes
+  uploadedAt     DateTime      @default(now())
+  // Set on a batch's test certificate: the shipment line that is the batch.
+  shipmentLineId Int?
+  shipmentLine   ShipmentLine? @relation(fields: [shipmentLineId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId])
+  @@index([shipmentLineId])
 }
 
 model ShipmentLine {
@@ -181,9 +185,12 @@ model ShipmentLine {
   item            Item               @relation(fields: [itemId], references: [id])
   qty             Decimal            @db.Decimal(14, 3)
   unitPrice       Decimal            @db.Decimal(14, 4)
+  // Each line is one batch: a product arriving in two batches is two lines, each with its own certificate.
   supplierBatchNo String?
+  manufactureDate DateTime?          @db.Date
   expiryDate      DateTime?          @db.Date
   lot             Lot?
+  certificates    ShipmentDocument[]
   orderLineId     Int?
   orderLine       PurchaseOrderLine? @relation(fields: [orderLineId], references: [id])
 }
@@ -213,6 +220,7 @@ model Lot {
   qtyOnHand       Decimal       @db.Decimal(14, 3)
   unitCostEgp     Decimal       @db.Decimal(14, 4)
   expiryDate      DateTime?     @db.Date
+  manufactureDate DateTime?     @db.Date
   supplierBatchNo String?
   createdAt       DateTime      @default(now())
   moves           StockMove[]

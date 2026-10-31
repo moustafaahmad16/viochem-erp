@@ -48,10 +48,10 @@ export async function addShipmentDocument(shipmentId: number, typeId: number, fi
   });
 }
 
-/** A shipment's documents, without their contents. */
+/** A shipment's documents, without their contents. Batches' test certificates are listed with their batch instead. */
 export function shipmentDocuments(shipmentId: number) {
   return db.shipmentDocument.findMany({
-    where: { shipmentId },
+    where: { shipmentId, shipmentLineId: null },
     select: { id: true, typeId: true, fileName: true, mimeType: true, size: true, uploadedAt: true },
     orderBy: { uploadedAt: "asc" },
   });

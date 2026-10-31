@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { db } from "@/lib/db";
 import { addDays, today } from "@/lib/dates";
 import { invoiceTotals } from "@/lib/costing";
+import { batchName } from "./batches";
 
 const dec = (v: { toString(): string } | null | undefined) => new Decimal(v == null ? 0 : v.toString());
 
@@ -44,7 +45,7 @@ export async function marginReport(from: Date, to: Date, groupBy: MarginGroup): 
       groupBy === "item" ? [`i${m.lot.itemId}`, m.lot.item.name, m.lot.item.code]
       : groupBy === "customer" ? [`c${customer.id}`, customer.name]
       : groupBy === "shipment" ? (shipment ? [`s${shipment.id}`, shipment.ref, shipment.supplier.name] : ["opening", "Opening stock"])
-      : [`l${m.lotId}`, m.lot.lotNo, m.lot.item.name];
+      : [`l${m.lotId}`, batchName(m.lot), m.lot.item.name];
     const row = groups.get(key) ?? blank(key, label, sub);
     row.qty = row.qty.plus(qty);
     row.revenue = row.revenue.plus(revenue);

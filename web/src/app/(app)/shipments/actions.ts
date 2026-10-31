@@ -9,6 +9,7 @@ import { shipmentDateProblem } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { activeAccount } from "@/lib/services/banking";
 import { UserError } from "@/lib/services/errors";
+import { addBatchLine, batchesMissing, removeCertificate, saveBatch, splitBatch } from "@/lib/services/batches";
 import { addShipmentDocument, documentType, removeShipmentDocument } from "@/lib/services/documents";
 import { createShipment as create, receiveShipment as receive, recostShipment } from "@/lib/services/inventory";
 
@@ -91,25 +92,63 @@ export async function updateShipment(id: number, _: FormState, fd: FormData): Pr
   return { ok: "Saved." };
 }
 
+/** The certificate file in a form, if one was chosen. */
+async function certificate(fd: FormData) {
+  const file = fd.get("certificate");
+  if (!(file instanceof File) || file.size === 0) return null;
+  return { name: file.name, type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) };
+}
+
+const batchDetails = async (fd: FormData) => ({
+  supplierBatchNo: text(fd, "supplierBatchNo"),
+  manufactureDate: optionalDate(fd, "manufactureDate"),
+  expiryDate: optionalDate(fd, "expiryDate"),
+  certificate: await certificate(fd),
+});
+
 export async function addLine(id: number, _: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   try {
-    await editable(id);
-    await db.shipmentLine.create({
-      data: {
-        shipmentId: id,
-        itemId: int(fd, "itemId", "Product"),
-        qty: decimal(fd, "qty", "Quantity"),
-        unitPrice: decimal(fd, "unitPrice", "Price", { allowZero: true }),
-        supplierBatchNo: text(fd, "supplierBatchNo"),
-        expiryDate: optionalDate(fd, "expiryDate"),
-      },
+    await addBatchLine(id, {
+      itemId: int(fd, "itemId", "Product"),
+      qty: decimal(fd, "qty", "Quantity"),
+      unitPrice: decimal(fd, "unitPrice", "Price", { allowZero: true }),
+      ...(await batchDetails(fd)),
     });
   } catch (e) {
     return fail(e);
   }
   revalidatePath(`/shipments/${id}`);
   return { ok: "Product added." };
+}
+
+export async function updateBatch(id: number, lineId: number, _: FormState, fd: FormData): Promise<FormState> {
+  await requireUser();
+  try {
+    await saveBatch(id, lineId, await batchDetails(fd));
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/shipments/${id}`);
+  revalidatePath("/stock/batches");
+  return { ok: "Batch saved." };
+}
+
+export async function splitLine(id: number, lineId: number, _: FormState, fd: FormData): Promise<FormState> {
+  await requireUser();
+  try {
+    await splitBatch(id, lineId, decimal(fd, "qty", "Quantity"));
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/shipments/${id}`);
+  return { ok: "Batch added. Fill in its batch number and certificate." };
+}
+
+export async function deleteCertificate(id: number, documentId: number) {
+  await requireUser();
+  await removeCertificate(id, documentId);
+  revalidatePath(`/shipments/${id}`);
 }
 
 export async function removeLine(id: number, lineId: number) {
@@ -155,12 +194,21 @@ export async function removeCharge(id: number, chargeId: number) {
 export async function receiveShipment(id: number, _: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   try {
+    const missing = await batchesMissing(id);
+    if (missing.length) {
+      throw new UserError(
+        `Every batch needs its batch number and test certificate before receiving. Still missing:\n${missing
+          .map((m) => `${m.product} (${m.qty.toString()} ${m.unit}): ${m.batchNo && m.certificate ? "batch number and certificate" : m.batchNo ? "batch number" : "certificate"}`)
+          .join("\n")}`,
+      );
+    }
     await receive(id, date(fd, "arrivalDate", "Arrival date"));
   } catch (e) {
     return fail(e);
   }
   revalidatePath(`/shipments/${id}`);
   revalidatePath("/stock");
+  revalidatePath("/stock/batches");
   return { ok: "Received. The stock is now available to sell." };
 }
 

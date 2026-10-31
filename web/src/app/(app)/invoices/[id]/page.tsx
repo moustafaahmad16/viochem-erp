@@ -16,6 +16,7 @@ import { etaSettings, prepare } from "@/lib/services/einvoice";
 import { EtaSend } from "@/components/eta-send";
 import { shareUrl, signingMode } from "@/lib/eta/client";
 import { getT } from "@/i18n/server";
+import { batchName, expiresSoon, isExpired } from "@/lib/services/batches";
 import { LineForm } from "./line-form";
 import { InvoiceCreditNotes } from "../../credit-notes/invoice-card";
 import { creditTotals } from "@/lib/services/credits";
@@ -34,7 +35,8 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const [items, lots, customers] = isDraft
     ? await Promise.all([
         db.item.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
-        db.lot.findMany({ where: { qtyOnHand: { gt: 0 } }, include: { item: true }, orderBy: [{ expiryDate: "asc" }, { receivedDate: "asc" }] }),
+        // Batches already expired on the invoice date can't be sold, so they aren't offered.
+        db.lot.findMany({ where: { qtyOnHand: { gt: 0 }, OR: [{ expiryDate: null }, { expiryDate: { gte: inv.date } }] }, include: { item: true }, orderBy: [{ expiryDate: "asc" }, { receivedDate: "asc" }] }),
         db.customer.findMany({ orderBy: { name: "asc" } }),
       ])
     : [[], [], []];
@@ -92,13 +94,15 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                         {l.moves.length > 0
                           ? l.moves.map((m) => (
                               <span key={m.id} className="me-2">
-                                <RowLink href={`/stock/lots/${m.lotId}`}>{m.lot.lotNo}</RowLink> ({qty(new Decimal(m.qty.toString()).neg())})
+                                <RowLink href={`/stock/batches/${m.lotId}`}>{batchName(m.lot)}</RowLink> ({qty(new Decimal(m.qty.toString()).neg())})
                               </span>
                             ))
                           : l.lot
-                            ? t("Lot {lot}", { lot: l.lot.lotNo })
+                            ? t("Batch {no}", { no: batchName(l.lot) })
                             : t("Earliest expiry first")}
                       </div>
+                      {isDraft && l.lot && isExpired(l.lot, inv.date) && <div className="text-xs font-medium text-red-700">{t("This batch expired on {date} and can't be sold. Remove the line and choose another.", { date: t.date(l.lot.expiryDate) })}</div>}
+                      {isDraft && l.lot && expiresSoon(l.lot, inv.date) && <div className="text-xs text-amber-700">{t("Expires {date}", { date: t.date(l.lot.expiryDate) })}</div>}
                     </td>
                     <td className="num">{qty(l.qty)} {l.item.unit}</td>
                     <td className="num">{money(l.unitPrice)}</td>
@@ -123,7 +127,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                   lots={lots.map((l) => ({
                     id: l.id,
                     itemId: l.itemId,
-                    label: `${l.lotNo} · ${qty(l.qtyOnHand)} ${l.item.unit}${l.expiryDate ? ` · ${t("exp {date}", { date: t.date(l.expiryDate) })}` : ""}`,
+                    label: `${batchName(l)} · ${qty(l.qtyOnHand)} ${l.item.unit}${l.expiryDate ? ` · ${t("exp {date}", { date: t.date(l.expiryDate) })}` : ""}${expiresSoon(l, inv.date) ? ` · ${t("expires soon")}` : ""}`,
                   }))}
                 />
               </div>
@@ -136,7 +140,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
             <>
               <Card title={t("Post invoice")}>
                 <ActionForm action={postInvoice.bind(null, inv.id)}>
-                  <p className="text-sm text-slate-600">{t("Posting takes the stock out of the lots and fixes the invoice. You can cancel it later if needed.")}</p>
+                  <p className="text-sm text-slate-600">{t("Posting takes the stock out of the batches and fixes the invoice. You can cancel it later if needed.")}</p>
                   {credit && credit.warnings.length > 0 && (
                     <div className={`rounded-lg p-3 text-sm ${credit.overLimit ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`}>
                       {credit.warnings.map((w) => <p key={w}>{t.message(w)}</p>)}
@@ -222,7 +226,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
               {inv.status === "POSTED" && (
                 <Card title={t("Cancel invoice")}>
                   <ActionForm action={cancelInvoice.bind(null, inv.id)}>
-                    <p className="text-sm text-slate-600">{t("Puts the stock back into the same lots. The invoice number stays used.")}{inv.etaUuid && ["SUBMITTED", "VALID"].includes(inv.etaStatus) && ` ${t("It is also cancelled at the tax authority.")}`}</p>
+                    <p className="text-sm text-slate-600">{t("Puts the stock back into the same batches. The invoice number stays used.")}{inv.etaUuid && ["SUBMITTED", "VALID"].includes(inv.etaStatus) && ` ${t("It is also cancelled at the tax authority.")}`}</p>
                     {inv.etaUuid && ["SUBMITTED", "VALID"].includes(inv.etaStatus) && <TextArea label={t("Reason (sent to the tax authority)")} name="reason" required />}
                     <Submit variant="danger" confirm={t("Cancel {number}? This can't be undone.", { number: inv.number })}>{t("Cancel invoice")}</Submit>
                   </ActionForm>

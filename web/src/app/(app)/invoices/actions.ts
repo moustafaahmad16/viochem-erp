@@ -8,6 +8,8 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { invoiceTotals, WHT_RATE } from "@/lib/costing";
 import { creditCheck } from "@/lib/services/credit";
+import { formatDate } from "@/lib/dates";
+import { batchName, isExpired } from "@/lib/services/batches";
 import { UserError } from "@/lib/services/errors";
 import { cancelOnEta, refreshStatus } from "@/lib/services/einvoice";
 import { cancelInvoice as cancel, createInvoice as create, postInvoice as post, uniqueInvoiceNumber } from "@/lib/services/inventory";
@@ -63,7 +65,9 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
     const lotId = lotValue ? Number(lotValue) : null;
     if (lotId) {
       const lot = await db.lot.findUnique({ where: { id: lotId } });
-      if (!lot || lot.itemId !== itemId) throw new UserError("That lot is for a different product.");
+      if (!lot || lot.itemId !== itemId) throw new UserError("That batch is for a different product.");
+      const inv = await db.invoice.findUniqueOrThrow({ where: { id } });
+      if (isExpired(lot, inv.date)) throw new UserError(`Batch ${batchName(lot)} expired on ${formatDate(lot.expiryDate)}, so it can't be sold.`);
     }
     await db.invoiceLine.create({
       data: { invoiceId: id, itemId, lotId, qty: decimal(fd, "qty", "Quantity"), unitPrice: decimal(fd, "unitPrice", "Price", { allowZero: true }) },
@@ -107,7 +111,7 @@ export async function cancelInvoice(id: number, _: FormState, fd: FormData): Pro
     return fail(e);
   }
   revalidatePath(`/invoices/${id}`);
-  return { ok: "Cancelled. The stock is back in its lots." };
+  return { ok: "Cancelled. The stock is back in its batches." };
 }
 
 export async function deleteDraft(id: number) {

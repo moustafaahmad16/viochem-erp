@@ -37,8 +37,8 @@ export default async function NewRfqPage({ searchParams }: PageProps<"/rfqs/new"
           />
         </Card>
         <div className="grid max-w-xl gap-3 sm:grid-cols-2">
-          <Field label={t("Currency")} name="currency" placeholder="USD" maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
-          <Field label={t("Incoterms")} name="incoterm" placeholder="CIF Alexandria" dir="ltr" />
+          <Field label={t("Currency")} name="currency" placeholder={t("e.g. {value}", { value: "USD" })} maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
+          <Field label={t("Incoterms")} name="incoterm" placeholder={t("e.g. {value}", { value: "CIF Alexandria" })} dir="ltr" />
         </div>
         <details className="text-sm">
           <summary className="cursor-pointer text-slate-600">{t("More options")}</summary>

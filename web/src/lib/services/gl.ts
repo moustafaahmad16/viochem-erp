@@ -244,7 +244,7 @@ export async function generalLedger() {
     add(m.date, opening ? 0 : 6, m.id, () => ({
       date: m.date,
       ref: m.lot.lotNo,
-      href: `/stock/lots/${m.lotId}`,
+      href: `/stock/batches/${m.lotId}`,
       memo: opening ? `Opening stock · ${m.lot.item.name}` : `Stock count · ${m.lot.item.name}${m.note ? ` · ${m.note}` : ""}`,
       lines: [line(CODES.stock, value), line(opening ? CODES.opening : CODES.countDiff, value.neg())],
     }));

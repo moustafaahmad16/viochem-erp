@@ -23,6 +23,7 @@ import {
 } from "@/lib/services/rankings";
 import { expiringLots, marginReport, type MarginGroup } from "@/lib/services/reports";
 import type { Report, Section, Value } from "./table";
+import { batchName } from "@/lib/services/batches";
 
 /**
  * Every report that can be downloaded, built from the same services as the page it sits on.
@@ -37,7 +38,7 @@ export const MARGIN_GROUPS: { key: MarginGroup; label: string }[] = [
   { key: "item", label: "Product" },
   { key: "customer", label: "Customer" },
   { key: "shipment", label: "Shipment" },
-  { key: "lot", label: "Lot" },
+  { key: "lot", label: "Batch" },
 ];
 
 export function dateParam(v: unknown, fallback: Date) {
@@ -304,13 +305,13 @@ const expiry: Build = async (q, t) => {
   const lots = await expiringLots(days);
   const now = today();
   return {
-    title: t("Expiring lots"),
+    title: t("Expiring batches"),
     subtitle: `${t("{n} days", { n: days })} · ${stamp(t)}`,
-    file: `expiring-lots-${days}-days`,
+    file: `expiring-batches-${days}-days`,
     sections: [
       {
-        columns: [{ title: t("Lot") }, { title: t("Product") }, { title: t("Expiry") }, { title: t("Days left"), kind: "int" }, { title: t("On hand"), kind: "qty" }, { title: t("Unit") }, { title: t("Value (EGP)"), kind: "money" }],
-        rows: lots.map((l) => [l.lotNo, l.item.name, l.expiryDate, Math.round((l.expiryDate!.getTime() - now.getTime()) / 86_400_000), l.qtyOnHand.toString(), t(l.item.unit), new Decimal(l.qtyOnHand.toString()).times(l.unitCostEgp.toString())]),
+        columns: [{ title: t("Batch") }, { title: t("Product") }, { title: t("Expiry") }, { title: t("Days left"), kind: "int" }, { title: t("On hand"), kind: "qty" }, { title: t("Unit") }, { title: t("Value (EGP)"), kind: "money" }],
+        rows: lots.map((l) => [batchName(l), l.item.name, l.expiryDate, Math.round((l.expiryDate!.getTime() - now.getTime()) / 86_400_000), l.qtyOnHand.toString(), t(l.item.unit), new Decimal(l.qtyOnHand.toString()).times(l.unitCostEgp.toString())]),
       },
     ],
   };

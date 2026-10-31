@@ -18,7 +18,7 @@ export default async function OpeningStockPage({ searchParams }: PageProps<"/sto
     <>
       <PageHeader
         title={t("Add opening stock")}
-        subtitle={t("For stock already in the warehouse before you started using VIOCHEM. Enter each lot separately.")}
+        subtitle={t("For stock already in the warehouse before you started using VIOCHEM. Enter each batch separately.")}
         back={{ href: "/stock", label: t("Stock on hand") }}
       />
       <Card className="max-w-2xl">
@@ -30,9 +30,10 @@ export default async function OpeningStockPage({ searchParams }: PageProps<"/sto
         ) : (
           <ActionForm action={createOpeningStock} className="grid gap-4 sm:grid-cols-2">
             <Select label={t("Product")} name="itemId" defaultValue={selected} options={items.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))} className="sm:col-span-2" placeholder={t("Choose…")} required />
-            <Field label={t("Quantity")} name="qty" inputMode="decimal" required />
-            <Field label={t("Cost per unit (EGP)")} name="unitCostEgp" inputMode="decimal" required hint={t("What this lot really cost you, landed")} />
-            <Field label={t("Supplier batch no.")} name="supplierBatchNo" />
+            <Field label={t("Quantity")} name="qty" inputMode="decimal" required placeholder={t("e.g. {value}", { value: "500" })} />
+            <Field label={t("Cost per unit (EGP)")} name="unitCostEgp" inputMode="decimal" required hint={t("What this batch really cost you, landed")} />
+            <Field label={t("Batch no.")} name="supplierBatchNo" placeholder={t("From the certificate")} />
+            <Field label={t("Manufactured")} name="manufactureDate" type="date" />
             <Field label={t("Expiry date")} name="expiryDate" type="date" />
             <Field label={t("As of date")} name="date" type="date" defaultValue={toInputDate(today())} required />
             <div className="sm:col-span-2">

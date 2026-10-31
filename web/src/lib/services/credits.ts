@@ -4,6 +4,7 @@ import { db, type Tx } from "@/lib/db";
 import { qty as fmtQty } from "@/lib/format";
 import { UserError } from "./errors";
 import { nextNumber } from "./numbering";
+import { batchName } from "./batches";
 
 /**
  * Credit notes: money given back on a posted invoice, because goods came back (restock) or the
@@ -155,7 +156,7 @@ export async function cancelCreditNote(noteId: number) {
     for (const m of moves) {
       const lot = await tx.lot.findUniqueOrThrow({ where: { id: m.lotId } });
       if (dec(lot.qtyOnHand).lt(dec(m.qty))) {
-        throw new UserError(`Lot ${lot.lotNo} no longer has the ${fmtQty(m.qty)} that came back, so this credit note can't be cancelled.`);
+        throw new UserError(`Batch ${batchName(lot)} no longer has the ${fmtQty(m.qty)} that came back, so this credit note can't be cancelled.`);
       }
       await tx.lot.update({ where: { id: m.lotId }, data: { qtyOnHand: { decrement: m.qty.toString() } } });
     }

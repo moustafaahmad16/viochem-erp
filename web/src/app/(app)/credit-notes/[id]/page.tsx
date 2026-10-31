@@ -12,6 +12,7 @@ import { getT } from "@/i18n/server";
 import { EtaBadge, InvoiceStatusBadge } from "../../invoices/status";
 import { addLine, cancelCreditNote, checkEta, deleteDraft, postCreditNote, removeLine } from "../actions";
 import { CreditLineForm } from "./line-form";
+import { batchName } from "@/lib/services/batches";
 
 export async function generateMetadata({ params }: PageProps<"/credit-notes/[id]">) {
   const note = await db.creditNote.findUnique({ where: { id: Number((await params).id) } });
@@ -80,7 +81,7 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
                       <div className="text-xs text-slate-500">
                         {l.moves.map((m) => (
                           <span key={m.id} className="me-2">
-                            <RowLink href={`/stock/lots/${m.lotId}`}>{m.lot.lotNo}</RowLink> (+{qty(m.qty)})
+                            <RowLink href={`/stock/batches/${m.lotId}`}>{batchName(m.lot)}</RowLink> (+{qty(m.qty)})
                           </span>
                         ))}
                       </div>
@@ -133,7 +134,7 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
           {isDraft ? (
             <Card title={t("Post credit note")}>
               <ActionForm action={postCreditNote.bind(null, cn.id)}>
-                <p className="text-sm text-slate-600">{t("Posting reduces what the customer owes and puts returned goods back into the lots they came from.")}</p>
+                <p className="text-sm text-slate-600">{t("Posting reduces what the customer owes and puts returned goods back into the batches they came from.")}</p>
                 <Submit confirm={t("Post {number} for EGP {amount}?", { number: cn.number, amount: money(totals.total) })}>{t("Post credit note")}</Submit>
               </ActionForm>
               <form action={deleteDraft.bind(null, cn.id)} className="mt-4 border-t border-slate-100 pt-4">
