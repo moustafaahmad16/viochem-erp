@@ -35,7 +35,7 @@ describe("quotations", () => {
     const inv = await quoteToInvoice(q.id);
     const full = await db.invoice.findUniqueOrThrow({ where: { id: inv.id }, include: { lines: { orderBy: { id: "asc" } }, quote: true } });
     expect(full.status).toBe("DRAFT");
-    expect(full.number).toMatch(/^INV-\d{4}-\d{4}$/);
+    expect(full.number).toBe(`DRAFT-${inv.id}`);
     expect(full.customerId).toBe(customer);
     expect(n(full.vatRate)).toBe(5);
     expect(full.notes).toBe("Delivery in 2 weeks");

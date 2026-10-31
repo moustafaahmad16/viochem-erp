@@ -113,12 +113,14 @@ export type BrowserSignature = { serialized: string; signature: string };
 async function ready(kind: EtaKind, id: number) {
   if (kind === "invoice") {
     const { invoice, document, problems: missing } = await prepare(id);
+    if (invoice.kind === "NON_TAXED") throw new UserError("Non-taxed invoices aren't sent to the tax authority.");
     if (invoice.status !== "POSTED") throw new UserError("Only posted invoices can be sent to the tax authority.");
     if (!SENDABLE.includes(invoice.etaStatus)) throw new UserError("This invoice is already with the tax authority.");
     if (missing.length) throw new UserError(`Fix these first:\n${missing.join("\n")}`);
     return { document, number: invoice.number };
   }
   const { creditNote: cn, document, problems: missing } = await prepareCreditNote(id);
+  if (cn.invoice.kind === "NON_TAXED") throw new UserError("Credit notes on non-taxed invoices aren't sent to the tax authority.");
   if (cn.status !== "POSTED") throw new UserError("Only posted credit notes can be sent to the tax authority.");
   if (!SENDABLE.includes(cn.etaStatus)) throw new UserError("This credit note is already with the tax authority.");
   if (!cn.invoice.etaUuid) throw new UserError(`Send ${cn.invoice.number} to the tax authority first.`);

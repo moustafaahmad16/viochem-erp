@@ -33,8 +33,9 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
             <img src="/logo.png" alt="Viochem for Trading and Industry" className="h-16 w-auto" />
           </div>
           <div className="text-right">
-            <div className="text-xl font-semibold">Tax Invoice</div>
-            <div className="text-xl font-semibold" dir="rtl">فاتورة ضريبية</div>
+            {/* A non-taxed invoice carries no VAT, so it isn't titled a tax invoice. */}
+            <div className="text-xl font-semibold">{inv.kind === "TAXED" ? "Tax Invoice" : "Invoice"}</div>
+            <div className="text-xl font-semibold" dir="rtl">{inv.kind === "TAXED" ? "فاتورة ضريبية" : "فاتورة"}</div>
           </div>
         </header>
 
@@ -90,8 +91,12 @@ export default async function PrintInvoicePage({ params }: PageProps<"/print/inv
         </table>
 
         <div className="mt-6 ml-auto w-72 space-y-1">
-          <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
-          <div className="flex justify-between"><span className="text-slate-500">VAT {inv.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
+          {inv.kind === "TAXED" && (
+            <>
+              <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">VAT {inv.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
+            </>
+          )}
           <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-base font-bold"><span>Total EGP · الإجمالي</span><span className="num">{money(totals.total)}</span></div>
           {totals.wht.gt(0) && (
             <>

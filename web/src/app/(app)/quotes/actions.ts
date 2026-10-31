@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { date, decimal, fail, int, optionalDate, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
+import { UserError } from "@/lib/services/errors";
 import * as svc from "@/lib/services/quotes";
 
 export async function createQuote(_: FormState, fd: FormData): Promise<FormState> {
@@ -50,6 +51,44 @@ export async function addLine(id: number, _: FormState, fd: FormData): Promise<F
   return { ok: "Product added." };
 }
 
+export async function updateLine(id: number, lineId: number, _: FormState, fd: FormData): Promise<FormState> {
+  await requireUser();
+  try {
+    await svc.updateQuoteLine(id, lineId, { qty: decimal(fd, "qty", "Quantity"), unitPrice: decimal(fd, "unitPrice", "Price", { allowZero: true }) });
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/quotes/${id}`);
+  return { ok: "Saved." };
+}
+
+/** Reserve the products. Only an admin can confirm when there isn't enough free stock. */
+export async function confirmQuote(id: number, _: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const admin = user.role === "ADMIN";
+  try {
+    await svc.confirmQuote(id, { allowShort: admin && fd.get("short") === "on" });
+  } catch (e) {
+    if (e instanceof svc.ShortError) return fail(new UserError(`${e.message}\n${admin ? "Tick \"Confirm anyway\" to reserve what there is." : "Ask an admin to confirm it."}`));
+    return fail(e);
+  }
+  revalidatePath(`/quotes/${id}`);
+  revalidatePath("/stock");
+  return { ok: "Confirmed. The products are reserved." };
+}
+
+export async function editQuote(id: number): Promise<FormState> {
+  await requireUser();
+  try {
+    await svc.editQuote(id);
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/quotes/${id}`);
+  revalidatePath("/stock");
+  return { ok: "Open for changes. Confirm it again to reserve the products." };
+}
+
 export async function removeLine(id: number, lineId: number) {
   await requireUser();
   await svc.removeQuoteLine(id, lineId);
@@ -88,11 +127,11 @@ export async function deleteQuote(id: number): Promise<FormState> {
   redirect("/quotes");
 }
 
-export async function toInvoice(id: number): Promise<FormState> {
+export async function toInvoice(id: number, _: FormState, fd: FormData): Promise<FormState> {
   await requireUser();
   let invoiceId: number;
   try {
-    invoiceId = (await svc.quoteToInvoice(id)).id;
+    invoiceId = (await svc.quoteToInvoice(id, fd.get("kind") === "NON_TAXED" ? "NON_TAXED" : "TAXED")).id;
   } catch (e) {
     return fail(e);
   }

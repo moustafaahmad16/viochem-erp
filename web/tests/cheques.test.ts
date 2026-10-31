@@ -41,8 +41,7 @@ beforeAll(async () => {
 async function postedInvoice(date: string, qty: number, price: number) {
   const inv = await createInvoice(customer, d(date));
   await db.invoiceLine.create({ data: { invoiceId: inv.id, itemId: item, qty, unitPrice: price } });
-  await postInvoice(inv.id);
-  return inv;
+  return postInvoice(inv.id);
 }
 
 const common = { bank: "CIB", notes: null };

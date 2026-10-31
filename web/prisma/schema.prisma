@@ -278,6 +278,8 @@ model Invoice {
   etaError          String?
   etaSentAt         DateTime?
   status            InvoiceStatus     @default(DRAFT)
+  // Taxed invoices carry VAT, are numbered 1, 2, 3… and go to ETA. Non-taxed ones are numbered NT-0, NT-1… and never do.
+  kind              InvoiceKind       @default(TAXED)
   vatRate           Decimal           @default(14) @db.Decimal(5, 2)
   // Withholding tax (WHT, خصم الضريبة) the customer deducts from what they pay, in %: 1 for supplies, 0 for none.
   whtRate           Decimal           @default(0) @db.Decimal(5, 2)
@@ -293,6 +295,11 @@ model Invoice {
   cheques           Cheque[]
 
   @@index([date])
+}
+
+enum InvoiceKind {
+  TAXED
+  NON_TAXED
 }
 
 model InvoiceLine {
@@ -510,25 +517,27 @@ model JournalLine {
 
 enum QuoteStatus {
   OPEN
+  CONFIRMED // the customer agreed: its products are reserved until the valid-until date
   ACCEPTED // turned into an invoice
   DECLINED
 }
 
 // A price offer to a customer. Accepting it makes a draft invoice with the same lines.
 model Quote {
-  id         Int         @id @default(autoincrement())
-  number     String      @unique
-  customerId Int
-  customer   Customer    @relation(fields: [customerId], references: [id])
-  date       DateTime    @db.Date
-  validUntil DateTime?   @db.Date
-  status     QuoteStatus @default(OPEN)
-  vatRate    Decimal     @default(14) @db.Decimal(5, 2)
-  notes      String?
-  invoiceId  Int?        @unique
-  invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
-  createdAt  DateTime    @default(now())
-  lines      QuoteLine[]
+  id          Int         @id @default(autoincrement())
+  number      String      @unique
+  customerId  Int
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  date        DateTime    @db.Date
+  validUntil  DateTime?   @db.Date
+  status      QuoteStatus @default(OPEN)
+  confirmedAt DateTime?
+  vatRate     Decimal     @default(14) @db.Decimal(5, 2)
+  notes       String?
+  invoiceId   Int?        @unique
+  invoice     Invoice?    @relation(fields: [invoiceId], references: [id])
+  createdAt   DateTime    @default(now())
+  lines       QuoteLine[]
 
   @@index([date])
 }

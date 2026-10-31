@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -10,6 +10,20 @@ describe("the Windows app", () => {
   it("splits a migration into statements, leaving out comments", () => {
     const sql = `-- CreateTable\nCREATE TABLE "A" (\n  "id" INTEGER\n);\n\n-- Seed\nINSERT INTO "A" VALUES\n  (1),\n  (2);\n`;
     expect(statements(sql)).toEqual([`CREATE TABLE "A" (\n  "id" INTEGER\n)`, `INSERT INTO "A" VALUES\n  (1),\n  (2)`]);
+  });
+
+  it("never rebuilds a table other tables point at, which would delete their rows", () => {
+    // Migrations run in a transaction, where SQLite ignores "PRAGMA foreign_keys=OFF", so dropping
+    // a table such as Invoice cascades and empties InvoiceLine. Add columns in place instead.
+    const schema = readFileSync("prisma/schema.prisma", "utf8");
+    const pointedAt = new Set([...schema.matchAll(/^\s+\w+\s+(\w+)\??\s+@relation\([^)]*fields:/gm)].map((m) => m[1]));
+    const dir = "prisma/sqlite/migrations";
+    const drops = readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .flatMap((e) => [...readFileSync(path.join(dir, e.name, "migration.sql"), "utf8").matchAll(/DROP TABLE "(\w+)"/g)].map((m) => `${e.name}: ${m[1]}`))
+      .filter((d) => pointedAt.has(d.split(": ")[1]));
+    expect(pointedAt.has("Invoice")).toBe(true);
+    expect(drops).toEqual([]);
   });
 
   it("matches names regardless of case", () => {

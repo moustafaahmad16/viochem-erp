@@ -10,6 +10,7 @@ import type { T } from "@/i18n/core";
 import { updateItem } from "../actions";
 import { ItemFields } from "../item-form";
 import { batchName } from "@/lib/services/batches";
+import { availability, NOTHING, reservationsFor } from "@/lib/services/reservations";
 
 const TABS = [
   { key: "", label: "Analysis" },
@@ -35,6 +36,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   });
   if (!item) notFound();
   const onHand = item.lots.reduce((s, l) => s + Number(l.qtyOnHand), 0);
+  const [held, reservations] = await Promise.all([availability([item.id]).then((m) => m.get(item.id) ?? NOTHING), reservationsFor(item.id)]);
   const unit = t(item.unit);
   const pill = (active: boolean) => `rounded-full px-3 py-1 text-sm ${active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`;
 
@@ -42,7 +44,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     <>
       <PageHeader
         title={item.name}
-        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>}{item.hsCode && <> · HS {item.hsCode}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${unit}` })}</>}
+        subtitle={<>{item.code}{item.casNumber && <> · CAS {item.casNumber}</>}{item.hsCode && <> · HS {item.hsCode}</>} · {t("{qty} in stock", { qty: `${qty(onHand)} ${unit}` })}{held.reserved.gt(0) && <> · <span className="font-medium text-amber-700">{t("{qty} reserved", { qty: `${qty(held.reserved)} ${unit}` })}</span> · {t("{qty} free", { qty: `${qty(held.free)} ${unit}` })}</>}</>}
         back={{ href: "/products", label: t("Products") }}
         actions={
           <>
@@ -56,6 +58,22 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
           <a key={x.key} href={`/products/${item.id}${x.key ? `?tab=${x.key}` : ""}`} className={pill(tab === x.key)}>{t(x.label)}</a>
         ))}
       </div>
+
+      {reservations.length > 0 && (
+        <Card title={t("Reserved for customers")} actions={<span className="text-sm text-slate-500">{t("{qty} reserved", { qty: `${qty(held.reserved)} ${unit}` })} · {t("{qty} free", { qty: `${qty(held.free)} ${unit}` })}</span>} padded={false} className="mb-6">
+          <Table head={<tr><th>{t("Reserved by")}</th><th>{t("Customer")}</th><th>{t("Date")}</th><th>{t("Until")}</th><th className="num">{t("Qty")}</th></tr>}>
+            {reservations.map((r) => (
+              <tr key={r.key}>
+                <td><RowLink href={r.href}>{r.kind === "quote" ? t("Quotation {number}", { number: r.number }) : r.number.startsWith("DRAFT-") ? t("Draft invoice") : t("Draft invoice {number}", { number: r.number })}</RowLink></td>
+                <td>{r.customer}</td>
+                <td>{t.date(r.date)}</td>
+                <td>{r.kind === "quote" ? t.date(r.until) : t("Until posted")}</td>
+                <td className="num">{qty(r.qty)} {unit}</td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+      )}
 
       {tab === "movements" ? (
         <Movements itemId={item.id} unit={unit} t={t} />

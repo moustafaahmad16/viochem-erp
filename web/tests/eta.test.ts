@@ -123,11 +123,11 @@ describe("sending to ETA", () => {
     const source = await db.invoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { lines: true } });
     const inv = await createInvoice(source.customerId, d("2022-02-02"));
     await db.invoiceLine.create({ data: { invoiceId: inv.id, itemId: source.lines[0].itemId, qty: 1, unitPrice: 500 } });
-    await postInvoice(inv.id);
+    const posted = await postInvoice(inv.id);
 
     const { serialized, number } = await textToSign("invoice", inv.id);
-    expect(number).toBe(inv.number);
-    expect(serialized).toContain(`"INTERNALID""${inv.number}"`);
+    expect(number).toBe(posted.number);
+    expect(serialized).toContain(`"INTERNALID""${posted.number}"`);
     await expect(sendInvoice(inv.id, { serialized: serialized.replace("500", "5"), signature: "SIG" })).rejects.toThrow(/changed while it was being signed/);
 
     const fetch = respond({ "connect/token": { access_token: "t" }, documentsubmissions: { submissionId: "S2", acceptedDocuments: [{ uuid: "U2", longId: "L2", internalId: inv.number }], rejectedDocuments: [] } });

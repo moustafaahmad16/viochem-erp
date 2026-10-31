@@ -1,9 +1,11 @@
 import Decimal from "decimal.js";
+import type { InvoiceKind } from "@prisma/client";
 import { db, type Tx } from "@/lib/db";
 import { landedUnitCosts, pickLots } from "@/lib/costing";
 import { addDays, formatDate, today } from "@/lib/dates";
 import { batchName, isExpired } from "./batches";
 import { UserError } from "./errors";
+import { draftNumber, isDraftNumber, takeInvoiceNumber } from "./invoice-numbers";
 import { nextNumber } from "./numbering";
 
 const dec = (v: { toString(): string }) => new Decimal(v.toString());
@@ -130,6 +132,12 @@ export async function postInvoice(invoiceId: number) {
     });
     if (invoice.status !== "DRAFT") throw new UserError("Only draft invoices can be posted.");
     if (!invoice.lines.length) throw new UserError("Add at least one product to the invoice.");
+    // A draft gets its real number now, so deleted drafts leave no gaps. A typed number is kept.
+    let number = invoice.number;
+    if (isDraftNumber(number)) {
+      do number = await takeInvoiceNumber(tx, invoice.kind);
+      while (await tx.invoice.findUnique({ where: { number } }));
+    }
 
     for (const line of invoice.lines) {
       const lots = await tx.lot.findMany({
@@ -160,12 +168,12 @@ export async function postInvoice(invoiceId: number) {
             qty: pick.qty.neg().toString(),
             unitCostEgp: lot.unitCostEgp,
             invoiceLineId: line.id,
-            note: invoice.number,
+            note: number,
           },
         });
       }
     }
-    await tx.invoice.update({ where: { id: invoiceId }, data: { status: "POSTED", postedAt: new Date(), dueDate: addDays(invoice.date, invoice.customer.paymentTermsDays) } });
+    return tx.invoice.update({ where: { id: invoiceId }, data: { number, status: "POSTED", postedAt: new Date(), dueDate: addDays(invoice.date, invoice.customer.paymentTermsDays) } });
   });
 }
 
@@ -183,17 +191,28 @@ export async function cancelInvoice(invoiceId: number) {
   });
 }
 
-/** A draft invoice. Its number is the next one in sequence unless one is typed in. */
-export async function createInvoice(customerId: number, date: Date, extra: { number?: string | null; deliveryNoteNo?: string | null; whtRate?: number } = {}) {
+/**
+ * A draft invoice. Unless a number is typed in, it gets the next number of its kind when posted.
+ * Non-taxed invoices carry no VAT or withholding tax.
+ */
+export async function createInvoice(
+  customerId: number,
+  date: Date,
+  extra: { number?: string | null; deliveryNoteNo?: string | null; whtRate?: number; kind?: InvoiceKind } = {},
+) {
+  const kind = extra.kind ?? "TAXED";
+  const typed = extra.number?.trim() || null;
   return db.$transaction(async (tx) => {
-    const number = extra.number?.trim() || (await nextNumber(tx, "INV", date));
-    await uniqueInvoiceNumber(tx, number);
-    return tx.invoice.create({ data: { number, customerId, date, deliveryNoteNo: extra.deliveryNoteNo?.trim() || null, whtRate: extra.whtRate ?? 0 } });
+    if (typed) await uniqueInvoiceNumber(tx, typed);
+    const taxes = kind === "NON_TAXED" ? { vatRate: 0, whtRate: 0 } : { whtRate: extra.whtRate ?? 0 };
+    const invoice = await tx.invoice.create({ data: { number: typed ?? `${draftNumber(0)}-${crypto.randomUUID()}`, kind, customerId, date, deliveryNoteNo: extra.deliveryNoteNo?.trim() || null, ...taxes } });
+    return typed ? invoice : tx.invoice.update({ where: { id: invoice.id }, data: { number: draftNumber(invoice.id) } });
   });
 }
 
 /** Invoice numbers are unique, typed in or not. */
 export async function uniqueInvoiceNumber(tx: Tx, number: string, except?: number) {
+  if (isDraftNumber(number) && number !== (except ? draftNumber(except) : "")) throw new UserError("Invoice numbers can't start with DRAFT-. Leave it empty to number the invoice when it is posted.");
   const taken = await tx.invoice.findUnique({ where: { number } });
   if (taken && taken.id !== except) throw new UserError(`Invoice number ${number} is already used.`);
 }

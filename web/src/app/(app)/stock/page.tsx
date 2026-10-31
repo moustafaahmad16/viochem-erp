@@ -1,3 +1,4 @@
+import { availability, NOTHING } from "@/lib/services/reservations";
 import Decimal from "decimal.js";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { addDays, today } from "@/lib/dates";
@@ -12,7 +13,7 @@ export async function generateMetadata() {
 
 export default async function StockPage() {
   const t = await getT();
-  const [rows, low] = await Promise.all([stockSummary(), lowStock()]);
+  const [rows, low, held] = await Promise.all([stockSummary(), lowStock(), availability()]);
   const lowIds = new Set(low.map((r) => r.itemId));
   const total = rows.reduce((sum, r) => sum.plus(r.value), new Decimal(0));
   const soon = addDays(today(), 90);
@@ -31,14 +32,23 @@ export default async function StockPage() {
       />
       <Card padded={false}>
         <Table
-          head={<tr><th>{t("Product")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Batches")}</th><th>{t("Next expiry")}</th><th className="num">{t("Avg cost / unit")}</th><th className="num">{t("Value (EGP)")}</th></tr>}
+          head={<tr><th>{t("Product")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Reserved")}</th><th className="num">{t("Free")}</th><th className="num">{t("Batches")}</th><th>{t("Next expiry")}</th><th className="num">{t("Avg cost / unit")}</th><th className="num">{t("Value (EGP)")}</th></tr>}
           empty={t("No stock yet. Receive a shipment or add the stock you already have.")}
-          footer={rows.length > 0 && <tr><td colSpan={5}>{t("Total")}</td><td className="num">{money(total)}</td></tr>}
+          footer={rows.length > 0 && <tr><td colSpan={7}>{t("Total")}</td><td className="num">{money(total)}</td></tr>}
         >
           {rows.map((r) => (
             <tr key={r.itemId} className="hover:bg-slate-50">
               <td><RowLink href={`/products/${r.itemId}`}>{r.name}</RowLink> <span className="text-xs text-slate-500">{r.code}</span></td>
               <td className="num">{lowIds.has(r.itemId) && <span className="me-2"><Badge color="amber">{t("Low")}</Badge></span>}{qty(r.qty)} {t(r.unit)}</td>
+              {(() => {
+                const a = held.get(r.itemId) ?? NOTHING;
+                return (
+                  <>
+                    <td className={`num ${a.reserved.gt(0) ? "text-amber-700" : "text-slate-400"}`}>{a.reserved.gt(0) ? qty(a.reserved) : "—"}</td>
+                    <td className={`num ${a.free.lt(0) ? "font-medium text-red-700" : ""}`}>{qty(a.free)}</td>
+                  </>
+                );
+              })()}
               <td className="num">{r.lots}</td>
               <td className={r.nextExpiry && r.nextExpiry <= soon ? "font-medium text-amber-700" : ""}>{t.date(r.nextExpiry)}</td>
               <td className="num">{money(r.value.div(r.qty))}</td>
