@@ -25,12 +25,15 @@ export default async function NewInvoicePage({ searchParams }: PageProps<"/invoi
         ) : (
           <ActionForm action={createInvoice}>
             <Select label={t("Customer")} name="customerId" defaultValue={selected} options={customers.map((c) => ({ value: c.id, label: c.name }))} placeholder={t("Choose…")} required />
-            <Field label={t("Invoice date")} name="date" type="date" defaultValue={toInputDate(today())} required />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={t("Invoice number")} name="number" dir="ltr" hint={t("Leave empty for the next number")} />
+              <Select label={t("Invoice type")} name="kind" defaultValue="TAXED" options={[{ value: "TAXED", label: t("Taxed (with VAT, sent to ETA)") }, { value: "NON_TAXED", label: t("Non-taxed (NT, no VAT)") }]} />
+              <Field label={t("Invoice date")} name="date" type="date" defaultValue={toInputDate(today())} required />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("Invoice number")} name="number" dir="ltr" hint={t("Leave empty to number it when it is posted")} />
               <Field label={t("Delivery note no.")} name="deliveryNoteNo" dir="ltr" />
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="wht" /> {t("Customer deducts 1% withholding tax (WHT, خصم الضريبة)")}</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="wht" /> {t("Customer deducts 1% withholding tax (WHT, خصم الضريبة)")} <span className="text-xs text-slate-500">{t("(taxed invoices only)")}</span></label>
             <Submit>{t("Continue")}</Submit>
           </ActionForm>
         )}

@@ -85,8 +85,13 @@ export default async function PrintQuotePage({ params }: PageProps<"/print/quote
         </table>
 
         <div className="mt-6 ml-auto w-72 space-y-1">
-          <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
-          <div className="flex justify-between"><span className="text-slate-500">VAT {q.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
+          {/* A non-taxed quotation carries no VAT. */}
+          {q.kind === "TAXED" && (
+            <>
+              <div className="flex justify-between"><span className="text-slate-500">Subtotal · الإجمالي قبل الضريبة</span><span className="num">{money(totals.net)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">VAT {q.vatRate.toString()}% · ضريبة القيمة المضافة</span><span className="num">{money(totals.vat)}</span></div>
+            </>
+          )}
           <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-base font-bold"><span>Total EGP · الإجمالي</span><span className="num">{money(totals.total)}</span></div>
         </div>
 

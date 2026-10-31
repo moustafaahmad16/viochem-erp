@@ -1,3 +1,4 @@
+import { InvoiceNumber } from "@/app/(app)/invoices/status";
 import Decimal from "decimal.js";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
@@ -66,7 +67,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               <Table head={<tr><th>{t("Invoice")}</th><th>{t("Date")}</th><th>{t("Status")}</th><th className="num">{t("Total (EGP)")}</th></tr>}>
                 {drafts.map((i) => (
                   <tr key={i.id}>
-                    <td><RowLink href={`/invoices/${i.id}`}>{i.number}</RowLink></td>
+                    <td><RowLink href={`/invoices/${i.id}`}><InvoiceNumber number={i.number} /></RowLink></td>
                     <td>{t.date(i.date)}</td>
                     <td><InvoiceStatusBadge status={i.status} /></td>
                     <td className="num">{money(invoiceTotals(i.lines, i.vatRate.toString()).total)}</td>

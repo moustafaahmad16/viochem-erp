@@ -27,7 +27,10 @@ export default async function NewQuotePage({ searchParams }: PageProps<"/quotes/
         ) : (
           <ActionForm action={createQuote}>
             <Select label={t("Customer")} name="customerId" defaultValue={selected} options={customers.map((c) => ({ value: c.id, label: c.name }))} placeholder={t("Choose…")} required />
-            <Field label={t("Quotation date")} name="date" type="date" defaultValue={toInputDate(day)} required />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Select label={t("Quotation type")} name="kind" defaultValue="TAXED" options={[{ value: "TAXED", label: t("Taxed (adds 14% VAT)") }, { value: "NON_TAXED", label: t("Non-taxed (no VAT)") }]} />
+              <Field label={t("Quotation date")} name="date" type="date" defaultValue={toInputDate(day)} required />
+            </div>
             <Field
               label={t("Valid until")}
               name="validUntil"

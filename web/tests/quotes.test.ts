@@ -35,7 +35,7 @@ describe("quotations", () => {
     const inv = await quoteToInvoice(q.id);
     const full = await db.invoice.findUniqueOrThrow({ where: { id: inv.id }, include: { lines: { orderBy: { id: "asc" } }, quote: true } });
     expect(full.status).toBe("DRAFT");
-    expect(full.number).toMatch(/^INV-\d{4}-\d{4}$/);
+    expect(full.number).toBe(`DRAFT-${inv.id}`);
     expect(full.customerId).toBe(customer);
     expect(n(full.vatRate)).toBe(5);
     expect(full.notes).toBe("Delivery in 2 weeks");
@@ -71,5 +71,18 @@ describe("quotations", () => {
     expect(isExpired(q, d("2031-04-03"))).toBe(true);
     expect(isExpired(q, d("2031-04-02"))).toBe(false);
     await expect(quoteToInvoice(q.id)).resolves.toBeTruthy();
+  });
+
+  it("adds no VAT when non-taxed, and becomes a non-taxed invoice", async () => {
+    const q = await createQuote(customer, d("2031-05-01"), null, "NON_TAXED");
+    expect([q.kind, n(q.vatRate)]).toEqual(["NON_TAXED", 0]);
+    await addQuoteLine(q.id, { itemId: itemA, qty: "2", unitPrice: "100" });
+    const inv = await quoteToInvoice(q.id);
+    expect([inv.kind, n(inv.vatRate)]).toEqual(["NON_TAXED", 0]);
+
+    // Switching a quotation to taxed brings back 14% VAT.
+    const t = await createQuote(customer, d("2031-05-02"), null, "NON_TAXED");
+    await updateQuote(t.id, { customerId: customer, date: d("2031-05-02"), validUntil: null, kind: "TAXED", notes: null });
+    expect(n((await db.quote.findUniqueOrThrow({ where: { id: t.id } })).vatRate)).toBe(14);
   });
 });

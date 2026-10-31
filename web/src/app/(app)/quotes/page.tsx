@@ -12,6 +12,7 @@ export async function generateMetadata() {
 const FILTERS = [
   { key: "", label: "All" },
   { key: "OPEN", label: "Open" },
+  { key: "CONFIRMED", label: "Confirmed" },
   { key: "ACCEPTED", label: "Accepted" },
   { key: "DECLINED", label: "Declined" },
 ] as const;
@@ -21,7 +22,7 @@ export default async function QuotesPage({ searchParams }: PageProps<"/quotes">)
   const raw = String((await searchParams).status ?? "");
   const status = FILTERS.some((f) => f.key === raw) ? raw : "";
   const quotes = await db.quote.findMany({
-    where: status ? { status: status as "OPEN" | "ACCEPTED" | "DECLINED" } : {},
+    where: status ? { status: status as "OPEN" | "CONFIRMED" | "ACCEPTED" | "DECLINED" } : {},
     include: { customer: true, lines: true },
     orderBy: [{ date: "desc" }, { id: "desc" }],
     take: 200,

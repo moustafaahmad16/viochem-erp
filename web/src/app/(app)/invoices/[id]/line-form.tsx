@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ActionForm, Field, Select, Submit, type FormState } from "@/components/forms";
 import { useT } from "@/i18n/client";
 
-type Option = { id: number; code: string; name: string; unit: string };
+type Option = { id: number; code: string; name: string; unit: string; stock: string };
 type LotOption = { id: number; itemId: number; label: string };
 
 const label = (i: Option) => `${i.code} · ${i.name}`;
@@ -32,11 +32,11 @@ export function LineForm({ action, items, lots }: { action: (s: FormState, fd: F
           autoComplete="off"
           dir="ltr"
           required
-          hint={item ? item.name : typed ? t("No product with that code. Pick one from the list.") : undefined}
+          hint={item ? `${item.name} · ${item.stock}` : typed ? t("No product with that code. Pick one from the list.") : undefined}
         />
         <datalist id="invoice-products">
           {items.map((i) => (
-            <option key={i.id} value={label(i)} />
+            <option key={i.id} value={label(i)} label={i.stock} />
           ))}
         </datalist>
         <input type="hidden" name="itemId" value={item?.id ?? ""} />

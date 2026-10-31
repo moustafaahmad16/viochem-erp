@@ -87,7 +87,7 @@ describe("credit notes", () => {
     expect(n(acc.balance)).toBe(2622 - 1596);
     expect(n(acc.bills.find((b) => b.key === `inv:${invoiceId}`)!.outstanding)).toBe(1026);
     const line = acc.statement.find((l) => l.label === "CRN-2032-0001")!;
-    expect([n(line.payment), line.detail]).toEqual([1596, expect.stringMatching(/^Credit for INV-2032-/)]);
+    expect([n(line.payment), line.detail]).toEqual([1596, expect.stringMatching(/^Credit for \d+$/)]);
   });
 
   it("books returns, VAT, the customer and stock in the ledger", async () => {

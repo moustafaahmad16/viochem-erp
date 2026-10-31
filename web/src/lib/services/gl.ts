@@ -33,6 +33,7 @@ export const CODES = {
   opening: "3900",
   sales: "4100",
   returns: "4110",
+  salesNonTaxed: "4120",
   cogs: "5100",
   countDiff: "5200",
   otherExpense: "6220",
@@ -260,7 +261,7 @@ export async function generalLedger() {
         ref: inv.number,
         href: `/invoices/${inv.id}`,
         memo: inv.customer.name,
-        lines: [line(CODES.customers, t.due), line(CODES.whtByCustomers, t.wht), line(CODES.sales, t.net.neg()), line(CODES.vatOut, t.vat.neg()), line(CODES.cogs, cost), line(CODES.stock, cost.neg())].filter(
+        lines: [line(CODES.customers, t.due), line(CODES.whtByCustomers, t.wht), line(inv.kind === "NON_TAXED" ? CODES.salesNonTaxed : CODES.sales, t.net.neg()), line(CODES.vatOut, t.vat.neg()), line(CODES.cogs, cost), line(CODES.stock, cost.neg())].filter(
           (l) => !l.debit.isZero() || !l.credit.isZero(),
         ),
       };

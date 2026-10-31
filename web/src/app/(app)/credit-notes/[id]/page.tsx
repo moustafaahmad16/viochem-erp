@@ -34,7 +34,8 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
   const isDraft = cn.status === "DRAFT";
   const totals = creditTotals(cn);
   const creditable = isDraft ? await creditableLines(cn.invoiceId, cn.id) : [];
-  const sendable = cn.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(cn.etaStatus);
+  const taxed = cn.invoice.kind === "TAXED";
+  const sendable = taxed && cn.status === "POSTED" && ["NOT_SENT", "REJECTED", "INVALID"].includes(cn.etaStatus);
   const etaMissing = sendable ? (await prepareCreditNote(cn.id)).problems : [];
   const onEta = !!cn.etaUuid && ["SUBMITTED", "VALID"].includes(cn.etaStatus);
 
@@ -143,7 +144,7 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
             </Card>
           ) : (
             <>
-              {(cn.status === "POSTED" || cn.etaUuid) && (
+              {taxed && (cn.status === "POSTED" || cn.etaUuid) && (
                 <Card title={t("E-invoice (tax authority)")} actions={<EtaBadge status={cn.etaStatus} />}>
                   <div className="space-y-3 text-sm">
                     {cn.etaUuid && cn.etaLongId && (

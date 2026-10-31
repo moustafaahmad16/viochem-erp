@@ -1,3 +1,4 @@
+import { InvoiceNumber } from "@/app/(app)/invoices/status";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
 import { today } from "@/lib/dates";
@@ -180,7 +181,7 @@ export default async function Dashboard() {
           <Table head={<tr><th>{t("Invoice")}</th><th>{t("Customer")}</th><th>{t("Date")}</th><th className="num">{t("Total")}</th></tr>} empty={t("No invoices yet.")}>
             {s.recentInvoices.map((i) => (
               <tr key={i.id}>
-                <td><RowLink href={`/invoices/${i.id}`}>{i.number}</RowLink></td>
+                <td><RowLink href={`/invoices/${i.id}`}><InvoiceNumber number={i.number} /></RowLink></td>
                 <td>{i.customer.name}</td>
                 <td>{t.date(i.date)}</td>
                 <td className="num">{money(invoiceTotals(i.lines, i.vatRate.toString()).total, 0)}</td>

@@ -87,9 +87,9 @@ describe("import to sale", () => {
 
     const inv = await createInvoice(customer, d("2026-03-01"));
     await db.invoiceLine.create({ data: { invoiceId: inv.id, itemId: vanillin, qty: 8, unitPrice: 4000 } });
-    await postInvoice(inv.id);
+    const posted = await postInvoice(inv.id);
 
-    const moves = await db.stockMove.findMany({ where: { kind: "SALE", note: inv.number }, include: { lot: true }, orderBy: { id: "asc" } });
+    const moves = await db.stockMove.findMany({ where: { kind: "SALE", note: posted.number }, include: { lot: true }, orderBy: { id: "asc" } });
     expect(moves.map((m) => [m.lot.expiryDate?.toISOString().slice(0, 10), num(m.qty)])).toEqual([
       ["2026-12-01", -5],
       ["2027-06-01", -3],
@@ -114,7 +114,9 @@ describe("invoice numbers", () => {
   it("takes a number typed in, and the delivery note, instead of the next in sequence", async () => {
     const inv = await createInvoice(customer, d("2026-05-01"), { number: " 1450 ", deliveryNoteNo: "D-77" });
     expect([inv.number, inv.deliveryNoteNo]).toEqual(["1450", "D-77"]);
-    expect((await createInvoice(customer, d("2026-05-01"), { number: "" })).number).toMatch(/^INV-2026-\d{4}$/);
+    // Left empty, a draft holds a placeholder until it is posted.
+    const blank = await createInvoice(customer, d("2026-05-01"), { number: "" });
+    expect(blank.number).toBe(`DRAFT-${blank.id}`);
   });
 
   it("refuses a number already used", async () => {
