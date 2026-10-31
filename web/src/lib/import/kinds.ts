@@ -67,7 +67,7 @@ export const KINDS: Record<KindName, { label: string; description: string; colum
   },
   stock: {
     label: "Opening stock",
-    description: "Adds one lot per row for stock you already have. Import products first.",
+    description: "Adds one batch per row for stock you already have. Import products first.",
     columns: [
       { key: "code", title: "Product code", required: true, example: "LIN-001" },
       { key: "qty", title: "Quantity", required: true, example: 120 },

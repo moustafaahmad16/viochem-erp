@@ -11,6 +11,7 @@ import { lowStock } from "@/lib/services/alerts";
 import { chequesDue } from "@/lib/services/cheques";
 import { dailyBudget } from "@/lib/services/rankings";
 import { ExportButtons } from "@/components/export-buttons";
+import { batchName } from "@/lib/services/batches";
 
 export default async function Dashboard() {
   const t = await getT();
@@ -97,7 +98,7 @@ export default async function Dashboard() {
         <Stat label={t("Sales in {month}", { month })} value={`EGP ${money(s.salesThisMonth, 0)}`} hint={t("Before VAT")} />
         <Stat label={t("Gross margin in {month}", { month })} value={`EGP ${money(s.marginThisMonth, 0)}`} hint={s.salesThisMonth.isZero() ? t("No sales yet") : t("{pct} of sales", { pct: pct(s.marginPctThisMonth) })} tone="good" />
         <Stat label={t("Stock value")} value={`EGP ${money(s.stockValue, 0)}`} hint={t("At landed cost")} />
-        <Stat label={t("Lots expiring in 90 days")} value={s.expiring.length} tone={s.expiring.length ? "warn" : "default"} hint={<RowLink href="/reports/expiry">{t("See them")}</RowLink>} />
+        <Stat label={t("Batches expiring in 90 days")} value={s.expiring.length} tone={s.expiring.length ? "warn" : "default"} hint={<RowLink href="/reports/expiry">{t("See them")}</RowLink>} />
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -189,10 +190,10 @@ export default async function Dashboard() {
         </Card>
 
         <Card title={t("Expiring soon")} actions={<RowLink href="/reports/expiry">{t("All")}</RowLink>} padded={false}>
-          <Table head={<tr><th>{t("Lot")}</th><th>{t("Product")}</th><th>{t("Expiry")}</th><th className="num">{t("On hand")}</th></tr>} empty={t("No lots expire in the next 90 days.")}>
+          <Table head={<tr><th>{t("Batch")}</th><th>{t("Product")}</th><th>{t("Expiry")}</th><th className="num">{t("On hand")}</th></tr>} empty={t("No batches expire in the next 90 days.")}>
             {s.expiring.slice(0, 6).map((l) => (
               <tr key={l.id}>
-                <td><RowLink href={`/stock/lots/${l.id}`}>{l.lotNo}</RowLink></td>
+                <td><RowLink href={`/stock/batches/${l.id}`}>{batchName(l)}</RowLink></td>
                 <td>{l.item.name}</td>
                 <td>{l.expiryDate! < now ? <Badge color="red">{t("Expired")}</Badge> : t.date(l.expiryDate)}</td>
                 <td className="num">{qty(l.qtyOnHand)} {l.item.unit}</td>

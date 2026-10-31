@@ -42,7 +42,7 @@ export function LineForm({ action, items, lots }: { action: (s: FormState, fd: F
         <input type="hidden" name="itemId" value={item?.id ?? ""} />
       </div>
       <Select
-        label={t("Lot")}
+        label={t("Batch")}
         name="lotId"
         options={itemLots.map((l) => ({ value: l.id, label: l.label }))}
         placeholder={t("Earliest expiry first")}

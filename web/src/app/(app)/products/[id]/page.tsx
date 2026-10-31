@@ -9,11 +9,12 @@ import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/core";
 import { updateItem } from "../actions";
 import { ItemFields } from "../item-form";
+import { batchName } from "@/lib/services/batches";
 
 const TABS = [
   { key: "", label: "Analysis" },
   { key: "movements", label: "Movements" },
-  { key: "lots", label: "Lots and details" },
+  { key: "lots", label: "Batches and details" },
 ] as const;
 
 const TYPE: Record<MoveType, { label: string; color: "gray" | "green" | "blue" | "amber" | "red" }> = {
@@ -60,12 +61,12 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         <Movements itemId={item.id} unit={unit} t={t} />
       ) : tab === "lots" ? (
         <div className="grid gap-6 lg:grid-cols-5">
-          <Card title={t("Lots")} className="lg:col-span-3" padded={false}>
-            <Table head={<tr><th>{t("Lot")}</th><th>{t("Received")}</th><th>{t("Expiry")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Cost / {unit}", { unit })}</th></tr>} empty={t("No stock received yet.")}>
+          <Card title={t("Batches")} className="lg:col-span-3" padded={false}>
+            <Table head={<tr><th>{t("Batch")}</th><th>{t("Received")}</th><th>{t("Expiry")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Cost / {unit}", { unit })}</th></tr>} empty={t("No stock received yet.")}>
               {item.lots.map((l) => (
                 <tr key={l.id}>
                   <td>
-                    <RowLink href={`/stock/lots/${l.id}`}>{l.lotNo}</RowLink>
+                    <RowLink href={`/stock/batches/${l.id}`}>{batchName(l)}</RowLink>
                     <div className="text-xs text-slate-500">{l.shipmentLine ? l.shipmentLine.shipment.ref : t("Opening stock")}</div>
                   </td>
                   <td>{t.date(l.receivedDate)}</td>
@@ -104,7 +105,7 @@ async function Analysis({ itemId, unit, t }: { itemId: number; unit: string; t: 
         <Stat
           label={t("On hand")}
           value={`${qty(a.onHand)} ${unit}`}
-          hint={<>{t("Worth EGP {amount} at lot cost", { amount: money(a.stockValue) })}{a.onOrder.gt(0) && <> · {t("{qty} ordered or on the way", { qty: `${qty(a.onOrder)} ${unit}` })}</>}</>}
+          hint={<>{t("Worth EGP {amount} at batch cost", { amount: money(a.stockValue) })}{a.onOrder.gt(0) && <> · {t("{qty} ordered or on the way", { qty: `${qty(a.onOrder)} ${unit}` })}</>}</>}
           tone={low ? "warn" : "default"}
         />
         <Stat
@@ -122,7 +123,7 @@ async function Analysis({ itemId, unit, t }: { itemId: number; unit: string; t: 
         <Stat
           label={t("Gross margin")}
           value={a.sales.revenue.isZero() ? "—" : pct(a.sales.marginPct)}
-          hint={t("EGP {amount} over the cost of the lots sold", { amount: money(a.sales.margin, 0) })}
+          hint={t("EGP {amount} over the cost of the batches sold", { amount: money(a.sales.margin, 0) })}
           tone={a.sales.margin.isNeg() ? "warn" : a.sales.revenue.isZero() ? "default" : "good"}
         />
         <Stat
@@ -170,7 +171,7 @@ async function Analysis({ itemId, unit, t }: { itemId: number; unit: string; t: 
           {a.purchases.map((p) => (
             <tr key={p.lotId}>
               <td className="whitespace-nowrap">{t.date(p.date)}</td>
-              <td>{p.shipment ? <RowLink href={`/shipments/${p.shipment.id}`}>{p.shipment.ref}</RowLink> : <RowLink href={`/stock/lots/${p.lotId}`}>{t("Opening stock")}</RowLink>}</td>
+              <td>{p.shipment ? <RowLink href={`/shipments/${p.shipment.id}`}>{p.shipment.ref}</RowLink> : <RowLink href={`/stock/batches/${p.lotId}`}>{t("Opening stock")}</RowLink>}</td>
               <td>{p.supplier && <RowLink href={`/suppliers/${p.supplier.id}`}>{p.supplier.name}</RowLink>}</td>
               <td className="num">{qty(p.qty)}</td>
               <td className="num whitespace-nowrap">{p.currency} {money(p.unitPrice)}</td>
@@ -191,7 +192,7 @@ async function Movements({ itemId, unit, t }: { itemId: number; unit: string; t:
     <Card
       title={t("All movements")}
       padded={false}
-      actions={<span className="text-xs text-slate-500">{t("The average cost changes only when stock is bought. Margins use the real cost of each lot.")}</span>}
+      actions={<span className="text-xs text-slate-500">{t("The average cost changes only when stock is bought. Margins use the real cost of each batch.")}</span>}
     >
       <Table
         head={

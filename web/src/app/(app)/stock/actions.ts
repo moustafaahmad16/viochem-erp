@@ -18,6 +18,7 @@ export async function createOpeningStock(_: FormState, fd: FormData): Promise<Fo
         unitCostEgp: decimal(fd, "unitCostEgp", "Cost", { allowZero: true }),
         date: date(fd, "date", "Date"),
         expiryDate: optionalDate(fd, "expiryDate"),
+        manufactureDate: optionalDate(fd, "manufactureDate"),
         supplierBatchNo: text(fd, "supplierBatchNo"),
       })
     ).id;
@@ -25,7 +26,7 @@ export async function createOpeningStock(_: FormState, fd: FormData): Promise<Fo
     return fail(e);
   }
   revalidatePath("/stock");
-  redirect(`/stock/lots/${lotId}`);
+  redirect(`/stock/batches/${lotId}`);
 }
 
 export async function adjustLot(lotId: number, _: FormState, fd: FormData): Promise<FormState> {
@@ -35,6 +36,6 @@ export async function adjustLot(lotId: number, _: FormState, fd: FormData): Prom
   } catch (e) {
     return fail(e);
   }
-  revalidatePath(`/stock/lots/${lotId}`);
+  revalidatePath(`/stock/batches/${lotId}`);
   return { ok: "Stock corrected." };
 }

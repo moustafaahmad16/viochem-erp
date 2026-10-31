@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { db } from "@/lib/db";
 import { today } from "@/lib/dates";
 import { onOrder } from "./orders";
+import { batchName } from "./batches";
 
 const dec = (v: { toString(): string } | null | undefined) => new Decimal(v == null ? 0 : v.toString());
 const ZERO = new Decimal(0);
@@ -100,7 +101,7 @@ export async function productHistory(itemId: number): Promise<HistoryRow[]> {
       row.doc = { label: credit.number, href: `/credit-notes/${credit.id}` };
       row.party = { name: credit.customer.name, href: `/customers/${credit.customerId}` };
     } else {
-      row.doc = { label: m.lot.lotNo, href: `/stock/lots/${m.lotId}` };
+      row.doc = { label: batchName(m.lot), href: `/stock/batches/${m.lotId}` };
     }
     rows.push(row);
   }

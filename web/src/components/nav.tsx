@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, Layers, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
@@ -28,7 +28,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
     ],
   },
   { title: "Money", links: [{ href: "/receivables", label: "Owed to you", icon: Wallet }, { href: "/payables", label: "You owe", icon: HandCoins }, { href: "/accounts", label: "Bank & cash", icon: Landmark }, { href: "/cheques", label: "Cheques", icon: BadgeCheck }, { href: "/expenses", label: "Expenses", icon: ReceiptText }] },
-  { title: "Stock", links: [{ href: "/stock", label: "Stock on hand", icon: Boxes }, { href: "/products", label: "Products", icon: FlaskConical }, { href: "/import", label: "Import from Excel", icon: Upload }] },
+  { title: "Stock", links: [{ href: "/stock", label: "Stock on hand", icon: Boxes }, { href: "/stock/batches", label: "Batches", icon: Layers }, { href: "/products", label: "Products", icon: FlaskConical }, { href: "/import", label: "Import from Excel", icon: Upload }] },
   {
     title: "Accounting",
     links: [
@@ -39,7 +39,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
       { href: "/ledger", label: "Chart of accounts", icon: BookOpen },
     ],
   },
-  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring lots", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }, { href: "/reports/wht", label: "Withholding tax", icon: Percent }] },
+  { title: "Reports", links: [{ href: "/reports/margin", label: "Margins", icon: BarChart3 }, { href: "/reports/expiry", label: "Expiring batches", icon: CalendarClock }, { href: "/reports/low-stock", label: "Low stock", icon: PackageMinus }, { href: "/reports/wht", label: "Withholding tax", icon: Percent }] },
 ];
 
 /** Hidden while the wide-screen bar is slim, shown once it slides open. */

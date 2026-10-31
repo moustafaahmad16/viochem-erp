@@ -23,7 +23,7 @@ export default async function NewJournalPage() {
         <ActionForm action={addJournal}>
           <div className="grid gap-3 sm:grid-cols-4">
             <Field label={t("Date")} name="date" type="date" defaultValue={toInputDate(today())} required />
-            <Field label={t("What it is for")} name="memo" required className="sm:col-span-3" placeholder={t("Depreciation for September")} />
+            <Field label={t("What it is for")} name="memo" required className="sm:col-span-3" placeholder={t("e.g. {value}", { value: t("Depreciation for September") })} />
           </div>
           <JournalLines accounts={accounts} />
           <p className="text-xs text-slate-500">

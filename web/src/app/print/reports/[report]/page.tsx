@@ -23,7 +23,7 @@ const REPORT_TITLES: Record<string, string> = {
   accounts: "Bank & cash",
   margin: "Margins",
   profit: "Profit and loss",
-  expiry: "Expiring lots",
+  expiry: "Expiring batches",
   "product-moves": "Movements",
 };
 

@@ -62,7 +62,7 @@ export default async function ChartPage() {
             <Card title={t("Add an account")}>
               <ActionForm action={addLedgerAccount} resetOnSuccess>
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label={t("Code")} name="code" required inputMode="numeric" maxLength={4} placeholder="6230" />
+                  <Field label={t("Code")} name="code" required inputMode="numeric" maxLength={4} placeholder={t("4 digits, e.g. {value}", { value: "6230" })} />
                   <Field label={t("Name")} name="name" required className="col-span-2" />
                 </div>
                 <Select label={t("Section")} name="section" required placeholder={t("Choose")} options={sections.map((s) => ({ value: s, label: t(SECTIONS[s].label) }))} />

@@ -24,7 +24,7 @@ export const sales: Record<string, string> = {
   "{pct} of sales": "{pct} من المبيعات",
   "Stock value": "قيمة المخزون",
   "At landed cost": "بالتكلفة الواصلة",
-  "Lots expiring in 90 days": "تشغيلات تنتهي خلال 90 يومًا",
+  "Batches expiring in 90 days": "تشغيلات تنتهي خلال 90 يومًا",
   "See them": "عرضها",
   "Customers owe you": "مستحق لك على العملاء",
   "By customer": "حسب العميل",
@@ -50,7 +50,7 @@ export const sales: Record<string, string> = {
   Lot: "التشغيلة",
   Expiry: "تاريخ الانتهاء",
   "On hand": "المتاح",
-  "No lots expire in the next 90 days.": "لا توجد تشغيلات تنتهي خلال الـ 90 يومًا القادمة.",
+  "No batches expire in the next 90 days.": "لا توجد تشغيلات تنتهي خلال الـ 90 يومًا القادمة.",
   Expired: "منتهية",
 
   // Invoice list and status
@@ -81,12 +81,12 @@ export const sales: Record<string, string> = {
   "No products on this invoice yet.": "لا توجد منتجات في هذه الفاتورة بعد.",
   Subtotal: "الإجمالي قبل الضريبة",
   "VAT {rate}%": "ضريبة القيمة المضافة {rate}%",
-  "Lot {lot}": "تشغيلة {lot}",
+  "Batch {batch}": "تشغيلة {batch}",
   "Earliest expiry first": "الأقرب انتهاءً أولًا",
   Remove: "إزالة",
   "exp {date}": "تنتهي {date}",
   "Post invoice": "ترحيل الفاتورة",
-  "Posting takes the stock out of the lots and fixes the invoice. You can cancel it later if needed.":
+  "Posting takes the stock out of the batches and fixes the invoice. You can cancel it later if needed.":
     "الترحيل يخصم الكميات من التشغيلات ويثبّت الفاتورة. يمكنك إلغاؤها لاحقًا عند الحاجة.",
   "Post {number} for EGP {amount}?": "ترحيل {number} بمبلغ {amount} ج.م؟",
   "VAT %": "ضريبة القيمة المضافة %",
@@ -111,7 +111,7 @@ export const sales: Record<string, string> = {
   "Landed cost of goods": "التكلفة الواصلة للبضاعة",
   "Gross margin": "مجمل الربح",
   "Cancel invoice": "إلغاء الفاتورة",
-  "Puts the stock back into the same lots. The invoice number stays used.": "تُعاد الكميات إلى نفس التشغيلات. ويبقى رقم الفاتورة مستخدمًا.",
+  "Puts the stock back into the same batches. The invoice number stays used.": "تُعاد الكميات إلى نفس التشغيلات. ويبقى رقم الفاتورة مستخدمًا.",
   "It is also cancelled at the tax authority.": "وتُلغى أيضًا لدى مصلحة الضرائب.",
   "Reason (sent to the tax authority)": "السبب (يُرسل إلى مصلحة الضرائب)",
   "Cancel {number}? This can't be undone.": "إلغاء {number}؟ لا يمكن التراجع عن ذلك.",
@@ -124,18 +124,18 @@ export const sales: Record<string, string> = {
   "VAT rate": "نسبة ضريبة القيمة المضافة",
   "Choose a customer.": "اختر العميل.",
   "Choose a product.": "اختر المنتج.",
-  "That lot is for a different product.": "هذه التشغيلة لمنتج آخر.",
+  "That batch is for a different product.": "هذه التشغيلة لمنتج آخر.",
   "Product added.": "تمت إضافة المنتج.",
   "Posted. The stock has been taken out.": "تم الترحيل. وخُصمت الكميات من المخزون.",
   "Cancelled by the seller": "ألغاها البائع",
-  "Cancelled. The stock is back in its lots.": "تم الإلغاء. وعادت الكميات إلى تشغيلاتها.",
+  "Cancelled. The stock is back in its batches.": "تم الإلغاء. وعادت الكميات إلى تشغيلاتها.",
   "Sent. The tax authority is checking it; check again in a minute.": "تم الإرسال. مصلحة الضرائب تراجعها؛ تحقق مرة أخرى بعد دقيقة.",
   "The tax authority refused it. The reasons are shown above.": "رفضتها مصلحة الضرائب. الأسباب موضحة بالأعلى.",
   "Updated.": "تم التحديث.",
   "Only draft invoices can be posted.": "لا يمكن ترحيل إلا الفواتير المسودة.",
   "Add at least one product to the invoice.": "أضف منتجًا واحدًا على الأقل إلى الفاتورة.",
   "Not enough {product} in stock on that date: {available} available.": "لا يوجد ما يكفي من {product} في المخزون في هذا التاريخ: المتاح {available}.",
-  "Not enough {product} in stock in the chosen lot on that date: {available} available.":
+  "Not enough {product} in stock in the chosen batch on that date: {available} available.":
     "لا يوجد ما يكفي من {product} في التشغيلة المختارة في هذا التاريخ: المتاح {available}.",
   "Only posted invoices can be cancelled.": "لا يمكن إلغاء إلا الفواتير المُرحّلة.",
 

@@ -25,7 +25,7 @@ export const common: Record<string, string> = {
   "Chart of accounts": "دليل الحسابات",
   Reports: "التقارير",
   Margins: "هوامش الربح",
-  "Expiring lots": "التشغيلات قريبة الانتهاء",
+  "Expiring batches": "التشغيلات قريبة الانتهاء",
   Settings: "الإعدادات",
   Users: "المستخدمون",
   "E-invoice": "الفاتورة الإلكترونية",

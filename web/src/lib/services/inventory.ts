@@ -1,7 +1,8 @@
 import Decimal from "decimal.js";
 import { db, type Tx } from "@/lib/db";
 import { landedUnitCosts, pickLots } from "@/lib/costing";
-import { addDays, today } from "@/lib/dates";
+import { addDays, formatDate, today } from "@/lib/dates";
+import { batchName, isExpired } from "./batches";
 import { UserError } from "./errors";
 import { nextNumber } from "./numbering";
 
@@ -41,6 +42,7 @@ export async function receiveShipment(shipmentId: number, arrivalDate: Date) {
           qtyOnHand: line.qty,
           unitCostEgp: unitCost.toFixed(4),
           expiryDate: line.expiryDate,
+          manufactureDate: line.manufactureDate,
           supplierBatchNo: line.supplierBatchNo,
         },
       });
@@ -74,6 +76,7 @@ export async function addOpeningStock(input: {
   unitCostEgp: Decimal.Value;
   date: Date;
   expiryDate: Date | null;
+  manufactureDate?: Date | null;
   supplierBatchNo: string | null;
 }) {
   if (new Decimal(input.qty).lte(0)) throw new UserError("Quantity must be more than zero.");
@@ -88,6 +91,7 @@ export async function addOpeningStock(input: {
         qtyOnHand: input.qty.toString(),
         unitCostEgp: input.unitCostEgp.toString(),
         expiryDate: input.expiryDate,
+        manufactureDate: input.manufactureDate ?? null,
         supplierBatchNo: input.supplierBatchNo,
       },
     });
@@ -114,7 +118,10 @@ export async function adjustLot(lotId: number, countedQty: Decimal.Value, note: 
   });
 }
 
-/** Post a draft invoice: take the stock out of lots and lock in the cost of what was sold. */
+/**
+ * Post a draft invoice: take the stock out of batches, earliest expiry first, and lock in the cost of
+ * what was sold. Batches already expired on the invoice date are never sold.
+ */
 export async function postInvoice(invoiceId: number) {
   return db.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUniqueOrThrow({
@@ -128,14 +135,18 @@ export async function postInvoice(invoiceId: number) {
       const lots = await tx.lot.findMany({
         where: line.lotId ? { id: line.lotId } : { itemId: line.itemId, qtyOnHand: { gt: 0 } },
       });
-      const picks = pickLots(
-        lots.filter((l) => l.receivedDate <= invoice.date),
-        dec(line.qty),
-      );
+      const chosen = line.lotId ? lots[0] : null;
+      if (chosen && isExpired(chosen, invoice.date)) {
+        throw new UserError(`Batch ${batchName(chosen)} of ${line.item.name} expired on ${formatDate(chosen.expiryDate)}, so it can't be sold.`);
+      }
+      const sellable = lots.filter((l) => l.receivedDate <= invoice.date && !isExpired(l, invoice.date));
+      const picks = pickLots(sellable, dec(line.qty));
       if (!picks) {
-        const available = lots.reduce((s, l) => s.plus(dec(l.qtyOnHand)), new Decimal(0));
+        const available = sellable.reduce((s, l) => s.plus(dec(l.qtyOnHand)), new Decimal(0));
+        const expired = lots.filter((l) => isExpired(l, invoice.date)).reduce((s, l) => s.plus(dec(l.qtyOnHand)), new Decimal(0));
         throw new UserError(
-          `Not enough ${line.item.name} in stock${line.lotId ? " in the chosen lot" : ""} on that date: ${available.toString()} ${line.item.unit} available.`,
+          `Not enough ${line.item.name} in stock${line.lotId ? " in the chosen batch" : ""} on that date: ${available.toString()} ${line.item.unit} available.` +
+            (expired.gt(0) ? ` Another ${expired.toString()} ${line.item.unit} has expired and can't be sold.` : ""),
         );
       }
       for (const pick of picks) {

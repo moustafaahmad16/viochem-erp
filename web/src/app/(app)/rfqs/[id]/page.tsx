@@ -252,8 +252,8 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
               <ActionForm action={updateRfq.bind(null, id)}>
                 <input type="hidden" name="date" value={toInputDate(rfq.date)} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label={t("Currency")} name="currency" defaultValue={rfq.currency ?? ""} placeholder="USD" maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
-                  <Field label={t("Incoterms")} name="incoterm" defaultValue={rfq.incoterm ?? ""} placeholder="CIF Alexandria" dir="ltr" />
+                  <Field label={t("Currency")} name="currency" defaultValue={rfq.currency ?? ""} placeholder={t("e.g. {value}", { value: "USD" })} maxLength={3} dir="ltr" hint={t("Asked of every supplier. Empty lets each write their own.")} />
+                  <Field label={t("Incoterms")} name="incoterm" defaultValue={rfq.incoterm ?? ""} placeholder={t("e.g. {value}", { value: "CIF Alexandria" })} dir="ltr" />
                 </div>
                 <Field label={t("Needed in Egypt by")} name="neededBy" type="date" defaultValue={toInputDate(rfq.neededBy)} hint={t("Offers that would arrive later count as more expensive.")} />
                 <TextArea label={t("Notes for suppliers")} name="notes" defaultValue={rfq.notes ?? ""} />

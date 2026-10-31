@@ -31,7 +31,7 @@ export default async function StockPage() {
       />
       <Card padded={false}>
         <Table
-          head={<tr><th>{t("Product")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Lots")}</th><th>{t("Next expiry")}</th><th className="num">{t("Avg cost / unit")}</th><th className="num">{t("Value (EGP)")}</th></tr>}
+          head={<tr><th>{t("Product")}</th><th className="num">{t("On hand")}</th><th className="num">{t("Batches")}</th><th>{t("Next expiry")}</th><th className="num">{t("Avg cost / unit")}</th><th className="num">{t("Value (EGP)")}</th></tr>}
           empty={t("No stock yet. Receive a shipment or add the stock you already have.")}
           footer={rows.length > 0 && <tr><td colSpan={5}>{t("Total")}</td><td className="num">{money(total)}</td></tr>}
         >

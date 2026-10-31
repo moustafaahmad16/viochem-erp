@@ -13,7 +13,7 @@ const GROUPS: { key: MarginGroup; label: string }[] = [
   { key: "item", label: "Product" },
   { key: "customer", label: "Customer" },
   { key: "shipment", label: "Shipment" },
-  { key: "lot", label: "Lot" },
+  { key: "lot", label: "Batch" },
 ];
 
 function safeDate(v: unknown, fallback: Date) {
@@ -36,7 +36,7 @@ export default async function MarginPage({ searchParams }: PageProps<"/reports/m
 
   return (
     <>
-      <PageHeader title={t("Margins")} subtitle={t("Sales against the real landed cost of the lots that were sold")} actions={<ExportButtons report="margin" query={{ from: toInputDate(from), to: toInputDate(to), by: groupBy }} />} />
+      <PageHeader title={t("Margins")} subtitle={t("Sales against the real landed cost of the batches that were sold")} actions={<ExportButtons report="margin" query={{ from: toInputDate(from), to: toInputDate(to), by: groupBy }} />} />
       <Card className="mb-4">
         <form className="flex flex-wrap items-end gap-3 text-sm">
           <label>

@@ -1,13 +1,13 @@
 /** The product page: analysis, movements with the running average cost, and buying prices. */
 export const product: Record<string, string> = {
   Analysis: "التحليل",
-  "Lots and details": "التشغيلات والتفاصيل",
+  "Batches and details": "التشغيلات والتفاصيل",
   Purchase: "شراء",
   Sale: "بيع",
   Return: "مرتجع",
 
   "Sales from {from} to {to}, net of returns and price allowances.": "المبيعات من {from} إلى {to}، بعد خصم المرتجعات والمسموحات.",
-  "Worth EGP {amount} at lot cost": "قيمته {amount} جنيه بتكلفة التشغيلات",
+  "Worth EGP {amount} at batch cost": "قيمته {amount} جنيه بتكلفة التشغيلات",
   "{qty} ordered or on the way": "{qty} مطلوب أو في الطريق",
   "Average cost / {unit}": "متوسط التكلفة / {unit}",
   "Last bought {date} at EGP {cost}": "آخر شراء {date} بسعر {cost} جنيه",
@@ -18,7 +18,7 @@ export const product: Record<string, string> = {
   "Nothing sold in the last 6 months": "لم يتم بيع شيء خلال آخر 6 أشهر",
   "Sales, last 12 months": "المبيعات، آخر 12 شهرًا",
   "{qty} sold": "تم بيع {qty}",
-  "EGP {amount} over the cost of the lots sold": "{amount} جنيه فوق تكلفة التشغيلات المباعة",
+  "EGP {amount} over the cost of the batches sold": "{amount} جنيه فوق تكلفة التشغيلات المباعة",
   "Average selling price": "متوسط سعر البيع",
   "Last sold {date}": "آخر بيع {date}",
   "Not sold in the last 12 months": "لم يتم بيعه خلال آخر 12 شهرًا",
@@ -30,7 +30,7 @@ export const product: Record<string, string> = {
   "Price change": "تغير السعر",
 
   "All movements": "كل الحركات",
-  "The average cost changes only when stock is bought. Margins use the real cost of each lot.": "متوسط التكلفة يتغير فقط عند الشراء. الأرباح تحسب بالتكلفة الفعلية لكل تشغيلة.",
+  "The average cost changes only when stock is bought. Margins use the real cost of each batch.": "متوسط التكلفة يتغير فقط عند الشراء. الأرباح تحسب بالتكلفة الفعلية لكل تشغيلة.",
   "Price (EGP)": "السعر (جنيه)",
   "Balance ({unit})": "الرصيد ({unit})",
   "Average cost": "متوسط التكلفة",
