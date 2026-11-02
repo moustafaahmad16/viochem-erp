@@ -173,4 +173,9 @@ export const rfq: Record<string, string> = {
   "Choose the product on every line, or remove the empty line.": "اختر المنتج في كل سطر، أو احذف السطر الفارغ.",
   "Enter a quantity for every product.": "أدخل كمية لكل منتج.",
   "The supplier's name isn't on the sheet. Choose who sent it.": "اسم المورد غير مكتوب في الملف. اختر من أرسله.",
+  "Reading the sheet…": "جارٍ قراءة الملف…",
+  "Only .xlsx files can be read. In Excel, choose Save As and pick Excel Workbook (.xlsx).": "يمكن قراءة ملفات ‎.xlsx فقط. في Excel اختر «حفظ باسم» ثم «مصنف Excel (‎.xlsx)».",
+  "That file couldn't be read, or it's empty. Close it in Excel, then choose it again.": "تعذّرت قراءة الملف أو أنه فارغ. أغلقه في Excel ثم اختره من جديد.",
+  "The upload didn't go through. If the file is open in Excel, close it and choose it again. Check that VIOCHEM is still open on the main computer, then try again.": "لم يكتمل الرفع. إذا كان الملف مفتوحًا في Excel فأغلقه واختره من جديد. وتأكد أن VIOCHEM ما زال مفتوحًا على الجهاز الرئيسي ثم حاول مرة أخرى.",
+  "That file took too long to read. Open it in Excel, copy the table into a new sheet from VIOCHEM, and upload that.": "استغرقت قراءة الملف وقتًا طويلًا. افتحه في Excel وانسخ الجدول إلى ملف جديد من VIOCHEM ثم ارفعه.",
 };

@@ -175,13 +175,26 @@ function wholeDays(v: Cell, label: string): number | null {
 }
 
 
+const LOAD_TIMEOUT_MS = 30_000;
+const TOO_LONG = "That file took too long to read. Open it in Excel, copy the table into a new sheet from VIOCHEM, and upload that.";
+/** Rows after the table are skipped once this many in a row have no #, so a sheet formatted down to row 1,000,000 reads quickly. */
+const BLANK_ROWS_TO_STOP = 200;
+
 /** Read a supplier's reply. Rows without a price mean they didn't quote that product. */
 export async function readReply(data: ArrayBuffer): Promise<Reply> {
   const book = new ExcelJS.Workbook();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    await book.xlsx.load(data);
-  } catch {
+    // Some files (saved by other spreadsheet programs, or damaged) never finish loading; don't wait forever.
+    const tooLong = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(TOO_LONG)), LOAD_TIMEOUT_MS);
+    });
+    await Promise.race([book.xlsx.load(data), tooLong]);
+  } catch (e) {
+    if (e instanceof Error && e.message === TOO_LONG) throw e;
     throw new Error("That file couldn't be opened. Save it from Excel as .xlsx and try again.");
+  } finally {
+    clearTimeout(timer);
   }
   const meta = book.getWorksheet(META);
   const metaValue = (key: string) => {
@@ -247,10 +260,14 @@ export async function readReply(data: ArrayBuffer): Promise<Reply> {
   const lineIds = String(metaValue("lines") ?? "").split(",").map(Number).filter((n) => n > 0);
   if (!old && !lineIds.length) throw new Error("This isn't a VIOCHEM quotation sheet: its hidden part is missing. Send the supplier a new sheet.");
 
-  for (let n = headRow + 1; n <= sheet.rowCount; n++) {
+  for (let n = headRow + 1, blank = 0; n <= sheet.rowCount && blank < BLANK_ROWS_TO_STOP; n++) {
     const r = sheet.getRow(n);
     const no = id(cell(r, old ? "ref" : "no"));
-    if (no === null) continue;
+    if (no === null) {
+      blank++;
+      continue;
+    }
+    blank = 0;
     try {
       const lineId = old ? no : lineIds[no - 1];
       if (!lineId) throw new Error(`There is no product #${no} on this request`);

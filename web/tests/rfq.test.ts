@@ -114,6 +114,22 @@ describe("supplier sheet", () => {
     ]);
   });
 
+  it("ignores stray cells far below the table", async () => {
+    const rfq = await db.rfq.findUniqueOrThrow({ where: { id: rfqId }, include: { lines: { include: { item: true }, orderBy: { id: "asc" } } } });
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load((await buildSheet({ rfq, lines: rfq.lines })) as unknown as ArrayBuffer);
+    const sheet = book.getWorksheet("Quotation")!;
+    let head = 0;
+    sheet.eachRow((row, i) => {
+      if (row.getCell(1).value === "#") head = i;
+    });
+    sheet.getRow(head + 1).getCell(5).value = 11;
+    sheet.getRow(200_000).getCell(5).value = " "; // a stray space far down, as Excel files sometimes carry
+    const reply = await readReply((await book.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(reply.errors).toEqual([]);
+    expect(reply.rows.filter((r) => r.unitPrice).map((r) => r.unitPrice)).toEqual(["11"]);
+  });
+
   it("adds a supplier it doesn't know yet, in the currency they quoted", async () => {
     const reply = { rfqId, supplierId: null, supplierName: "RFQ Brand New Trading", number: null, errors: [], rows: [{ row: 12, lineId: lineA, unitPrice: "99", currency: "GBP", moq: null, leadTimeDays: null, paymentTermsDays: null, validUntil: null, incoterm: null, notes: null }] };
     expect(await loadReply(rfqId, null, reply)).toEqual({ supplier: "RFQ Brand New Trading", priced: 1, swapped: [] });

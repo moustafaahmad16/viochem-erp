@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import { isValidCas, isValidHsCode } from "@/lib/chemistry";
+import { isValidCas, isValidHsCode, normalizeCas } from "@/lib/chemistry";
 
 /**
  * What each Excel import expects. Every sheet has one header row with these column titles,
@@ -182,7 +182,8 @@ function customerType(v: Cell): { etaType?: string } {
 
 const PARSERS = {
   products: (r: Record<string, Cell>): ProductRow => {
-    const cas = text(r.casNumber);
+    const typed = text(r.casNumber);
+    const cas = typed && (normalizeCas(typed) || null);
     if (cas && !isValidCas(cas)) throw new Error(`CAS number ${cas} isn't valid`);
     const hs = text(r.hsCode);
     if (hs && !isValidHsCode(hs)) throw new Error(`HS code ${hs} isn't valid`);

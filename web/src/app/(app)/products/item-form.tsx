@@ -1,5 +1,5 @@
 import type { Item } from "@prisma/client";
-import { Field, Select, Submit, TextArea } from "@/components/forms";
+import { CasField, Field, Select, Submit, TextArea } from "@/components/forms";
 import type { T } from "@/i18n/core";
 
 export function ItemFields({ item, t }: { item?: Item; t: T }) {
@@ -8,7 +8,7 @@ export function ItemFields({ item, t }: { item?: Item; t: T }) {
       <Field label={t("Code")} name="code" defaultValue={item?.code} required placeholder={t("Your own short code, e.g. {value}", { value: "LIN-001" })} />
       <Field label={t("Name")} name="name" defaultValue={item?.name} required placeholder={t("The product name, e.g. {value}", { value: "Linalool" })} />
       <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
-        <Field label={t("CAS number")} name="casNumber" defaultValue={item?.casNumber ?? ""} placeholder={t("e.g. {value}", { value: "78-70-6" })} dir="ltr" hint={t("Checked automatically")} />
+        <CasField label={t("CAS number")} name="casNumber" defaultValue={item?.casNumber ?? ""} placeholder={t("e.g. {value}", { value: "78-70-6" })} dir="ltr" hint={t("Checked automatically")} />
         <Field label={t("HS code")} name="hsCode" defaultValue={item?.hsCode ?? ""} placeholder={t("e.g. {value}", { value: "2905.22.00" })} dir="ltr" hint={t("The customs tariff code.")} />
         <Field label={t("EGS code")} name="etaItemCode" defaultValue={item?.etaItemCode ?? ""} placeholder={t("e.g. {value}", { value: "EG-100324932-LIN001" })} dir="ltr" hint={t("As registered on the ETA portal. Needed to send e-invoices.")} />
       </div>

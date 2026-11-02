@@ -207,6 +207,8 @@ function buildMenu() {
           },
         ],
       },
+      // Without an Edit menu, copy and paste shortcuts don't reach the page on every system.
+      { label: "Edit", submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }] },
       { label: "View", submenu: [{ role: "reload" }, { role: "zoomIn" }, { role: "zoomOut" }, { role: "resetZoom" }, { type: "separator" }, { role: "togglefullscreen" }] },
     ]),
   );
@@ -225,6 +227,24 @@ async function createWindow() {
     if (url.startsWith(LOCAL)) return { action: "allow" };
     shell.openExternal(url);
     return { action: "deny" };
+  });
+  // Right-click to cut, copy and paste, as in a browser. Electron shows no menu of its own.
+  win.webContents.on("context-menu", (_e, params) => {
+    const { editFlags, isEditable, selectionText } = params;
+    const items = isEditable
+      ? [
+          { role: "undo", enabled: editFlags.canUndo },
+          { role: "redo", enabled: editFlags.canRedo },
+          { type: "separator" },
+          { role: "cut", enabled: editFlags.canCut },
+          { role: "copy", enabled: editFlags.canCopy },
+          { role: "paste", enabled: editFlags.canPaste },
+          { role: "selectAll", enabled: editFlags.canSelectAll },
+        ]
+      : selectionText.trim()
+        ? [{ role: "copy" }]
+        : [];
+    if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
   });
   // Closing VIOCHEM closes it for everyone on the Wi-Fi, so it asks first.
   win.on("close", (e) => {
