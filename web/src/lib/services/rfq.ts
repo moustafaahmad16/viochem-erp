@@ -248,7 +248,9 @@ export async function loadReply(id: number, supplierId: number | null, reply: Re
     }
     await tx.rfqSupplier.upsert({ where: { rfqId_supplierId: { rfqId: id, supplierId: who } }, create: { rfqId: id, supplierId: who, repliedAt: new Date() }, update: { repliedAt: new Date() } });
     return { supplier: supplier.name, priced, swapped };
-  });
+    // A long request on a slow computer can take more than the 5 seconds a transaction gets by default,
+    // and another save in progress can hold the database for a moment.
+  }, { maxWait: 15_000, timeout: 60_000 });
 }
 
 /**

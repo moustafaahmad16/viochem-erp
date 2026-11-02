@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ActionForm, Field, Select, Submit, TextArea } from "@/components/forms";
+import { ActionForm, Field, Submit, TextArea } from "@/components/forms";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
 import { toInputDate } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -9,6 +9,7 @@ import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/core";
 import { cancelRfq, chooseQuote, deleteRfq, orderSuggested, removeSupplier, reopenRfq, saveLines, setRate, updateRfq, uploadReply } from "../actions";
 import { ProductRows } from "../product-rows";
+import { ReplyUpload } from "../reply-upload";
 import { RfqStatusBadge } from "../status";
 
 export async function generateMetadata({ params }: PageProps<"/rfqs/[id]">) {
@@ -97,18 +98,7 @@ export default async function RfqPage({ params }: PageProps<"/rfqs/[id]">) {
 
         <Card title={t("Supplier replies")}>
           {isOpen && (
-            <ActionForm action={uploadReply.bind(null, id)} resetOnSuccess>
-              <input
-                type="file"
-                name="file"
-                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                required
-                aria-label={t("Reply sheet")}
-                className="block w-full text-sm text-slate-600 file:me-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-800 hover:file:bg-slate-200"
-              />
-              <Select label={t("From")} name="supplierId" options={suppliers.map((s) => ({ value: s.id, label: s.name }))} placeholder={t("The name written on the sheet")} />
-              <Submit>{t("Upload reply")}</Submit>
-            </ActionForm>
+            <ReplyUpload action={uploadReply.bind(null, id)} suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))} />
           )}
           <ul className="mt-5 divide-y divide-slate-100 border-t border-slate-100 text-sm">
             {replies.length === 0 && <li className="py-3 text-slate-500">{t("No replies yet.")}</li>}

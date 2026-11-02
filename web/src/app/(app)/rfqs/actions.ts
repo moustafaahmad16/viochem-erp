@@ -89,7 +89,7 @@ export async function uploadReply(id: number, _: FormState, fd: FormData): Promi
     const reply = await readReply(await file.arrayBuffer());
     done = await rfqs.loadReply(id, chosen ? Number(chosen) : null, reply);
   } catch (e) {
-    if (e instanceof Error && /couldn't be opened|isn't a VIOCHEM|is missing from the sheet/.test(e.message)) return { error: e.message };
+    if (e instanceof Error && /couldn't be opened|took too long to read|isn't a VIOCHEM|is missing from the sheet/.test(e.message)) return { error: e.message };
     return fail(e);
   }
   refresh(id);

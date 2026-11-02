@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import { describe, expect, it } from "vitest";
 import { invoiceTotals, landedUnitCosts, pickLots } from "@/lib/costing";
-import { isValidCas, isValidHsCode } from "@/lib/chemistry";
+import { isValidCas, isValidHsCode, normalizeCas } from "@/lib/chemistry";
 import { formatDate, monthRange, monthsSince, parseInputDate, shipmentDateProblem } from "@/lib/dates";
 
 describe("landed cost", () => {
@@ -108,6 +108,22 @@ describe("CAS numbers", () => {
     expect(isValidCas("121-33-5")).toBe(true); // vanillin
     expect(isValidCas("78-70-5")).toBe(false);
     expect(isValidCas("hello")).toBe(false);
+  });
+
+  it("tidies CAS numbers pasted from websites, PDFs and sheets", () => {
+    expect(normalizeCas(" 78-70-6 ")).toBe("78-70-6");
+    expect(normalizeCas("78\u201170\u20116")).toBe("78-70-6"); // non-breaking hyphens
+    expect(normalizeCas("121\u201333\u20135")).toBe("121-33-5"); // en dashes
+    expect(normalizeCas("\u200E78 - 70 - 6\u200F")).toBe("78-70-6"); // direction marks from Arabic text
+    expect(normalizeCas("CAS No.: 78-70-6")).toBe("78-70-6");
+    expect(normalizeCas("CAS# 121-33-5")).toBe("121-33-5");
+    expect(normalizeCas("CAS-No. 78-70-6")).toBe("78-70-6");
+    expect(normalizeCas("٧٨-٧٠-٦")).toBe("78-70-6"); // Arabic digits
+    expect(normalizeCas("７８－７０－６")).toBe("78-70-6"); // full-width
+    expect(normalizeCas("78706")).toBe("78-70-6");
+    expect(normalizeCas("7732185")).toBe("7732-18-5");
+    expect(normalizeCas("hello")).toBe("hello");
+    expect(isValidCas(normalizeCas("CAS: 7732\u201318\u20135"))).toBe(true);
   });
 });
 

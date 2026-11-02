@@ -3,6 +3,7 @@
 import { createContext, startTransition, useActionState, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { useT } from "@/i18n/client";
+import { normalizeCas } from "@/lib/chemistry";
 import { buttonClass } from "./ui";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -91,6 +92,26 @@ function Labelled({ label, hint, className, children }: { label: string; hint?: 
 export function Field({ label, name, hint, className = "", ...input }: FieldProps & React.InputHTMLAttributes<HTMLInputElement>) {
   if (input.type === "date") return <DateField label={label} name={name} hint={hint} className={className} {...input} />;
   return <Labelled label={label} hint={hint} className={className}>{(id, hintId) => <input id={id} name={name} aria-describedby={hintId} className={inputClass} {...input} />}</Labelled>;
+}
+
+/**
+ * A CAS number box that takes whatever is pasted into it (from PubChem, a supplier's PDF, a
+ * spreadsheet) and tidies it when you leave the box, so "CAS No. 78‑70‑6 " shows as 78-70-6.
+ */
+export function CasField({ onBlur, ...props }: FieldProps & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <Field
+      inputMode="text"
+      autoComplete="off"
+      spellCheck={false}
+      onBlur={(e) => {
+        const tidy = normalizeCas(e.currentTarget.value);
+        if (tidy !== e.currentTarget.value) e.currentTarget.value = tidy;
+        onBlur?.(e);
+      }}
+      {...props}
+    />
+  );
 }
 
 /**

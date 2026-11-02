@@ -5,12 +5,13 @@ import { redirect } from "next/navigation";
 import type { FormState } from "@/components/forms";
 import { decimal, fail, required, text } from "@/lib/actions";
 import { requireUser } from "@/lib/auth";
-import { isValidCas, isValidHsCode } from "@/lib/chemistry";
+import { isValidCas, isValidHsCode, normalizeCas } from "@/lib/chemistry";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
 
 function itemData(fd: FormData) {
-  const casNumber = text(fd, "casNumber");
+  const typed = text(fd, "casNumber");
+  const casNumber = typed && (normalizeCas(typed) || null);
   if (casNumber && !isValidCas(casNumber)) throw new UserError(`CAS number ${casNumber} isn't valid. Check the digits.`);
   const hsCode = text(fd, "hsCode");
   if (hsCode && !isValidHsCode(hsCode)) throw new UserError(`HS code ${hsCode} isn't valid. It should be 4 to 12 digits, like 2905.22.00.`);
