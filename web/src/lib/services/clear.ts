@@ -17,6 +17,8 @@ export async function clearAllData(tx: Tx) {
   await tx.journalEntry.deleteMany();
   await tx.creditNoteLine.deleteMany();
   await tx.creditNote.deleteMany();
+  await tx.customerRequestLine.deleteMany();
+  await tx.customerRequest.deleteMany();
   await tx.quoteLine.deleteMany();
   await tx.quote.deleteMany();
   await tx.customerPayment.deleteMany();

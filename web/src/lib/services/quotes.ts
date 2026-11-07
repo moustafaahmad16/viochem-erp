@@ -1,5 +1,5 @@
 import type { InvoiceKind } from "@prisma/client";
-import { db } from "@/lib/db";
+import { db, type Tx } from "@/lib/db";
 import { addDays, today } from "@/lib/dates";
 import { UserError } from "./errors";
 import { draftNumber } from "./invoice-numbers";
@@ -28,12 +28,12 @@ function checkValidity(date: Date, validUntil: Date) {
 }
 
 /** A taxed quotation adds 14% VAT; a non-taxed one adds none. */
-export async function createQuote(customerId: number, date: Date, validUntil: Date | null = null, kind: InvoiceKind = "TAXED") {
+export async function createQuote(customerId: number, date: Date, validUntil: Date | null = null, kind: InvoiceKind = "TAXED", within?: Tx) {
   const until = validUntil ?? addDays(date, DEFAULT_VALID_DAYS);
   checkValidity(date, until);
-  return db.$transaction(async (tx) =>
-    tx.quote.create({ data: { number: await nextNumber(tx, "QUO", date), customerId, date, validUntil: until, kind, vatRate: kind === "NON_TAXED" ? 0 : 14 } }),
-  );
+  const make = async (tx: Tx) =>
+    tx.quote.create({ data: { number: await nextNumber(tx, "QUO", date), customerId, date, validUntil: until, kind, vatRate: kind === "NON_TAXED" ? 0 : 14 } });
+  return within ? make(within) : db.$transaction(make);
 }
 
 export async function updateQuote(

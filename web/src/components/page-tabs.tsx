@@ -49,6 +49,7 @@ export function pageTitle(): string {
 /** What a document's number is shown after, so "← 392" reads "← Invoice 392". */
 const KIND: [string, string][] = [
   ["/invoices/", "Invoice"],
+  ["/requests/", "Customer request"],
   ["/quotes/", "Quotation"],
   ["/credit-notes/", "Credit note"],
   ["/purchase-orders/", "Purchase order"],

@@ -29,28 +29,29 @@ model Counter {
 }
 
 model Item {
-  id            Int                 @id @default(autoincrement())
-  code          String              @unique
+  id            Int                   @id @default(autoincrement())
+  code          String                @unique
   name          String
   casNumber     String?
   // Harmonized System customs code, e.g. 2905.22.
   hsCode        String?
-  unit          String              @default("kg")
+  unit          String                @default("kg")
   hazardClass   String?
   notes         String?
   // The item code registered with the Egyptian Tax Authority, e.g. EG-100324932-LIN001 (EGS) or a GS1 barcode.
   etaItemCode   String?
-  etaItemType   String              @default("EGS")
-  active        Boolean             @default(true)
+  etaItemType   String                @default("EGS")
+  active        Boolean               @default(true)
   // Warn when stock on hand falls to this or below. Empty means no alert.
-  minQty        Decimal?            @db.Decimal(14, 3)
-  createdAt     DateTime            @default(now())
+  minQty        Decimal?              @db.Decimal(14, 3)
+  createdAt     DateTime              @default(now())
   lots          Lot[]
   shipmentLines ShipmentLine[]
   invoiceLines  InvoiceLine[]
   quoteLines    QuoteLine[]
   orderLines    PurchaseOrderLine[]
   rfqLines      RfqLine[]
+  requestLines  CustomerRequestLine[]
 }
 
 model Supplier {
@@ -104,6 +105,7 @@ model Customer {
   quotes             Quote[]
   creditNotes        CreditNote[]
   cheques            Cheque[]
+  requests           CustomerRequest[]
 }
 
 enum ShipmentStatus {
@@ -524,22 +526,23 @@ enum QuoteStatus {
 
 // A price offer to a customer. Accepting it makes a draft invoice with the same lines.
 model Quote {
-  id          Int         @id @default(autoincrement())
-  number      String      @unique
+  id          Int              @id @default(autoincrement())
+  number      String           @unique
   customerId  Int
-  customer    Customer    @relation(fields: [customerId], references: [id])
-  date        DateTime    @db.Date
-  validUntil  DateTime?   @db.Date
-  status      QuoteStatus @default(OPEN)
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  date        DateTime         @db.Date
+  validUntil  DateTime?        @db.Date
+  status      QuoteStatus      @default(OPEN)
   confirmedAt DateTime?
   // Taxed quotations add 14% VAT; non-taxed ones none, and turn into non-taxed invoices.
-  kind        InvoiceKind @default(TAXED)
-  vatRate     Decimal     @default(14) @db.Decimal(5, 2)
+  kind        InvoiceKind      @default(TAXED)
+  vatRate     Decimal          @default(14) @db.Decimal(5, 2)
   notes       String?
-  invoiceId   Int?        @unique
-  invoice     Invoice?    @relation(fields: [invoiceId], references: [id])
-  createdAt   DateTime    @default(now())
+  invoiceId   Int?             @unique
+  invoice     Invoice?         @relation(fields: [invoiceId], references: [id])
+  createdAt   DateTime         @default(now())
   lines       QuoteLine[]
+  request     CustomerRequest?
 
   @@index([date])
 }
@@ -783,4 +786,51 @@ model RfqRate {
   rate     Decimal @db.Decimal(14, 6)
 
   @@unique([rfqId, currency])
+}
+
+enum CustomerRequestStatus {
+  OPEN // still being written down
+  CONVERTED // sent on: what is free in stock went onto a quotation, the rest to the supply gap
+  CANCELLED
+}
+
+/**
+ * What a customer asked for, before any price is offered. Each product is either one of ours
+ * or one we don't import, typed in by name. Sending it on puts what is free in stock onto a
+ * quotation, and records the rest (with who asked and how much) as the supply gap.
+ */
+model CustomerRequest {
+  id          Int                   @id @default(autoincrement())
+  number      String                @unique
+  customerId  Int
+  customer    Customer              @relation(fields: [customerId], references: [id])
+  date        DateTime              @db.Date
+  status      CustomerRequestStatus @default(OPEN)
+  notes       String?
+  quoteId     Int?                  @unique
+  quote       Quote?                @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  convertedAt DateTime?
+  createdAt   DateTime              @default(now())
+  lines       CustomerRequestLine[]
+
+  @@index([date])
+}
+
+model CustomerRequestLine {
+  id          Int             @id @default(autoincrement())
+  requestId   Int
+  request     CustomerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  // One of our products, or empty for a product we don't import, named below.
+  itemId      Int?
+  item        Item?           @relation(fields: [itemId], references: [id])
+  productName String?
+  casNumber   String?
+  unit        String          @default("kg")
+  qty         Decimal         @db.Decimal(14, 3)
+  notes       String?
+  // Set when the request is sent on: how much went onto the quotation, and how much couldn't be offered.
+  quotedQty   Decimal?        @db.Decimal(14, 3)
+  gapQty      Decimal?        @db.Decimal(14, 3)
+  // When the missing quantity was dealt with (ordered, bought locally, or let go).
+  gapClosedAt DateTime?
 }

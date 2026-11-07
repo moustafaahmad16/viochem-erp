@@ -5,6 +5,7 @@ export const nav: Record<string, string> = {
   "New tab": "تبويب جديد",
   "Close tab": "إغلاق التبويب",
   "Loading…": "جارٍ التحميل…",
+  "No requests from this customer yet.": "لا توجد طلبات من هذا العميل بعد.",
   "Not yet": "لم يرد بعد",
   Replied: "تاريخ الرد",
   "No quotations for this customer yet.": "لا توجد عروض أسعار لهذا العميل بعد.",

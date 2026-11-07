@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BadgeCheck, Building2, ClipboardList, FileSearch, FileText, FlaskConical, NotebookPen, Plus, Receipt, ReceiptText, Ship, Users, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Inbox, Building2, ClipboardList, FileSearch, FileText, FlaskConical, NotebookPen, Plus, Receipt, ReceiptText, Ship, Users, type LucideIcon } from "lucide-react";
 import { useT } from "@/i18n/client";
 
 type Entry = { href: string; label: string; icon: LucideIcon; admin?: boolean };
@@ -11,6 +11,7 @@ const GROUPS: { title: string; links: Entry[] }[] = [
   {
     title: "Sales",
     links: [
+      { href: "/requests/new", label: "Customer request", icon: Inbox },
       { href: "/quotes/new", label: "Quotation", icon: FileText },
       { href: "/invoices/new", label: "Invoice", icon: Receipt },
       { href: "/cheques/new?direction=received", label: "Receive a cheque", icon: BadgeCheck },

@@ -8,20 +8,23 @@ import type { getT } from "@/i18n/server";
 import { ChequeStatusBadge } from "../cheques/status";
 import { InvoiceNumber, InvoiceStatusBadge } from "../invoices/status";
 import { QuoteStatusBadge } from "../quotes/status";
+import { RequestStatusBadge } from "../requests/status";
 
 type T = Awaited<ReturnType<typeof getT>>;
 
 /** Everything done with one customer, a tab per kind of document. */
 export async function CustomerHistory({ customerId, tab, t }: { customerId: number; tab: string; t: T }) {
   const where = { customerId };
-  const [invoices, quotes, credits, cheques] = await Promise.all([
+  const [invoices, quotes, credits, cheques, requests] = await Promise.all([
     db.invoice.findMany({ where, include: { lines: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     db.quote.findMany({ where, include: { lines: true, invoice: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     db.creditNote.findMany({ where, include: { lines: true, invoice: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     db.cheque.findMany({ where, orderBy: [{ dueDate: "desc" }, { id: "desc" }] }),
+    db.customerRequest.findMany({ where, include: { quote: true, _count: { select: { lines: true } } }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
   ]);
   const tabs = [
     { key: "", label: t("Invoices"), count: invoices.length },
+    { key: "requests", label: t("Customer requests"), count: requests.length },
     { key: "quotes", label: t("Quotations"), count: quotes.length },
     { key: "credits", label: t("Credit notes"), count: credits.length },
     { key: "cheques", label: t("Cheques"), count: cheques.length },
@@ -33,7 +36,19 @@ export async function CustomerHistory({ customerId, tab, t }: { customerId: numb
       <div className="border-b border-slate-100 px-5 py-3">
         <TabPills tabs={tabs} current={current} href={(k) => `/customers/${customerId}${k ? `?tab=${k}` : ""}#history`} />
       </div>
-      {current === "quotes" ? (
+      {current === "requests" ? (
+        <Table head={<tr><th>{t("Request")}</th><th>{t("Date")}</th><th>{t("Status")}</th><th>{t("Quotation")}</th><th className="num">{t("Products")}</th></tr>} empty={t("No requests from this customer yet.")}>
+          {requests.map((r) => (
+            <tr key={r.id}>
+              <td><RowLink href={`/requests/${r.id}`}>{r.number}</RowLink></td>
+              <td>{t.date(r.date)}</td>
+              <td><RequestStatusBadge status={r.status} /></td>
+              <td>{r.quote && <RowLink href={`/quotes/${r.quote.id}`}>{r.quote.number}</RowLink>}</td>
+              <td className="num">{r._count.lines}</td>
+            </tr>
+          ))}
+        </Table>
+      ) : current === "quotes" ? (
         <Table head={<tr><th>{t("Quotation")}</th><th>{t("Date")}</th><th>{t("Status")}</th><th>{t("Invoice")}</th><th className="num">{t("Total (EGP)")}</th></tr>} empty={t("No quotations for this customer yet.")}>
           {quotes.map((q) => (
             <tr key={q.id}>
