@@ -29,7 +29,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
   if (!Number.isInteger(id)) notFound();
   const q = await db.quote.findUnique({
     where: { id },
-    include: { customer: true, invoice: true, lines: { include: { item: true }, orderBy: { id: "asc" } } },
+    include: { customer: true, invoice: true, request: true, lines: { include: { item: true }, orderBy: { id: "asc" } } },
   });
   if (!q) notFound();
   const isOpen = q.status === "OPEN";
@@ -58,6 +58,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
           <>
             <RowLink href={`/customers/${q.customerId}`}>{q.customer.name}</RowLink> · {t.date(q.date)}
             {q.validUntil && ` · ${t("Valid until {date}", { date: t.date(q.validUntil) })}`}
+            {q.request && <> · {t("From request")} <RowLink href={`/requests/${q.request.id}`}>{q.request.number}</RowLink></>}
           </>
         }
         back={{ href: "/quotes", label: t("Quotations") }}
