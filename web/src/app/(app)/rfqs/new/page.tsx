@@ -3,6 +3,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { db } from "@/lib/db";
 import { lowStock } from "@/lib/services/alerts";
 import { productMovement, safetyStock } from "@/lib/services/rankings";
+import { stillToBuy, supplyGap } from "@/lib/services/requests";
 import { getT } from "@/i18n/server";
 import { createRfq } from "../actions";
 import { ProductRows } from "../product-rows";
@@ -18,6 +19,7 @@ export default async function NewRfqPage({ searchParams }: PageProps<"/rfqs/new"
   const [items, start] = await Promise.all([
     db.item.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     sp.from === "low-stock" ? lowStock().then((rows) => rows.map((r) => ({ itemId: r.itemId, short: r.short })))
+    : sp.from === "gap" ? supplyGap().then((g) => g.ours.map((r) => ({ itemId: r.itemId!, short: stillToBuy(r) })))
     : sp.from === "safety" ? productMovement().then((rows) => safetyStock(rows).map((r) => ({ itemId: r.itemId, short: r.periods[months - 1].short.toDecimalPlaces(0, 0) })))
     : Promise.resolve([]),
   ]);

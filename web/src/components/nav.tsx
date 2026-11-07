@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
-import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, Layers, Hash, type LucideIcon } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, Layers, Hash, Inbox, PackageSearch, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
   { title: "", links: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] },
   {
     title: "Sales",
     links: [
+      { href: "/requests", label: "Customer requests", icon: Inbox },
       { href: "/quotes", label: "Quotations", icon: FileText },
       { href: "/invoices", label: "Invoices", icon: Receipt },
       { href: "/credit-notes", label: "Credit notes", icon: Undo2 },
@@ -21,6 +22,7 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: Luc
   {
     title: "Imports",
     links: [
+      { href: "/supply-gap", label: "Supply gap", icon: PackageSearch },
       { href: "/rfqs", label: "Requests for quotation", icon: FileSearch },
       { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
       { href: "/shipments", label: "Shipments", icon: Ship },
