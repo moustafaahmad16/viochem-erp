@@ -1,4 +1,4 @@
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { ButtonLink, Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
@@ -50,7 +50,7 @@ export default async function QuotesPage({ searchParams }: PageProps<"/quotes">)
           {quotes.map((q) => (
             <tr key={q.id} className="hover:bg-slate-50">
               <td><RowLink href={`/quotes/${q.id}`}>{q.number}</RowLink></td>
-              <td>{q.customer.name}</td>
+              <td><NameLink href={`/customers/${q.customerId}`}>{q.customer.name}</NameLink></td>
               <td>{t.date(q.date)}</td>
               <td>{q.validUntil ? t.date(q.validUntil) : ""}</td>
               <td><QuoteStatusBadge status={q.status} validUntil={q.validUntil} /></td>

@@ -9,13 +9,14 @@ import { supplierAccounts } from "@/lib/services/accounts";
 import { updateSupplier } from "../actions";
 import { PendingCheques } from "../../cheques/pending";
 import { CURRENCIES, SupplierFields } from "../fields";
-import { StatusBadge } from "../../shipments/status";
+import { SupplierHistory } from "../history";
 import { deleteSupplierPayment, paySupplier } from "../../payments/actions";
 import { accountOptions, Balance, OpenBills, PaySupplierForm, Statement } from "../../payments/parts";
 
-export default async function SupplierPage({ params }: PageProps<"/suppliers/[id]">) {
+export default async function SupplierPage({ params, searchParams }: PageProps<"/suppliers/[id]">) {
   const t = await getT();
   const id = Number((await params).id);
+  const tab = String((await searchParams).tab ?? "");
   const [[acc], user, accounts, openOrders] = await Promise.all([
     supplierAccounts({ id }),
     currentUser(),
@@ -25,7 +26,6 @@ export default async function SupplierPage({ params }: PageProps<"/suppliers/[id
   if (!acc) notFound();
   const s = acc.supplier;
   const deletes = user?.role === "ADMIN" ? new Map(acc.payments.map((p) => [p.number, deleteSupplierPayment.bind(null, p.id)])) : undefined;
-  const shipments = [...s.shipments].sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
   const unpaid = acc.accounts.flatMap((a) => a.bills.filter((b) => b.outstanding.gt(0) && b.key !== "opening").map((b) => ({ ...b, currency: a.currency })));
 
   return (
@@ -55,22 +55,12 @@ export default async function SupplierPage({ params }: PageProps<"/suppliers/[id
               <OpenBills account={a} />
             </Card>
           ))}
+          <SupplierHistory supplierId={s.id} tab={tab} t={t} />
           {acc.accounts.map((a) => (
             <Card key={a.currency} title={t("Statement ({currency})", { currency: a.currency })} padded={false}>
               <Statement account={a} onDelete={deletes} />
             </Card>
           ))}
-          <Card title={t("Shipments")} padded={false}>
-            <Table head={<tr><th>{t("Shipment")}</th><th>{t("Ordered")}</th><th>{t("Status")}</th></tr>} empty={t("No shipments from this supplier yet.")}>
-              {shipments.map((sh) => (
-                <tr key={sh.id}>
-                  <td><RowLink href={`/shipments/${sh.id}`}>{sh.ref}</RowLink></td>
-                  <td>{t.date(sh.orderDate)}</td>
-                  <td><StatusBadge status={sh.status} /></td>
-                </tr>
-              ))}
-            </Table>
-          </Card>
         </div>
         <div className="space-y-6">
           {openOrders.length > 0 && (

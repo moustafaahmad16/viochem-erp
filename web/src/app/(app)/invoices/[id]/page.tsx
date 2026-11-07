@@ -98,7 +98,7 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
                 return (
                   <tr key={l.id}>
                     <td>
-                      {l.item.name}
+                      <RowLink href={`/products/${l.itemId}`}>{l.item.name}</RowLink>
                       <div className="text-xs text-slate-500">
                         {l.moves.length > 0
                           ? l.moves.map((m) => (

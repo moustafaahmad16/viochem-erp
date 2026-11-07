@@ -84,7 +84,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                 return (
                   <tr key={l.id}>
                     <td>
-                      {l.item.name}
+                      <RowLink href={`/products/${l.itemId}`}>{l.item.name}</RowLink>
                       {isOpen && <div className="text-xs text-slate-500">{t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(l.item.unit) })}</div>}
                       {isOpen && (
                         <div className="text-xs text-slate-500">

@@ -6,6 +6,7 @@ import { desktop } from "./desktop";
 import { eta } from "./eta";
 import { imports } from "./imports";
 import { money } from "./money";
+import { nav } from "./nav";
 import { orders } from "./orders";
 import { product } from "./product";
 import { quotes } from "./quotes";
@@ -14,4 +15,4 @@ import { rfq } from "./rfq";
 import { sales } from "./sales";
 
 /** Arabic for each English text, gathered by area of the app. */
-export const ar: Record<string, string> = { ...common, ...sales, ...imports, ...money, ...quotes, ...credits, ...cheques, ...orders, ...alerts, ...eta, ...product, ...rfq, ...reports, ...desktop };
+export const ar: Record<string, string> = { ...common, ...sales, ...imports, ...money, ...quotes, ...credits, ...cheques, ...orders, ...alerts, ...eta, ...product, ...rfq, ...reports, ...desktop, ...nav };

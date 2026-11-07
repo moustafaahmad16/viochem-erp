@@ -90,6 +90,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             </Table>
           </Card>
         </div>
+        <div id="add" className="scroll-mt-6">
         <Card title={t("Add an expense")}>
           <ActionForm action={addExpense} resetOnSuccess>
             <Select label={t("Category")} name="category" required placeholder={t("Choose")} options={categories.map((c) => ({ value: c.category, label: t(c.category), group: t(c.group) }))} hint={t("Your accountant can add more in the chart of accounts")} />
@@ -105,6 +106,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             <Submit>{t("Save expense")}</Submit>
           </ActionForm>
         </Card>
+        </div>
       </div>
     </>
   );

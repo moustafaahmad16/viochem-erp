@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { ButtonLink, Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { MonthFilter } from "@/components/month-filter";
 import { db } from "@/lib/db";
 import { monthRange, monthsSince } from "@/lib/dates";
@@ -44,7 +44,7 @@ export default async function ShipmentsPage({ searchParams }: PageProps<"/shipme
                     </div>
                   )}
                 </td>
-                <td>{s.supplier.name}</td>
+                <td><NameLink href={`/suppliers/${s.supplierId}`}>{s.supplier.name}</NameLink></td>
                 <td>{t.date(s.orderDate)}</td>
                 <td>{s.status === "RECEIVED" ? t.date(s.arrivalDate) : t.date(s.eta)}</td>
                 <td><StatusBadge status={s.status} /></td>

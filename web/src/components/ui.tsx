@@ -1,15 +1,12 @@
 import Link from "next/link";
+import { BackLink } from "./back-link";
 import type { ReactNode } from "react";
 import { Tr } from "@/i18n/switch";
 
 export function PageHeader({ title, subtitle, actions, back }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; back?: { href: string; label: string } }) {
   return (
     <div className="mb-6">
-      {back && (
-        <Link href={back.href} className="mb-2 inline-block text-sm text-slate-500 hover:text-slate-800">
-          <span className="inline-block rtl:rotate-180">←</span> {back.label}
-        </Link>
-      )}
+      {back && <BackLink href={back.href} label={back.label} />}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
@@ -70,7 +67,7 @@ const BADGE = {
 };
 
 export function Badge({ children, color = "gray" }: { children: ReactNode; color?: keyof typeof BADGE }) {
-  return <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ring-transparent ${BADGE[color]}`}>{children}</span>;
+  return <span data-badge className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ring-transparent ${BADGE[color]}`}>{children}</span>;
 }
 
 export function Table({ head, children, empty, footer }: { head: ReactNode; children: ReactNode; empty?: ReactNode; footer?: ReactNode }) {
@@ -92,6 +89,15 @@ export function Table({ head, children, empty, footer }: { head: ReactNode; chil
 export function RowLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} className="whitespace-nowrap font-medium text-brand-700 hover:underline">
+      {children}
+    </Link>
+  );
+}
+
+/** A quiet link for a name in a table, such as the customer on an invoice row. */
+export function NameLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="text-slate-700 hover:text-brand-700 hover:underline">
       {children}
     </Link>
   );
