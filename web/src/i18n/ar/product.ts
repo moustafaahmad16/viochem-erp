@@ -35,4 +35,11 @@ export const product: Record<string, string> = {
   "Balance ({unit})": "الرصيد ({unit})",
   "Average cost": "متوسط التكلفة",
   Now: "الآن",
+
+  "Movement history": "سجل الحركة",
+  "Open product page": "فتح صفحة المنتج",
+  Close: "إغلاق",
+  "Loading…": "جارٍ التحميل…",
+  "Couldn't load the movements. Try again.": "تعذر تحميل الحركات. حاول مرة أخرى.",
+  "This product no longer exists.": "هذا المنتج لم يعد موجودًا.",
 };

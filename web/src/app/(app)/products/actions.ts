@@ -8,6 +8,8 @@ import { requireUser } from "@/lib/auth";
 import { isValidCas, isValidHsCode, normalizeCas } from "@/lib/chemistry";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
+import { productHistory } from "@/lib/services/product";
+import { toMoveRows } from "@/components/movements-table";
 
 function itemData(fd: FormData) {
   const typed = text(fd, "casNumber");
@@ -50,4 +52,12 @@ export async function updateItem(id: number, _: FormState, fd: FormData): Promis
   }
   revalidatePath(`/products/${id}`);
   return { ok: "Saved." };
+}
+
+/** A product's movements, for the pop-up on a quotation. */
+export async function productMoves(itemId: number) {
+  await requireUser();
+  const item = await db.item.findUnique({ where: { id: itemId }, select: { id: true, name: true, code: true, unit: true } });
+  if (!item) return null;
+  return { item, rows: toMoveRows(await productHistory(itemId)) };
 }
