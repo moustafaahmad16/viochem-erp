@@ -2,6 +2,9 @@
 export const nav: Record<string, string> = {
   New: "جديد",
   "Journal entry": "قيد يومية",
+  "New tab": "تبويب جديد",
+  "Close tab": "إغلاق التبويب",
+  "Loading…": "جارٍ التحميل…",
   "Not yet": "لم يرد بعد",
   Replied: "تاريخ الرد",
   "No quotations for this customer yet.": "لا توجد عروض أسعار لهذا العميل بعد.",
