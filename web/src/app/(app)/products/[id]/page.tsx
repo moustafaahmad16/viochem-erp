@@ -4,7 +4,8 @@ import { ExportButtons } from "@/components/export-buttons";
 import { Badge, ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
 import { db } from "@/lib/db";
 import { money, pct, qty } from "@/lib/format";
-import { productAnalysis, productHistory, type MoveType } from "@/lib/services/product";
+import { productAnalysis, productHistory } from "@/lib/services/product";
+import { MovementsTable, toMoveRows } from "@/components/movements-table";
 import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/core";
 import { updateItem } from "../actions";
@@ -17,14 +18,6 @@ const TABS = [
   { key: "movements", label: "Movements" },
   { key: "lots", label: "Batches and details" },
 ] as const;
-
-const TYPE: Record<MoveType, { label: string; color: "gray" | "green" | "blue" | "amber" | "red" }> = {
-  OPENING: { label: "Opening stock", color: "gray" },
-  RECEIPT: { label: "Purchase", color: "green" },
-  SALE: { label: "Sale", color: "blue" },
-  RETURN: { label: "Return", color: "amber" },
-  ADJUSTMENT: { label: "Stock count", color: "gray" },
-};
 
 export default async function ProductPage({ params, searchParams }: PageProps<"/products/[id]">) {
   const t = await getT();
@@ -204,59 +197,14 @@ async function Analysis({ itemId, unit, t }: { itemId: number; unit: string; t: 
 }
 
 async function Movements({ itemId, unit, t }: { itemId: number; unit: string; t: T }) {
-  const rows = await productHistory(itemId);
-  const last = rows.at(-1);
+  const rows = toMoveRows(await productHistory(itemId));
   return (
     <Card
       title={t("All movements")}
       padded={false}
       actions={<span className="text-xs text-slate-500">{t("The average cost changes only when stock is bought. Margins use the real cost of each batch.")}</span>}
     >
-      <Table
-        head={
-          <tr>
-            <th>{t("Date")}</th>
-            <th>{t("Type")}</th>
-            <th>{t("Document")}</th>
-            <th className="num">{t("In")}</th>
-            <th className="num">{t("Out")}</th>
-            <th className="num">{t("Price (EGP)")}</th>
-            <th className="num">{t("Balance ({unit})", { unit })}</th>
-            <th className="num">{t("Average cost")}</th>
-            <th className="num">{t("Stock value")}</th>
-          </tr>
-        }
-        empty={t("No stock received yet.")}
-        footer={last && (
-          <tr>
-            <td colSpan={6}>{t("Now")}</td>
-            <td className="num">{qty(last.balance)}</td>
-            <td className="num">{money(last.avgCost)}</td>
-            <td className="num">{money(last.value)}</td>
-          </tr>
-        )}
-      >
-        {rows.map((r, i) => {
-          const changed = i === 0 || !r.avgCost.eq(rows[i - 1].avgCost);
-          return (
-            <tr key={r.key}>
-              <td className="whitespace-nowrap">{t.date(r.date)}</td>
-              <td><Badge color={TYPE[r.type].color}>{t(TYPE[r.type].label)}</Badge></td>
-              <td>
-                {r.doc && <RowLink href={r.doc.href}>{r.doc.label}</RowLink>}
-                {r.party && <div><a href={r.party.href} className="text-xs text-slate-500 hover:underline">{r.party.name}</a></div>}
-                {r.note && <div className="text-xs text-slate-500">{r.note}</div>}
-              </td>
-              <td className="num text-emerald-700">{r.qtyIn.isZero() ? "" : qty(r.qtyIn)}</td>
-              <td className="num text-red-700">{r.qtyOut.isZero() ? "" : qty(r.qtyOut)}</td>
-              <td className="num">{money(r.price)}</td>
-              <td className="num font-medium">{qty(r.balance)}</td>
-              <td className={`num ${changed ? "font-semibold text-slate-900" : "text-slate-500"}`}>{money(r.avgCost)}</td>
-              <td className="num">{money(r.value)}</td>
-            </tr>
-          );
-        })}
-      </Table>
+      <MovementsTable rows={rows} unit={unit} t={t} />
     </Card>
   );
 }

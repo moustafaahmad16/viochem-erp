@@ -5,6 +5,7 @@ import { ActionForm, Field, Select, Submit, type FormState } from "@/components/
 import { useT } from "@/i18n/client";
 import type { PriceHint } from "@/lib/services/price-history";
 import { PricePanel } from "@/components/price-panel";
+import { MovementsButton } from "@/components/movements-button";
 
 type Option = { id: number; label: string; unit: string; avgCost: string | null; hint?: PriceHint };
 
@@ -27,6 +28,11 @@ export function QuoteLineForm({ action, items, customer }: { action: (s: FormSta
         className="sm:col-span-6"
         required
       />
+      {item && (
+        <div className="-mt-1 flex justify-end sm:col-span-6">
+          <MovementsButton itemId={item.id} />
+        </div>
+      )}
       {item?.hint && <PricePanel hint={item.hint} avgCost={item.avgCost} price={price} unit={t(item.unit)} customer={customer} />}
       <Field label={item ? t("Quantity ({unit})", { unit: item.unit }) : t("Quantity")} name="qty" inputMode="decimal" required className="sm:col-span-2" />
       <Field label={t("Price per unit (EGP, before VAT)")} name="unitPrice" inputMode="decimal" required className="sm:col-span-2" value={price} onChange={(e) => setPrice(e.target.value)} />
