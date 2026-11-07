@@ -15,6 +15,7 @@ import { LineInput, LineSave } from "@/components/line-edit";
 import { InvoiceNumber } from "../../invoices/status";
 import { QuoteStatusBadge } from "../status";
 import { QuoteLineForm } from "./line-form";
+import { MovementsButton } from "@/components/movements-button";
 import { priceHints } from "@/lib/services/price-history";
 
 export async function generateMetadata({ params }: PageProps<"/quotes/[id]">) {
@@ -84,7 +85,10 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                 return (
                   <tr key={l.id}>
                     <td>
-                      <RowLink href={`/products/${l.itemId}`}>{l.item.name}</RowLink>
+                      <div className="flex flex-wrap items-baseline gap-x-3">
+                        <RowLink href={`/products/${l.itemId}`}>{l.item.name}</RowLink>
+                        {isOpen && <MovementsButton itemId={l.itemId} className="text-xs" />}
+                      </div>
                       {isOpen && <div className="text-xs text-slate-500">{t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(l.item.unit) })}</div>}
                       {isOpen && (
                         <div className="text-xs text-slate-500">
