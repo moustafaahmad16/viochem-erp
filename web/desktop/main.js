@@ -230,7 +230,14 @@ async function createWindow() {
   });
   // Right-click to cut, copy and paste, as in a browser. Electron shows no menu of its own.
   win.webContents.on("context-menu", (_e, params) => {
-    const { editFlags, isEditable, selectionText } = params;
+    const { editFlags, isEditable, selectionText, linkURL } = params;
+    // Pages of VIOCHEM can open in a new tab along the top of the window.
+    if (linkURL && linkURL.startsWith(LOCAL)) {
+      const href = linkURL.slice(LOCAL.length) || "/";
+      const open = () => win.webContents.executeJavaScript(`window.dispatchEvent(new CustomEvent("viochem-open-tab", { detail: ${JSON.stringify(href)} }))`);
+      Menu.buildFromTemplate([{ label: "Open in new tab", click: open }]).popup({ window: win });
+      return;
+    }
     const items = isEditable
       ? [
           { role: "undo", enabled: editFlags.canUndo },

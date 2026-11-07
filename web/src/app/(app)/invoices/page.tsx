@@ -1,4 +1,4 @@
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { ButtonLink, Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
 import { db } from "@/lib/db";
 import { MonthFilter } from "@/components/month-filter";
@@ -72,7 +72,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           {invoices.map((i) => (
             <tr key={i.id} className="hover:bg-slate-50">
               <td><RowLink href={`/invoices/${i.id}`}><InvoiceNumber number={i.number} /></RowLink></td>
-              <td>{i.customer.name}</td>
+              <td><NameLink href={`/customers/${i.customerId}`}>{i.customer.name}</NameLink></td>
               <td><InvoiceKindBadge kind={i.kind} /></td>
               <td>{t.date(i.date)}</td>
               <td>{i.deliveryNoteNo}</td>

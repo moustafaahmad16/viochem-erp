@@ -1,5 +1,5 @@
 import type { PurchaseOrderStatus } from "@prisma/client";
-import { ButtonLink, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { ButtonLink, Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { MonthFilter } from "@/components/month-filter";
 import { db } from "@/lib/db";
 import { monthRange, monthsSince } from "@/lib/dates";
@@ -73,7 +73,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PageProps<"/p
             return (
               <tr key={o.id} className="hover:bg-slate-50">
                 <td><RowLink href={`/purchase-orders/${o.id}`}>{o.number}</RowLink></td>
-                <td>{o.supplier.name}</td>
+                <td><NameLink href={`/suppliers/${o.supplierId}`}>{o.supplier.name}</NameLink></td>
                 <td>{t.date(o.date)}</td>
                 <td>{t.date(o.expectedDate)}</td>
                 <td className="num">{o.currency} {money(p.value)}</td>

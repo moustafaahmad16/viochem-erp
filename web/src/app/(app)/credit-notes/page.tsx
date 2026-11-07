@@ -1,4 +1,4 @@
-import { Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import { creditTotals } from "@/lib/services/credits";
@@ -49,7 +49,7 @@ export default async function CreditNotesPage({ searchParams }: PageProps<"/cred
             <tr key={n.id} className="hover:bg-slate-50">
               <td><RowLink href={`/credit-notes/${n.id}`}>{n.number}</RowLink></td>
               <td><RowLink href={`/invoices/${n.invoiceId}`}>{n.invoice.number}</RowLink></td>
-              <td>{n.customer.name}</td>
+              <td><NameLink href={`/customers/${n.customerId}`}>{n.customer.name}</NameLink></td>
               <td>{t.date(n.date)}</td>
               <td><InvoiceStatusBadge status={n.status} /></td>
               <td>{n.status !== "DRAFT" && <EtaBadge status={n.etaStatus} />}</td>

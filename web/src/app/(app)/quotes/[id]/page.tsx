@@ -87,7 +87,7 @@ export default async function QuotePage({ params }: PageProps<"/quotes/[id]">) {
                   <tr key={l.id}>
                     <td>
                       <div className="flex flex-wrap items-baseline gap-x-3">
-                        {l.item.name}
+                        <RowLink href={`/products/${l.itemId}`}>{l.item.name}</RowLink>
                         {isOpen && <MovementsButton itemId={l.itemId} className="text-xs" />}
                       </div>
                       {isOpen && <div className="text-xs text-slate-500">{t("{onHand} {unit} in stock · {reserved} reserved · {free} free", { onHand: qty(a.onHand), reserved: qty(a.reserved), free: qty(a.free), unit: t(l.item.unit) })}</div>}

@@ -1,5 +1,5 @@
 import { InvoiceNumber } from "@/app/(app)/invoices/status";
-import { Badge, ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
+import { Badge, ButtonLink, Card, PageHeader, RowLink, Stat, Table, NameLink } from "@/components/ui";
 import { invoiceTotals } from "@/lib/costing";
 import { today } from "@/lib/dates";
 import { money, pct, qty } from "@/lib/format";
@@ -161,7 +161,7 @@ export default async function Dashboard() {
               return (
                 <tr key={sh.id}>
                   <td><RowLink href={`/shipments/${sh.id}`}>{sh.ref}</RowLink></td>
-                  <td>{sh.supplier.name}</td>
+                  <td><NameLink href={`/suppliers/${sh.supplierId}`}>{sh.supplier.name}</NameLink></td>
                   <td className={late ? "font-medium text-amber-700" : ""}>{t.date(sh.eta)}{late && ` · ${t("late")}`}</td>
                   <td><StatusBadge status={sh.status} /></td>
                 </tr>
@@ -187,7 +187,7 @@ export default async function Dashboard() {
             {s.recentInvoices.map((i) => (
               <tr key={i.id}>
                 <td><RowLink href={`/invoices/${i.id}`}><InvoiceNumber number={i.number} /></RowLink></td>
-                <td>{i.customer.name}</td>
+                <td><NameLink href={`/customers/${i.customerId}`}>{i.customer.name}</NameLink></td>
                 <td>{t.date(i.date)}</td>
                 <td className="num">{money(invoiceTotals(i.lines, i.vatRate.toString()).total, 0)}</td>
               </tr>
@@ -200,7 +200,7 @@ export default async function Dashboard() {
             {s.expiring.slice(0, 6).map((l) => (
               <tr key={l.id}>
                 <td><RowLink href={`/stock/batches/${l.id}`}>{batchName(l)}</RowLink></td>
-                <td>{l.item.name}</td>
+                <td><NameLink href={`/products/${l.itemId}`}>{l.item.name}</NameLink></td>
                 <td>{l.expiryDate! < now ? <Badge color="red">{t("Expired")}</Badge> : t.date(l.expiryDate)}</td>
                 <td className="num">{qty(l.qtyOnHand)} {l.item.unit}</td>
               </tr>

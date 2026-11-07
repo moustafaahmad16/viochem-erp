@@ -77,7 +77,7 @@ export default async function CreditNotePage({ params }: PageProps<"/credit-note
               {cn.lines.map((l) => (
                 <tr key={l.id}>
                   <td>
-                    {l.invoiceLine.item.name}
+                    <RowLink href={`/products/${l.invoiceLine.itemId}`}>{l.invoiceLine.item.name}</RowLink>
                     {l.moves.length > 0 && (
                       <div className="text-xs text-slate-500">
                         {l.moves.map((m) => (

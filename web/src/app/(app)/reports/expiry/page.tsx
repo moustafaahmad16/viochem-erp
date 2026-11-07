@@ -1,5 +1,5 @@
 import { ExportButtons } from "@/components/export-buttons";
-import { Badge, Card, PageHeader, RowLink, Table } from "@/components/ui";
+import { Badge, Card, PageHeader, RowLink, Table, NameLink } from "@/components/ui";
 import { today } from "@/lib/dates";
 import { getT } from "@/i18n/server";
 import { money, qty } from "@/lib/format";
@@ -35,7 +35,7 @@ export default async function ExpiryPage({ searchParams }: PageProps<"/reports/e
             return (
               <tr key={l.id}>
                 <td><RowLink href={`/stock/batches/${l.id}`}>{batchName(l)}</RowLink></td>
-                <td>{l.item.name}</td>
+                <td><NameLink href={`/products/${l.itemId}`}>{l.item.name}</NameLink></td>
                 <td>{t.date(l.expiryDate)}</td>
                 <td className="num">{left < 0 ? <Badge color="red">{t("Expired")}</Badge> : left <= 30 ? <Badge color="amber">{left}</Badge> : left}</td>
                 <td className="num">{qty(l.qtyOnHand)} {t(l.item.unit)}</td>

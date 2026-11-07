@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/i18n/client";
 import { LangSwitch } from "@/i18n/switch";
+import { QuickNew } from "./quick-new";
 import { BarChart3, Boxes, Building2, CalendarClock, FlaskConical, LayoutDashboard, Receipt, Settings, Ship, Upload, Users, FileCheck, Wallet, HandCoins, FileText, Undo2, ClipboardList, BadgeCheck, PackageMinus, Landmark, ReceiptText, TrendingUp, ListTree, NotebookPen, Scale, BookOpen, FileSearch, HardDrive, Trash2, Percent, Layers, Hash, Inbox, PackageSearch, type LucideIcon } from "lucide-react";
 
 const SECTIONS: { title: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
@@ -67,9 +68,12 @@ export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin:
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Viochem" className="h-8 w-auto" />
-        <button onClick={() => setOpen(!open)} className="rounded-md border border-slate-300 px-2.5 py-1 text-sm" aria-label={t("Menu")}>
-          ☰
-        </button>
+        <div className="flex items-center gap-2">
+          <QuickNew isAdmin={isAdmin} />
+          <button onClick={() => setOpen(!open)} className="rounded-md border border-slate-300 px-2.5 py-1 text-sm" aria-label={t("Menu")}>
+            ☰
+          </button>
+        </div>
       </div>
       {/* On wide screens: a slim bar of icons that slides open over the page while the mouse is on it (or a link has keyboard focus). */}
       <aside

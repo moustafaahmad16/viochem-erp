@@ -1,29 +1,26 @@
-import { InvoiceNumber } from "@/app/(app)/invoices/status";
 import Decimal from "decimal.js";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/forms";
-import { ButtonLink, Card, PageHeader, RowLink, Stat, Table } from "@/components/ui";
-import { invoiceTotals } from "@/lib/costing";
+import { ButtonLink, Card, PageHeader, Stat } from "@/components/ui";
 import { currentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import { customerAccounts } from "@/lib/services/accounts";
 import { getT } from "@/i18n/server";
 import { updateCustomer } from "../actions";
 import { CustomerFields } from "../fields";
 import { PendingCheques } from "../../cheques/pending";
-import { InvoiceStatusBadge } from "../../invoices/status";
+import { CustomerHistory } from "../history";
 import { deleteCustomerPayment, receivePayment } from "../../payments/actions";
 import { accountOptions, Balance, OpenBills, ReceivePaymentForm, Statement } from "../../payments/parts";
 
-export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
+export default async function CustomerPage({ params, searchParams }: PageProps<"/customers/[id]">) {
   const t = await getT();
   const id = Number((await params).id);
+  const tab = String((await searchParams).tab ?? "");
   const [acc] = await customerAccounts({ id });
   if (!acc) notFound();
   const c = acc.customer;
-  const [drafts, user, accounts] = await Promise.all([
-    db.invoice.findMany({ where: { customerId: id, status: { not: "POSTED" } }, include: { lines: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
+  const [user, accounts] = await Promise.all([
     currentUser(),
     accountOptions({ egpOnly: true }),
   ]);
@@ -59,23 +56,10 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           <Card title={t("Unpaid invoices")} padded={false}>
             <OpenBills account={acc} />
           </Card>
+          <CustomerHistory customerId={c.id} tab={tab} t={t} />
           <Card title={t("Statement")} padded={false}>
             <Statement account={acc} onDelete={deletes} />
           </Card>
-          {drafts.length > 0 && (
-            <Card title={t("Drafts and cancelled invoices")} padded={false}>
-              <Table head={<tr><th>{t("Invoice")}</th><th>{t("Date")}</th><th>{t("Status")}</th><th className="num">{t("Total (EGP)")}</th></tr>}>
-                {drafts.map((i) => (
-                  <tr key={i.id}>
-                    <td><RowLink href={`/invoices/${i.id}`}><InvoiceNumber number={i.number} /></RowLink></td>
-                    <td>{t.date(i.date)}</td>
-                    <td><InvoiceStatusBadge status={i.status} /></td>
-                    <td className="num">{money(invoiceTotals(i.lines, i.vatRate.toString()).total)}</td>
-                  </tr>
-                ))}
-              </Table>
-            </Card>
-          )}
         </div>
         <div className="space-y-6">
           <PendingCheques customerId={c.id} />
