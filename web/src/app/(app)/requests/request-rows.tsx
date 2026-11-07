@@ -13,7 +13,7 @@ const blank = (key: number): Row => ({ key, itemId: "", qty: "", name: "", cas: 
 
 /**
  * The products a customer asked for. Each is one of ours, with what is free in stock shown as it is
- * picked, or "A product we don't import", typed in by name and CAS number.
+ * picked, or "Not found in our list", typed in by name and CAS number.
  */
 export function RequestRows({ items, start = 1 }: { items: RequestItem[]; start?: number }) {
   const t = useT();
@@ -44,7 +44,7 @@ export function RequestRows({ items, start = 1 }: { items: RequestItem[]; start?
                 <td className="space-y-2">
                   <select name={`item_${i}`} value={r.itemId} onChange={(e) => set(r.key, { itemId: e.target.value })} aria-label={t("Product")} className={input}>
                     <option value="">{t("Choose…")}</option>
-                    <option value="other">{t("+ A product we don't import…")}</option>
+                    <option value="other">{t("+ Not found in our list…")}</option>
                     {items.map((it) => (
                       <option key={it.id} value={it.id}>
                         {it.name}{it.cas ? ` · CAS ${it.cas}` : ""} ({it.code}) · {t("{qty} {unit} free", { qty: show(it.free), unit: t(it.unit) })}
@@ -75,7 +75,7 @@ export function RequestRows({ items, start = 1 }: { items: RequestItem[]; start?
                       />
                     </div>
                   )}
-                  {other && <p className="text-xs text-slate-500">{t("Recorded in the supply gap under products we don't import.")}</p>}
+                  {other && <p className="text-xs text-slate-500">{t("Recorded in the supply gap under Not found.")}</p>}
                 </td>
                 <td>
                   <div className="flex items-center gap-2">

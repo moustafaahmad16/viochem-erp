@@ -19,7 +19,7 @@ function refresh(id?: number) {
 
 /**
  * The product rows of the form: item_0/qty_0… with name_0/cas_0/unit_0 when item_0 is "other",
- * a product we don't import. Empty rows are skipped.
+ * a product not found in our list. Empty rows are skipped.
  */
 function productRows(fd: FormData): svc.RequestLineInput[] {
   const lines: svc.RequestLineInput[] = [];
@@ -32,7 +32,7 @@ function productRows(fd: FormData): svc.RequestLineInput[] {
     if (!item) throw new UserError("Choose the product on every line, or remove the empty line.");
     if (!qty || !(Number(qty) > 0)) throw new UserError("Enter a quantity for every product.");
     if (item === "other") {
-      if (!name && !cas) throw new UserError("Type the name of each product we don't import.");
+      if (!name && !cas) throw new UserError("Type the name of each product not found in our list.");
       lines.push({ itemId: null, productName: name, casNumber: cas, unit: text(fd, `unit_${i}`), qty });
     } else {
       lines.push({ itemId: Number(item), productName: null, casNumber: null, unit: null, qty });

@@ -54,7 +54,7 @@ export default async function SupplyGapPage({ searchParams }: PageProps<"/supply
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm" role="tablist">
           {[
             { key: "ours", label: t("Our products"), n: gap.ours.length },
-            { key: "local", label: t("Products we don't import"), n: gap.local.length },
+            { key: "local", label: t("Not found"), n: gap.local.length },
           ].map((x) => (
             <Link
               key={x.key}
@@ -81,8 +81,8 @@ export default async function SupplyGapPage({ searchParams }: PageProps<"/supply
 
       <p className="mb-3 text-sm text-slate-600">
         {tab === "ours"
-          ? t("Products we import that were out of stock, or short, when a customer asked.")
-          : t("Products we don't import, which we buy from local distributors when a customer asks.")}
+          ? t("Products in our list that were out of stock, or short, when a customer asked.")
+          : t("Products customers asked for that aren't in our product list. We buy these from local distributors.")}
       </p>
 
       <Card padded={false}>

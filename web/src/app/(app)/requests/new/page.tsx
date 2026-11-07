@@ -19,7 +19,7 @@ export default async function NewRequestPage({ searchParams }: PageProps<"/reque
     <>
       <PageHeader
         title={t("New customer request")}
-        subtitle={t("List everything the customer asked for, even products that are out of stock or that we don't import.")}
+        subtitle={t("List everything the customer asked for, even products that are out of stock or not found in our list.")}
         back={{ href: "/requests", label: t("Customer requests") }}
       />
       {customers.length === 0 ? (

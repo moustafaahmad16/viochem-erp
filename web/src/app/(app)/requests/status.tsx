@@ -18,7 +18,7 @@ const LINE: Record<LinePlan["kind"], { label: string; color: "green" | "amber" |
   stock: { label: "In stock", color: "green" },
   partial: { label: "Partly in stock", color: "amber" },
   none: { label: "Out of stock", color: "red" },
-  "not-ours": { label: "We don't import", color: "gray" },
+  "not-ours": { label: "Not found", color: "gray" },
 };
 
 export function LineBadge({ kind }: { kind: LinePlan["kind"] }) {

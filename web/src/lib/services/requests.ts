@@ -13,7 +13,7 @@ import { availability, NOTHING } from "./reservations";
 /**
  * Customer requests: what customers asked for, written down before a price is offered.
  * Sending one on puts what is free in stock onto a quotation and records the rest as the
- * supply gap: our own products we were short of, and products we don't import at all.
+ * supply gap: our own products we were short of, and products not in our list at all.
  */
 
 const dec = (v: { toString(): string } | null | undefined) => new Decimal(v?.toString() ?? 0);
@@ -37,7 +37,7 @@ async function resolve(line: RequestLineInput) {
   if (line.itemId) return { itemId: line.itemId, productName: null, casNumber: null, unit: null, qty: qty.toString(), notes: line.notes ?? null };
   const name = line.productName?.trim() || null;
   const cas = line.casNumber?.trim() ? normalizeCas(line.casNumber) : null;
-  if (!name && !cas) throw new UserError("Choose a product, or type the name of one we don't import.");
+  if (!name && !cas) throw new UserError("Choose a product, or type the name of one not found in our list.");
   const ours =
     (cas ? await db.item.findFirst({ where: { casNumber: cas, active: true } }) : null) ??
     (name ? (await db.item.findMany({ where: { active: true }, select: { id: true, name: true } })).find((i) => sameName(i.name, name)) : null);
@@ -172,13 +172,13 @@ export type GapRow = {
   coming?: Decimal;
 };
 
-/** A product we don't import is the same one when its CAS number is, or else its name. */
+/** A product not in our list is the same one when its CAS number is, or else its name. */
 export const gapKey = (l: { itemId: number | null; productName: string | null; casNumber: string | null }) =>
   l.itemId ? `item:${l.itemId}` : l.casNumber ? `cas:${l.casNumber}` : `name:${(l.productName ?? "").trim().toLowerCase().replace(/\s+/g, " ")}`;
 
 /**
  * The supply gap: what customers asked for that we couldn't offer, added up by product, most asked
- * first. "ours" are our products we were short of; "local" are products we don't import, bought
+ * first. "ours" are our products we were short of; "local" are products not in our list, bought
  * from local distributors. Open gaps only, unless handled ones are asked for.
  */
 export async function supplyGap(opts: { since?: Date | null; handled?: boolean } = {}) {
