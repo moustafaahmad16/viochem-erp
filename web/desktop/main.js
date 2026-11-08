@@ -153,6 +153,27 @@ async function restore() {
   dialog.showMessageBox(win, { type: "info", message: "Restored.", detail: `The data as it was before is saved as:\n${safety}` });
 }
 
+/**
+ * For when nobody can sign in as an admin. Writes a one-time key to the data folder and opens the
+ * reset page with it in this window. The key never leaves this computer, so the page can't be
+ * used from a phone or another computer on the Wi-Fi. The server checks it, and deletes it once used.
+ */
+async function resetAdminPassword() {
+  const { response } = await dialog.showMessageBox(win, {
+    type: "question",
+    buttons: ["Continue", "Cancel"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Reset an admin's password",
+    message: "Set a new password for an admin?",
+    detail: "Use this when an admin forgot their password and nobody else can reset it. The page works for 15 minutes, on this computer only.",
+  });
+  if (response !== 0) return;
+  const key = crypto.randomBytes(24).toString("hex");
+  fs.writeFileSync(path.join(dataDir, "password-reset.json"), JSON.stringify({ key, expires: new Date(Date.now() + 15 * 60_000).toISOString() }));
+  win?.loadURL(`${LOCAL}/reset-password?key=${key}`);
+}
+
 async function chooseBackupFolder() {
   const pick = await dialog.showOpenDialog(win, { title: "Choose the backup folder", defaultPath: backupDir(), properties: ["openDirectory", "createDirectory"] });
   if (pick.canceled || !pick.filePaths[0]) return;
@@ -187,6 +208,8 @@ function buildMenu() {
           },
           { label: "Restore from backup…", click: restore },
           { label: "Open data folder", click: () => shell.openPath(dataDir) },
+          { type: "separator" },
+          { label: "Reset an admin's password…", click: resetAdminPassword },
           { type: "separator" },
           { role: "quit" },
         ],

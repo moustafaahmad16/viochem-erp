@@ -6,6 +6,7 @@ import { getT } from "@/i18n/server";
 import { hashPassword, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { UserError } from "@/lib/services/errors";
+import { setPassword } from "@/lib/services/passwords";
 
 export async function generateMetadata() {
   return { title: (await getT())("Users") };
@@ -30,6 +31,20 @@ async function addUser(_: FormState, fd: FormData): Promise<FormState> {
   }
   revalidatePath("/users");
   return { ok: "User added. Send them the email and password." };
+}
+
+/** For a user who forgot their password. The admin tells them the new one, and they can change it afterwards. */
+async function resetPassword(id: number, _: FormState, fd: FormData): Promise<FormState> {
+  "use server";
+  const me = await requireAdmin();
+  try {
+    if (me.id === id) throw new UserError("Change your own password under Change password.");
+    await setPassword(id, String(fd.get("password") ?? ""));
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/users");
+  return { ok: "Password changed. Tell them the new one." };
 }
 
 async function toggleUser(id: number) {
@@ -58,9 +73,18 @@ export default async function UsersPage() {
                 <td>{t.date(u.createdAt)}</td>
                 <td className="text-end">
                   {u.id !== me.id && (
-                    <form action={toggleUser.bind(null, u.id)}>
-                      <button className="text-xs text-slate-500 hover:text-slate-900">{t(u.active ? "Turn off" : "Turn on")}</button>
-                    </form>
+                    <div className="flex flex-col items-end gap-1">
+                      <form action={toggleUser.bind(null, u.id)}>
+                        <button className="text-xs text-slate-500 hover:text-slate-900">{t(u.active ? "Turn off" : "Turn on")}</button>
+                      </form>
+                      <details className="text-start">
+                        <summary className="cursor-pointer text-end text-xs text-slate-500 hover:text-slate-900">{t("Reset password")}</summary>
+                        <ActionForm action={resetPassword.bind(null, u.id)} resetOnSuccess className="mt-2 w-56 space-y-2">
+                          <Field label={t("New password")} name="password" type="text" required minLength={8} dir="ltr" hint={t("At least 8 characters")} />
+                          <Submit variant="secondary">{t("Set password")}</Submit>
+                        </ActionForm>
+                      </details>
+                    </div>
                   )}
                 </td>
               </tr>

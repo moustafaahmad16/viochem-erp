@@ -109,9 +109,14 @@ export function Nav({ user, isAdmin, desktop, logout }: { user: string; isAdmin:
             <div className="truncate text-slate-700">{user}</div>
             <LangSwitch />
           </div>
-          <form action={logout}>
-            <button className="text-slate-500 hover:text-slate-800">{t("Sign out")}</button>
-          </form>
+          <div className="flex items-center gap-4">
+            <Link href="/account" className="text-slate-500 hover:text-slate-800">
+              {t("Change password")}
+            </Link>
+            <form action={logout}>
+              <button className="text-slate-500 hover:text-slate-800">{t("Sign out")}</button>
+            </form>
+          </div>
         </div>
       </aside>
     </>

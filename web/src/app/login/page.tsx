@@ -12,7 +12,8 @@ export async function generateMetadata() {
 export default async function LoginPage() {
   const t = await getT();
   // The Windows app on its first start has nobody to sign in as, so it asks for the first admin.
-  const firstRun = isDesktop() && (await db.user.count()) === 0;
+  const desktop = isDesktop();
+  const firstRun = desktop && (await db.user.count()) === 0;
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-accent-50 px-4">
       <div className="w-full max-w-sm">
@@ -43,6 +44,11 @@ export default async function LoginPage() {
               <div className="pt-1 [&>button]:w-full">
                 <Submit>{t("Sign in")}</Submit>
               </div>
+              <details className="text-sm text-slate-500">
+                <summary className="cursor-pointer">{t("Forgot your password?")}</summary>
+                <p className="mt-2">{t("Ask an admin to set a new one for you, under Users.")}</p>
+                {desktop && <p className="mt-2">{t("If you are the only admin: on the main computer, in the VIOCHEM app, open File, then Reset an admin's password.")}</p>}
+              </details>
             </ActionForm>
           )}
         </div>
