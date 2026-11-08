@@ -80,4 +80,25 @@ export const desktop: Record<string, string> = {
   "No off-site backup made yet": "لم تُعمل نسخة خارج الجهاز بعد",
   "If this computer is lost or broken, the data goes with it. Set up a Google Drive or OneDrive copy.": "لو ضاع هذا الجهاز أو تعطل تضيع البيانات معه. فعّل نسخة على Google Drive أو OneDrive.",
   "Fix it": "إصلاح",
+  // Passwords: changing your own, an admin resetting one, and the main computer's reset for admins.
+  "Change password": "تغيير كلمة المرور",
+  "Current password": "كلمة المرور الحالية",
+  "New password": "كلمة المرور الجديدة",
+  "Your password is changed.": "تم تغيير كلمة المرور.",
+  "Your current password isn't right.": "كلمة المرور الحالية غير صحيحة.",
+  "Reset password": "إعادة تعيين كلمة المرور",
+  "Set password": "حفظ كلمة المرور",
+  "Password changed. Tell them the new one.": "تم تغيير كلمة المرور. أبلغه بكلمة المرور الجديدة.",
+  "Change your own password under Change password.": "غيّر كلمة مرورك من «تغيير كلمة المرور».",
+  "Reset an admin's password": "إعادة تعيين كلمة مرور المسؤول",
+  "Set password and sign in": "حفظ كلمة المرور والدخول",
+  "This page only opens from the main computer. In the VIOCHEM app there, open File, then Reset an admin's password.":
+    "هذه الصفحة تُفتح من الجهاز الرئيسي فقط. افتح برنامج VIOCHEM عليه، ثم قائمة «File»، ثم «Reset an admin's password»",
+  "This reset link has run out. Open it again from the File menu of VIOCHEM on the main computer.":
+    "انتهت صلاحية رابط إعادة التعيين. افتحه مرة أخرى من قائمة File في برنامج VIOCHEM على الجهاز الرئيسي.",
+  "Choose an admin.": "اختر المسؤول.",
+  "Forgot your password?": "نسيت كلمة المرور؟",
+  "Ask an admin to set a new one for you, under Users.": "اطلب من المسؤول تعيين كلمة مرور جديدة لك من صفحة المستخدمين.",
+  "If you are the only admin: on the main computer, in the VIOCHEM app, open File, then Reset an admin's password.":
+    "لو كنت المسؤول الوحيد: على الجهاز الرئيسي، افتح برنامج VIOCHEM، ثم قائمة «File»، ثم «Reset an admin's password»",
 };
