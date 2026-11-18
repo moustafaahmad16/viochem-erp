@@ -1,6 +1,7 @@
 import path from "node:path";
 import { db } from "@/lib/db";
 import { backupNow, scheduleBackups } from "./backup";
+import { scheduleInbox } from "./inbox";
 import { migrateSqlite, pendingMigrations } from "./migrate";
 
 export async function startDesktop() {
@@ -15,4 +16,5 @@ export async function startDesktop() {
   const applied = await migrateSqlite(db, dir);
   if (applied.length) console.log(`Database updated: ${applied.join(", ")}`);
   scheduleBackups();
+  scheduleInbox();
 }

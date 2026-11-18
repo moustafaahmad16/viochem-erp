@@ -74,6 +74,14 @@ an Electron window, with the data in a SQLite file instead of PostgreSQL.
   e-seal signer itself (E-invoice → Start e-seal signer), so invoices sent from any device are signed
   with the token plugged into the main computer.
 
+- **Sales reps outside the office**: under Settings → Sales reps outside, each rep gets a personal link to
+  open on any phone, anywhere, and send a customer request (customer, products, quantities, notes). Requests wait
+  in a small online inbox, a free Cloudflare Worker (`inbox/viochem-inbox.js`), and the app collects them every
+  2 minutes while it is open; they show under Customer requests marked with the rep's name. The app itself is
+  never reachable from the internet: it only calls out to the inbox. The form shows customer and product names,
+  never prices or stock. A customer typed in that isn't on file is added. The settings page lists the one-time
+  Cloudflare setup (a worker, a D1 database bound as `DB`, and the key from the page as the `INBOX_KEY` secret).
+
 Build it on Windows with `cd desktop && npm ci && npm run dist`; the installer lands in `desktop/dist`.
 `npm start` in `desktop/` runs it without installing, after `node prepare.mjs`.
 

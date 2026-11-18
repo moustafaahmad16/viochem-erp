@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   output: process.env.VIOCHEM_STANDALONE ? "standalone" : undefined,
   // Every page reads live business data for a signed-in user, so nothing is cached between requests.
   cacheComponents: false,
-  // The e-seal signer script is read from disk when an admin downloads it.
-  outputFileTracingIncludes: { "/settings/eta/signer": ["./signer/**/*"] },
+  // The e-seal signer script and the reps' inbox code are read from disk when an admin downloads them.
+  outputFileTracingIncludes: { "/settings/eta/signer": ["./signer/**/*"], "/settings/reps/inbox": ["./inbox/**/*"] },
   experimental: {
     // Shipment documents are uploaded through a server action; the files may be up to 15 MB.
     serverActions: { bodySizeLimit: "16mb" },

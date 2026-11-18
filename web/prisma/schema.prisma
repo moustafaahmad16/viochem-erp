@@ -811,6 +811,9 @@ model CustomerRequest {
   quote       Quote?                @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   convertedAt DateTime?
   createdAt   DateTime              @default(now())
+  // A request a sales rep sent from outside the office: who sent it, and its id in the online inbox.
+  sentBy      String?
+  inboxId     String?               @unique
   lines       CustomerRequestLine[]
 
   @@index([date])
