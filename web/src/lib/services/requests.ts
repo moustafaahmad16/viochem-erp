@@ -45,7 +45,13 @@ async function resolve(line: RequestLineInput) {
   return { itemId: null, productName: name ?? cas, casNumber: cas, unit: line.unit?.trim() || "kg", qty: qty.toString(), notes: line.notes ?? null };
 }
 
-export async function createRequest(customerId: number, date: Date, lines: RequestLineInput[] = [], notes: string | null = null) {
+export async function createRequest(
+  customerId: number,
+  date: Date,
+  lines: RequestLineInput[] = [],
+  notes: string | null = null,
+  from: { sentBy?: string | null; inboxId?: string | null } = {},
+) {
   const data = await Promise.all(lines.map(resolve));
   return db.$transaction(async (tx) =>
     tx.customerRequest.create({
@@ -54,6 +60,8 @@ export async function createRequest(customerId: number, date: Date, lines: Reque
         customerId,
         date,
         notes,
+        sentBy: from.sentBy ?? null,
+        inboxId: from.inboxId ?? null,
         lines: { create: data.map(({ unit, ...l }) => ({ ...l, ...(unit ? { unit } : {}) })) },
       },
     }),

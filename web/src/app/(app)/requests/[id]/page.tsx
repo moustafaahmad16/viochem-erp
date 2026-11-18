@@ -42,7 +42,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[id]"
     <>
       <PageHeader
         title={<span className="flex items-center gap-3">{r.number} <RequestStatusBadge status={r.status} /></span>}
-        subtitle={<><RowLink href={`/customers/${r.customerId}`}>{r.customer.name}</RowLink> · {t.date(r.date)}</>}
+        subtitle={<><RowLink href={`/customers/${r.customerId}`}>{r.customer.name}</RowLink> · {t.date(r.date)}{r.sentBy && <> · {t("Sent by {rep} from outside the office", { rep: r.sentBy })}</>}</>}
         back={{ href: "/requests", label: t("Customer requests") }}
       />
 

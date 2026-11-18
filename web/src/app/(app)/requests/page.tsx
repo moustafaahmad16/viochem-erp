@@ -59,7 +59,10 @@ export default async function RequestsPage({ searchParams }: PageProps<"/request
             return (
               <tr key={r.id} className="hover:bg-slate-50">
                 <td><RowLink href={`/requests/${r.id}`}>{r.number}</RowLink></td>
-                <td>{r.customer.name}</td>
+                <td>
+                  {r.customer.name}
+                  {r.sentBy && <span className="ms-2 rounded-full bg-sky-50 px-2 py-0.5 text-xs text-sky-800">{t("From {rep}", { rep: r.sentBy })}</span>}
+                </td>
                 <td>{t.date(r.date)}</td>
                 <td className="num">{r.lines.length}</td>
                 <td className="num">{r.status === "CONVERTED" ? missing : ""}</td>

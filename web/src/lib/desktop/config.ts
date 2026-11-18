@@ -17,9 +17,20 @@ export type DesktopConfig = {
   /** A Google Drive or OneDrive folder each daily backup is also copied to. Empty means off. */
   offsiteDir: string;
   eta: { environment: "preprod" | "production"; clientId: string; clientSecret: string };
+  /** The online inbox sales reps outside the office send customer requests to (see inbox.ts). */
+  inbox: InboxConfig;
 };
 
-const DEFAULTS: DesktopConfig = { backupDir: "", keepBackups: 30, offsiteDir: "", eta: { environment: "preprod", clientId: "", clientSecret: "" } };
+export type SalesRep = { id: number; name: string; code: string; active: boolean };
+export type InboxConfig = { url: string; key: string; reps: SalesRep[] };
+
+const DEFAULTS: DesktopConfig = {
+  backupDir: "",
+  keepBackups: 30,
+  offsiteDir: "",
+  eta: { environment: "preprod", clientId: "", clientSecret: "" },
+  inbox: { url: "", key: "", reps: [] },
+};
 
 const file = () => path.join(process.env.VIOCHEM_DATA_DIR ?? "", "desktop.json");
 
@@ -30,7 +41,7 @@ export function readConfig(): DesktopConfig {
   } catch {
     // First start, or no settings saved yet.
   }
-  return { ...DEFAULTS, ...saved, eta: { ...DEFAULTS.eta, ...saved.eta } };
+  return { ...DEFAULTS, ...saved, eta: { ...DEFAULTS.eta, ...saved.eta }, inbox: { ...DEFAULTS.inbox, ...saved.inbox } };
 }
 
 export function writeConfig(change: Partial<DesktopConfig>) {

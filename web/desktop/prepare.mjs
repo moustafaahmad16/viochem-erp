@@ -1,5 +1,5 @@
 // Builds the server for the Windows app into desktop/app: Next.js as a standalone folder, with the
-// Prisma client for SQLite, the SQLite migrations and the e-seal signer beside it.
+// Prisma client for SQLite, the SQLite migrations, the e-seal signer and the reps' inbox code beside it.
 // Run on Windows (the release workflow does), so the database engine built for Windows is the one included.
 import { execSync } from "node:child_process";
 import { cpSync, existsSync, lstatSync, readdirSync, realpathSync, rmSync } from "node:fs";
@@ -21,6 +21,7 @@ cpSync(path.join(web, ".next/static"), path.join(app, ".next/static"), { recursi
 cpSync(path.join(web, "public"), path.join(app, "public"), { recursive: true });
 cpSync(path.join(web, "prisma/sqlite/migrations"), path.join(app, "prisma/sqlite/migrations"), { recursive: true });
 cpSync(path.join(web, "signer"), path.join(app, "signer"), { recursive: true });
+cpSync(path.join(web, "inbox"), path.join(app, "inbox"), { recursive: true });
 // The query engines, in case the build's file tracing missed the one for the other platform.
 const engines = path.join(web, "node_modules/.prisma/client");
 for (const f of readdirSync(engines).filter((f) => f.endsWith(".node") || f === "schema.prisma")) {
